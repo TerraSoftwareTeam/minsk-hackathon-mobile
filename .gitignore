@@ -1,0 +1,81 @@
+# Gradle & Build outputs
+.gradle/
+build/
+**/build/
+.kotlin/
+kotlin-js-store/
+.gradle-test-kit/
+
+# IntelliJ IDEA / Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+.vscode/
+
+# Local & Environment properties
+local.properties
+secrets.properties
+keystore.properties
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+
+# One-off scripts & temporary tools
+refactor.py
+*.pyc
+__pycache__/
+*.tmp
+*.temp
+
+# Android specific
+*.apk
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+.cxx/
+captures/
+
+# iOS specific
+.DS_Store
+DerivedData/
+iosApp/DerivedData/
+iosApp/build/
+*.xcworkspace
+!iosApp/*.xcodeproj
+xcuserdata/
+*.xcuserdatad
+*.xcworkspacedata
+*.xcuserstate
+
+# Node/JS
+node_modules/
+.yarn/
+package-lock.json
+
+# Logs & Memory Dumps
+*.log
+*.hprof
+hs_err_pid*.log
+
+# OS Junk
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# Backup files
+*~
+*.bak
+*.swp
+
+# Generated assets and resources
+androidApp/src/main/assets/composeResources/
+core/localization/src/androidMain/assets/composeResources/
+
+/docs
