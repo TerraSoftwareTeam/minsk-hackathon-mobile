@@ -5,13 +5,19 @@ import com.dev.lbsuhack.core.network.auth.TokenRefresher
 import com.dev.lbsuhack.core.network.auth.TokenStorage
 import com.dev.lbsuhack.core.network.client.AppHttpClientFactory
 import io.ktor.client.HttpClient
-import org.koin.core.module.dsl.singleOf
+import kotlinx.coroutines.Dispatchers
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
 val networkModule = module {
-    singleOf(::EncryptedTokenStorage).bind<TokenStorage>()
+    single {
+        EncryptedTokenStorage(
+            context = androidContext(),
+            ioDispatcher = Dispatchers.IO,
+        )
+    } bind TokenStorage::class
 
     single(named("unauthenticatedHttpClient")) {
         AppHttpClientFactory.createUnauthenticated()

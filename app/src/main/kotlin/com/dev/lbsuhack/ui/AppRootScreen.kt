@@ -11,9 +11,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
@@ -44,7 +44,7 @@ fun AppRootScreen(
 
     val startDestination: NavKey = tabs.firstOrNull()?.rootRoute ?: HomeRoute
 
-    val backStack = remember { NavBackStack(startDestination) }
+    val backStack = rememberNavBackStack(startDestination)
     val navigator = remember(backStack) { AppNavigator(backStack, startDestination) }
     val snackbarHostState = remember { SnackbarHostState() }
 

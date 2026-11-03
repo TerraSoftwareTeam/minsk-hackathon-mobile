@@ -1,19 +1,82 @@
+import java.util.Properties
+
 plugins {
     id("android.dev.application")
+}
+
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) {
+        file.inputStream().use { load(it) }
+    }
+}
+
+val releaseStore = (
+    providers.gradleProperty("RELEASE_STORE_FILE").orNull
+        ?: providers.environmentVariable("RELEASE_STORE_FILE").orNull
+        ?: keystoreProperties.getProperty("storeFile")
+    )?.let { rootProject.file(it) }
+
+val releaseStorePassword = providers.gradleProperty("RELEASE_STORE_PASSWORD").orNull
+    ?: providers.environmentVariable("RELEASE_STORE_PASSWORD").orNull
+    ?: keystoreProperties.getProperty("storePassword")
+
+val releaseKeyAlias = providers.gradleProperty("RELEASE_KEY_ALIAS").orNull
+    ?: providers.environmentVariable("RELEASE_KEY_ALIAS").orNull
+    ?: keystoreProperties.getProperty("keyAlias")
+
+val releaseKeyPassword = providers.gradleProperty("RELEASE_KEY_PASSWORD").orNull
+    ?: providers.environmentVariable("RELEASE_KEY_PASSWORD").orNull
+    ?: keystoreProperties.getProperty("keyPassword")
+
+val hasReleaseSigning =
+    releaseStore?.exists() == true &&
+        !releaseStorePassword.isNullOrBlank() &&
+        !releaseKeyAlias.isNullOrBlank() &&
+        !releaseKeyPassword.isNullOrBlank()
+
+val appVersionCode = providers.gradleProperty("VERSION_CODE").orNull
+    ?.toIntOrNull()
+    ?: 1
+
+val appVersionName = providers.gradleProperty("VERSION_NAME").orNull
+    ?.takeIf { it.isNotBlank() }
+    ?: "1.0.0"
+
+if (!hasReleaseSigning) {
+    logger.warn(
+        "Release signing is not configured. " +
+            "`assembleRelease` will produce an unsigned APK. " +
+            "Use keystore.properties locally or RELEASE_* secrets in CI."
+    )
 }
 
 android {
     namespace = "com.dev.lbsuhack"
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = releaseStore
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     defaultConfig {
         applicationId = "com.dev.lbsuhack"
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -54,6 +117,7 @@ dependencies {
     // MVIKotlin
     implementation(libs.bundles.mvikotlin)
 
+    testImplementation(libs.bundles.unit.test)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

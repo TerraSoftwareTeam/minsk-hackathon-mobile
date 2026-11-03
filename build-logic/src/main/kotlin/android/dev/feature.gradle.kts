@@ -23,4 +23,5 @@ dependencies {
     add("implementation", catalog.findLibrary("androidx-lifecycle-viewmodel-compose").get())
     add("implementation", catalog.findLibrary("androidx-compose-material3").get())
     add("implementation", catalog.findLibrary("androidx-compose-icons-extended").get())
+    add("testImplementation", catalog.findBundle("unit-test").get())
 }

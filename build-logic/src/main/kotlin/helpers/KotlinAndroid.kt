@@ -18,4 +18,5 @@ fun Project.configureKotlinAndroid(commonExtension: CommonExtension<*, *, *, *, 
     commonExtension.defaultConfig.minSdk = minSdk
     commonExtension.compileOptions.sourceCompatibility = JavaVersion.VERSION_21
     commonExtension.compileOptions.targetCompatibility = JavaVersion.VERSION_21
+    commonExtension.testOptions.unitTests.isReturnDefaultValues = true
 }

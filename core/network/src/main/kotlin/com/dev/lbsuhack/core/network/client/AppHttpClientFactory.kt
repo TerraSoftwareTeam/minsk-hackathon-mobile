@@ -1,5 +1,6 @@
 package com.dev.lbsuhack.core.network.client
 
+import com.dev.lbsuhack.core.network.BuildConfig
 import com.dev.lbsuhack.core.network.auth.TokenStorage
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
@@ -11,12 +12,10 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
-import io.github.cdimascio.dotenv.dotenv
 
 object AppHttpClientFactory {
 
-    val dotenv = dotenv()
-    private val BASE_URL = dotenv.get("BASE_URL") ?: "null"
+    private val BASE_URL = BuildConfig.BASE_URL
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -25,10 +24,12 @@ object AppHttpClientFactory {
         explicitNulls = false
     }
 
+    private val logLevel = if (BuildConfig.DEBUG) LogLevel.INFO else LogLevel.NONE
+
     fun createUnauthenticated(): HttpClient = HttpClient(CIO) {
         expectSuccess = false
         install(ContentNegotiation) { json(json) }
-        install(Logging) { level = LogLevel.INFO }
+        install(Logging) { level = logLevel }
         defaultRequest {
             url(BASE_URL)
             contentType(ContentType.Application.Json)
@@ -41,7 +42,7 @@ object AppHttpClientFactory {
     ): HttpClient = HttpClient(CIO) {
         expectSuccess = true
         install(ContentNegotiation) { json(json) }
-        install(Logging) { level = LogLevel.INFO }
+        install(Logging) { level = logLevel }
         install(AuthPlugin) {
             this.tokenStorage = tokenStorage
             this.refreshTokens = refreshTokens
