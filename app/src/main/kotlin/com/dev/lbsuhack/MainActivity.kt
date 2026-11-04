@@ -6,7 +6,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import com.dev.lbsuhack.core.localization.LanguageController
 import com.dev.lbsuhack.ui.AppRootScreen
-import com.dev.lbsuhack.ui.theme.LbsuhackTheme
+import com.dev.lbsuhack.ui.AppTheme
 import org.koin.android.ext.android.inject
 
 class MainActivity : AppCompatActivity() {
@@ -21,7 +21,7 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
 
         setContent {
-            LbsuhackTheme {
+            AppTheme {
                 AppRootScreen()
             }
         }

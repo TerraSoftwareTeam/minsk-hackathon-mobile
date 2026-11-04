@@ -23,6 +23,7 @@ dependencyResolutionManagement {
 rootProject.name = "Lbsuhack"
 include(":app")
 
+include(":core:designsystem")
 include(":core:navigation")
 include(":core:domain")
 include(":core:localization")

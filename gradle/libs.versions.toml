@@ -26,6 +26,7 @@ room = "2.8.4"
 coil = "2.7.0"
 mvikotlin = "4.4.0"
 openapi-generator = "7.12.0"
+kover = "0.9.11"
 
 [libraries]
 android-gradle-plugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
@@ -33,6 +34,7 @@ kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-p
 kotlin-compose-gradle-plugin = { group = "org.jetbrains.kotlin", name = "compose-compiler-gradle-plugin", version.ref = "kotlin" }
 kotlin-serialization-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-serialization", version.ref = "kotlin" }
 ksp-gradle-plugin = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
+kover-gradle-plugin = { group = "org.jetbrains.kotlinx", name = "kover-gradle-plugin", version.ref = "kover" }
 
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity-compose" }
@@ -90,7 +92,7 @@ mvikotlin-logging = { group = "com.arkivanov.mvikotlin", name = "mvikotlin-loggi
 
 [bundles]
 unit-test = ["junit", "coroutines-test", "turbine"]
-build-logic-classpath = ["android-gradle-plugin", "kotlin-gradle-plugin", "kotlin-compose-gradle-plugin", "ksp-gradle-plugin", "kotlin-serialization-plugin"]
+build-logic-classpath = ["android-gradle-plugin", "kotlin-gradle-plugin", "kotlin-compose-gradle-plugin", "ksp-gradle-plugin", "kotlin-serialization-plugin", "kover-gradle-plugin"]
 android-test = ["androidx-test-ext-junit", "androidx-espresso-core"]
 navigation3 = ["navigation3-runtime", "navigation3-ui"]
 mvikotlin = ["mvikotlin-core", "mvikotlin-main", "mvikotlin-coroutines"]
@@ -112,3 +114,4 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 openapi-generator = { id = "org.openapi.generator", version.ref = "openapi-generator" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }

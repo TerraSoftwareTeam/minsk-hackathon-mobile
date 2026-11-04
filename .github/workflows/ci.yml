@@ -43,8 +43,8 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Run unit tests
-        run: ./gradlew testDebugUnitTest --continue --console=plain
+      - name: Run unit tests with coverage
+        run: ./gradlew testDebugUnitTest :koverXmlReport :koverHtmlReport --continue --console=plain
 
       - name: Upload test reports
         if: failure()
@@ -53,6 +53,35 @@ jobs:
           name: unit-test-reports
           path: '**/build/reports/tests/'
           retention-days: 7
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            build/reports/kover/html/
+            build/reports/kover/report.xml
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          if [ ! -f build/reports/kover/report.xml ]; then
+            echo "Coverage report was not generated" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import xml.etree.ElementTree as ET
+          report = ET.parse("build/reports/kover/report.xml").getroot()
+          line = next(c for c in report.findall("counter") if c.get("type") == "LINE")
+          covered = int(line.get("covered"))
+          missed = int(line.get("missed"))
+          total = covered + missed
+          percent = round(100 * covered / total, 1) if total else 0.0
+          print(f"### Coverage\n\n| Metric | Value |\n| --- | --- |\n| Lines | {percent}% ({covered}/{total}) |")
+          PY
 
   release:
     name: Build & Publish Release

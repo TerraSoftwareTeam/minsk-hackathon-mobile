@@ -109,6 +109,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     // Core & Feature Modules
+    implementation(project(":core:designsystem"))
     implementation(project(":core:localization"))
     implementation(project(":core:navigation"))
     implementation(project(":core:network"))

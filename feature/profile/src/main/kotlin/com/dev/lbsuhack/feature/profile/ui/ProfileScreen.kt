@@ -37,6 +37,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dev.lbsuhack.core.designsystem.theme.AppThemeMode
+import com.dev.lbsuhack.core.designsystem.theme.ThemeController
 import com.dev.lbsuhack.core.localization.LanguageController
 import com.dev.lbsuhack.feature.profile.R
 import com.dev.lbsuhack.feature.profile.presentation.ProfileViewModel
@@ -49,9 +51,11 @@ import org.koin.compose.koinInject
 fun ProfileScreen(
     viewModel: ProfileViewModel = koinViewModel(),
     languageController: LanguageController = koinInject(),
+    themeController: ThemeController = koinInject(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val currentLanguage by languageController.current.collectAsStateWithLifecycle()
+    val currentTheme by themeController.current.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
 
@@ -194,6 +198,46 @@ fun ProfileScreen(
                 }
             }
 
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = stringResource(R.string.profile_theme),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = stringResource(R.string.profile_theme_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    themeController.availableModes.forEach { mode ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .selectable(
+                                    selected = currentTheme == mode,
+                                    onClick = { themeController.setMode(mode) },
+                                    role = Role.RadioButton,
+                                )
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(
+                                selected = currentTheme == mode,
+                                onClick = null,
+                            )
+                            Spacer(modifier = Modifier.size(8.dp))
+                            Text(
+                                text = stringResource(mode.labelRes()),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                        }
+                    }
+                }
+            }
+
             Button(
                 onClick = { viewModel.accept(ProfileStore.Intent.IncrementSaved) },
                 modifier = Modifier.fillMaxWidth()
@@ -202,4 +246,10 @@ fun ProfileScreen(
             }
         }
     }
+}
+
+private fun AppThemeMode.labelRes(): Int = when (this) {
+    AppThemeMode.SYSTEM -> R.string.profile_theme_system
+    AppThemeMode.LIGHT -> R.string.profile_theme_light
+    AppThemeMode.DARK -> R.string.profile_theme_dark
 }

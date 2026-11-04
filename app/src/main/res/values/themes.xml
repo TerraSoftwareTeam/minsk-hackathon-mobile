@@ -1,5 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.Lbsuhack" parent="Theme.AppCompat.DayNight.NoActionBar" />
+    <!--
+        The window background is always the brand dark colour so the launch
+        window never flashes white. Compose then applies the theme picked by
+        the user (dark by default).
+    -->
+    <style name="Theme.Lbsuhack" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/hack_window_background</item>
+    </style>
 </resources>
