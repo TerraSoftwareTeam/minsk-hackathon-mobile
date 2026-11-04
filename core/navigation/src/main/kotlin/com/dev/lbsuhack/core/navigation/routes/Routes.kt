@@ -10,7 +10,6 @@ data object HomeRoute : NavKey
 @Serializable
 data class DetailsRoute(
     val itemId: String,
-    val title: String = "",
 ) : NavKey
 
 @Serializable

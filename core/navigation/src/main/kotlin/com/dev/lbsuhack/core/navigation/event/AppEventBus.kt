@@ -1,13 +1,14 @@
 package com.dev.lbsuhack.core.navigation.event
 
+import com.dev.lbsuhack.core.localization.UiText
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
 
 sealed interface AppEvent {
-    data class Error(val message: String) : AppEvent
-    data class Toast(val message: String) : AppEvent
+    data class Error(val text: UiText) : AppEvent
+    data class Toast(val text: UiText) : AppEvent
 }
 
 interface AppEventBus {

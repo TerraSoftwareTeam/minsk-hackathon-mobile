@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="profile_tab_title">Профиль</string>
+    <string name="profile_title">Профиль</string>
+    <string name="profile_notifications">Уведомления</string>
+    <string name="profile_notifications_description">Push-уведомления от сервисов</string>
+    <string name="profile_notifications_enabled">Уведомления включены</string>
+    <string name="profile_notifications_disabled">Уведомления отключены</string>
+    <string name="profile_add_saved">Добавить в сохранённое (+1)</string>
+    <string name="profile_language">Язык</string>
+    <string name="profile_language_description">Язык интерфейса приложения</string>
+
+    <plurals name="profile_saved_items">
+        <item quantity="one">%1$d сохранённый элемент</item>
+        <item quantity="few">%1$d сохранённых элемента</item>
+        <item quantity="many">%1$d сохранённых элементов</item>
+        <item quantity="other">%1$d сохранённых элементов</item>
+    </plurals>
+</resources>

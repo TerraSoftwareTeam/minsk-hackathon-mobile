@@ -10,6 +10,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.scene.Scene
@@ -64,13 +65,14 @@ class MainScene(
             bottomBar = {
                 NavigationBar {
                     tabs.forEach { tab ->
+                        val title = stringResource(tab.titleRes)
                         NavigationBarItem(
                             selected = tab.id == activeTabId,
                             onClick = {
                                 if (tab.id != activeTabId) navigator.switchTab(tab.rootRoute)
                             },
-                            icon = { Icon(tab.icon, contentDescription = tab.title) },
-                            label = { Text(tab.title) },
+                            icon = { Icon(tab.icon, contentDescription = title) },
+                            label = { Text(title) },
                         )
                     }
                 }

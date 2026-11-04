@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_tab_title">Главная</string>
+    <string name="home_title">Главная</string>
+    <string name="home_refresh">Обновить</string>
+
+    <string name="home_item_1_title">Обзор хакатона</string>
+    <string name="home_item_1_description">Правила, расписание и полезные ресурсы для участников</string>
+    <string name="home_item_2_title">Навигация в Compose</string>
+    <string name="home_item_2_description">Пример перехода в стек Navigation 3 с аргументами</string>
+    <string name="home_item_3_title">Архитектура MVI</string>
+    <string name="home_item_3_description">Состояния, интенты и сайд-эффекты через MVIKotlin</string>
+
+    <string name="home_item_1_title_refreshed">Обзор хакатона (обновлено)</string>
+    <string name="home_item_1_description_refreshed">Правила, расписание и полезные ресурсы</string>
+    <string name="home_item_2_description_refreshed">Стек Navigation 3 с передачей аргументов</string>
+    <string name="home_item_3_description_refreshed">MVIKotlin без компонентов Decompose</string>
+    <string name="home_item_4_title">Koin DI Multibindings</string>
+    <string name="home_item_4_description">Сборка фич и табов в единый host</string>
+
+    <string name="details_title">Детали #%1$s</string>
+    <string name="details_item_id">Идентификатор элемента: %1$s</string>
+    <string name="details_description">Этот экран открыт в рамках стека Navigation 3. Нажатие системной кнопки «Назад» или стрелки в тулбаре вызывает router.pop().</string>
+    <string name="details_back">Назад</string>
+    <string name="details_return">Вернуться назад</string>
+</resources>

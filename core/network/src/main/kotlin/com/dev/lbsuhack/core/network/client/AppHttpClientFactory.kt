@@ -1,5 +1,6 @@
 package com.dev.lbsuhack.core.network.client
 
+import com.dev.lbsuhack.core.domain.localization.LocaleProvider
 import com.dev.lbsuhack.core.network.BuildConfig
 import com.dev.lbsuhack.core.network.auth.TokenStorage
 import io.ktor.client.HttpClient
@@ -8,7 +9,9 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.request.header
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
@@ -26,17 +29,19 @@ object AppHttpClientFactory {
 
     private val logLevel = if (BuildConfig.DEBUG) LogLevel.INFO else LogLevel.NONE
 
-    fun createUnauthenticated(): HttpClient = HttpClient(CIO) {
+    fun createUnauthenticated(localeProvider: LocaleProvider): HttpClient = HttpClient(CIO) {
         expectSuccess = false
         install(ContentNegotiation) { json(json) }
         install(Logging) { level = logLevel }
         defaultRequest {
             url(BASE_URL)
             contentType(ContentType.Application.Json)
+            header(HttpHeaders.AcceptLanguage, localeProvider.currentLanguageTag())
         }
     }
 
     fun createAuthenticated(
+        localeProvider: LocaleProvider,
         tokenStorage: TokenStorage,
         refreshTokens: suspend () -> Boolean,
     ): HttpClient = HttpClient(CIO) {
@@ -55,6 +60,7 @@ object AppHttpClientFactory {
         defaultRequest {
             url(BASE_URL)
             contentType(ContentType.Application.Json)
+            header(HttpHeaders.AcceptLanguage, localeProvider.currentLanguageTag())
         }
     }
 }

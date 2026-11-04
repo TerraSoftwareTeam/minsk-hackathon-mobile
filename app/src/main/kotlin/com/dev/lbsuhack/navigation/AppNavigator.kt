@@ -5,9 +5,6 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.dev.lbsuhack.core.navigation.api.Navigator
 
-/**
- * Реализация [Navigator] для работы со стеком Navigation 3 [NavBackStack].
- */
 class AppNavigator(
     private val backStack: NavBackStack<NavKey>,
     private val startRoute: NavKey,

@@ -98,6 +98,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.icons.extended)
+    implementation(libs.androidx.appcompat)
 
     // Koin
     implementation(libs.koin.android)
@@ -108,6 +109,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     // Core & Feature Modules
+    implementation(project(":core:localization"))
     implementation(project(":core:navigation"))
     implementation(project(":core:network"))
     implementation(project(":layers"))

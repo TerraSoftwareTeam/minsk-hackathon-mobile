@@ -8,12 +8,13 @@ import androidx.navigation3.runtime.NavKey
 import com.dev.lbsuhack.core.navigation.layer.MainLayerMeta
 import com.dev.lbsuhack.core.navigation.api.MainTabInstaller
 import com.dev.lbsuhack.core.navigation.routes.ProfileRoute
+import com.dev.lbsuhack.feature.profile.R
 import com.dev.lbsuhack.feature.profile.ui.ProfileScreen
 
 class ProfileNavigationInstaller : MainTabInstaller {
     override val id: String = "profile"
     override val rootRoute: NavKey = ProfileRoute
-    override val title: String = "Профиль"
+    override val titleRes: Int = R.string.profile_tab_title
     override val icon: ImageVector = Icons.Default.Person
     override val order: Int = 1
 

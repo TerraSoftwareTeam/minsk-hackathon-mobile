@@ -25,6 +25,7 @@ include(":app")
 
 include(":core:navigation")
 include(":core:domain")
+include(":core:localization")
 include(":core:network")
 include(":layers")
 

@@ -8,4 +8,5 @@ android {
 
 dependencies {
     implementation(project(":core:navigation"))
+    implementation(project(":core:localization"))
 }

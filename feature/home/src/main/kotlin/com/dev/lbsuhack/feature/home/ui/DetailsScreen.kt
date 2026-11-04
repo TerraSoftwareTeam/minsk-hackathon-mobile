@@ -18,24 +18,25 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dev.lbsuhack.feature.home.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailsScreen(
     itemId: String,
-    title: String,
     onBack: () -> Unit,
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Детали #$itemId") },
+                title = { Text(stringResource(R.string.details_title, itemId)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Назад"
+                            contentDescription = stringResource(R.string.details_back),
                         )
                     }
                 }
@@ -50,24 +51,18 @@ fun DetailsScreen(
         ) {
             Column {
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineMedium
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "Идентификатор элемента: $itemId",
+                    text = stringResource(R.string.details_item_id, itemId),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Этот экран открыт в рамках Navigation 3 стека. " +
-                        "Нажатие системной кнопки «Назад» или стрелки в тулбаре вызывает router.pop().",
+                    text = stringResource(R.string.details_description),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(onClick = onBack) {
-                    Text("Вернуться назад")
+                    Text(stringResource(R.string.details_return))
                 }
             }
         }

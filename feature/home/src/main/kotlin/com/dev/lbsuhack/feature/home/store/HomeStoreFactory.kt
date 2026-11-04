@@ -4,6 +4,8 @@ import com.arkivanov.mvikotlin.core.store.Reducer
 import com.arkivanov.mvikotlin.core.store.Store
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
+import com.dev.lbsuhack.core.localization.UiText
+import com.dev.lbsuhack.feature.home.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -27,7 +29,7 @@ class HomeStoreFactory(
         override fun executeIntent(intent: HomeStore.Intent) {
             when (intent) {
                 is HomeStore.Intent.ClickItem -> {
-                    publish(HomeStore.Label.OpenDetails(intent.id, intent.title))
+                    publish(HomeStore.Label.OpenDetails(intent.id))
                 }
                 is HomeStore.Intent.Refresh -> {
                     scope.launch {
@@ -36,10 +38,26 @@ class HomeStoreFactory(
                         dispatch(
                             Message.Loaded(
                                 listOf(
-                                    HomeStore.State.Item("1", "Обзор хакатона (обновлено)", "Правила, расписание и полезные ресурсы"),
-                                    HomeStore.State.Item("2", "Навигация в Compose", "Стек Navigation 3 c передачей аргументов"),
-                                    HomeStore.State.Item("3", "Архитектура MVI", "MVIKotlin без компонентов Decompose"),
-                                    HomeStore.State.Item("4", "Koin DI Multibindings", "Сборка фич и табов в единый host"),
+                                    HomeStore.State.Item(
+                                        id = "1",
+                                        title = UiText.Resource(R.string.home_item_1_title_refreshed),
+                                        description = UiText.Resource(R.string.home_item_1_description_refreshed),
+                                    ),
+                                    HomeStore.State.Item(
+                                        id = "2",
+                                        title = UiText.Resource(R.string.home_item_2_title),
+                                        description = UiText.Resource(R.string.home_item_2_description_refreshed),
+                                    ),
+                                    HomeStore.State.Item(
+                                        id = "3",
+                                        title = UiText.Resource(R.string.home_item_3_title),
+                                        description = UiText.Resource(R.string.home_item_3_description_refreshed),
+                                    ),
+                                    HomeStore.State.Item(
+                                        id = "4",
+                                        title = UiText.Resource(R.string.home_item_4_title),
+                                        description = UiText.Resource(R.string.home_item_4_description),
+                                    ),
                                 )
                             )
                         )

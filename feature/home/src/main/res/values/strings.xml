@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_tab_title">Home</string>
+    <string name="home_title">Home</string>
+    <string name="home_refresh">Refresh</string>
+
+    <string name="home_item_1_title">Hackathon overview</string>
+    <string name="home_item_1_description">Rules, schedule and useful resources for participants</string>
+    <string name="home_item_2_title">Navigation in Compose</string>
+    <string name="home_item_2_description">An example of navigating to the Navigation 3 stack with arguments</string>
+    <string name="home_item_3_title">MVI architecture</string>
+    <string name="home_item_3_description">State, intents and side effects with MVIKotlin</string>
+
+    <string name="home_item_1_title_refreshed">Hackathon overview (updated)</string>
+    <string name="home_item_1_description_refreshed">Rules, schedule and useful resources</string>
+    <string name="home_item_2_description_refreshed">Navigation 3 stack with argument passing</string>
+    <string name="home_item_3_description_refreshed">MVIKotlin without Decompose components</string>
+    <string name="home_item_4_title">Koin DI multibindings</string>
+    <string name="home_item_4_description">Assembling features and tabs into a single host</string>
+
+    <string name="details_title">Details #%1$s</string>
+    <string name="details_item_id">Item ID: %1$s</string>
+    <string name="details_description">This screen is opened in the Navigation 3 stack. Press the system Back button or the toolbar arrow to call router.pop().</string>
+    <string name="details_back">Back</string>
+    <string name="details_return">Go back</string>
+</resources>

@@ -10,12 +10,13 @@ import com.dev.lbsuhack.core.navigation.layer.MainLayerMeta
 import com.dev.lbsuhack.core.navigation.api.MainTabInstaller
 import com.dev.lbsuhack.core.navigation.routes.DetailsRoute
 import com.dev.lbsuhack.core.navigation.routes.HomeRoute
+import com.dev.lbsuhack.feature.home.R
 import com.dev.lbsuhack.feature.home.ui.DetailsScreen
 import com.dev.lbsuhack.feature.home.ui.HomeScreen
 
 class HomeNavigationInstaller : MainTabInstaller {
     override val rootRoute: NavKey = HomeRoute
-    override val title: String = "Главная"
+    override val titleRes: Int = R.string.home_tab_title
     override val icon: ImageVector = Icons.Default.Home
     override val order: Int = 0
 
@@ -26,8 +27,8 @@ class HomeNavigationInstaller : MainTabInstaller {
             entry<HomeRoute>(metadata = MainLayerMeta.tab("home")) {
                 val navigator = LocalNavigator.current
                 HomeScreen(
-                    onNavigateToDetails = { id, title ->
-                        navigator.navigate(DetailsRoute(itemId = id, title = title))
+                    onNavigateToDetails = { id ->
+                        navigator.navigate(DetailsRoute(itemId = id))
                     },
                 )
             }
@@ -35,7 +36,6 @@ class HomeNavigationInstaller : MainTabInstaller {
                 val navigator = LocalNavigator.current
                 DetailsScreen(
                     itemId = route.itemId,
-                    title = route.title,
                     onBack = { navigator.back() },
                 )
             }

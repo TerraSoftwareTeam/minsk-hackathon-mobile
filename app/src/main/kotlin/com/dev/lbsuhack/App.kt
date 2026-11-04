@@ -3,6 +3,7 @@ package com.dev.lbsuhack
 import android.app.Application
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
+import com.dev.lbsuhack.core.localization.di.localizationModule
 import com.dev.lbsuhack.core.network.di.networkModule
 import com.dev.lbsuhack.feature.home.di.homeModule
 import com.dev.lbsuhack.feature.profile.di.profileModule
@@ -24,6 +25,7 @@ class App : Application() {
             androidContext(this@App)
             modules(
                 appModule,
+                localizationModule,
                 layersModule,
                 networkModule,
                 homeModule,

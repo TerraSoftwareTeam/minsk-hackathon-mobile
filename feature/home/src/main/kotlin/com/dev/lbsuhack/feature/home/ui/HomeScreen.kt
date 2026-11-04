@@ -31,8 +31,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dev.lbsuhack.core.localization.asString
+import com.dev.lbsuhack.feature.home.R
 import com.dev.lbsuhack.feature.home.presentation.HomeViewModel
 import com.dev.lbsuhack.feature.home.store.HomeStore
 import org.koin.androidx.compose.koinViewModel
@@ -40,7 +43,7 @@ import org.koin.androidx.compose.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    onNavigateToDetails: (itemId: String, title: String) -> Unit,
+    onNavigateToDetails: (itemId: String) -> Unit,
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -48,7 +51,7 @@ fun HomeScreen(
     LaunchedEffect(viewModel) {
         viewModel.labels.collect { label ->
             when (label) {
-                is HomeStore.Label.OpenDetails -> onNavigateToDetails(label.itemId, label.title)
+                is HomeStore.Label.OpenDetails -> onNavigateToDetails(label.itemId)
             }
         }
     }
@@ -56,10 +59,13 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Главная") },
+                title = { Text(stringResource(R.string.home_title)) },
                 actions = {
                     IconButton(onClick = { viewModel.accept(HomeStore.Intent.Refresh) }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Обновить")
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = stringResource(R.string.home_refresh),
+                        )
                     }
                 }
             )
@@ -79,11 +85,14 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(state.items, key = { it.id }) { item ->
+                        val title = item.title.asString()
+                        val description = item.description.asString()
+
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    viewModel.accept(HomeStore.Intent.ClickItem(item.id, item.title))
+                                    viewModel.accept(HomeStore.Intent.ClickItem(item.id))
                                 },
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                         ) {
@@ -96,12 +105,12 @@ fun HomeScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = item.title,
+                                        text = title,
                                         style = MaterialTheme.typography.titleMedium
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = item.description,
+                                        text = description,
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )

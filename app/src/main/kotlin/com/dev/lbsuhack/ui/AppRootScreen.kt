@@ -11,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -22,17 +23,14 @@ import com.dev.lbsuhack.core.navigation.event.AppEventBus
 import com.dev.lbsuhack.core.navigation.api.LocalNavigator
 import com.dev.lbsuhack.core.navigation.api.MainTabInstaller
 import com.dev.lbsuhack.core.navigation.api.NavigationInstaller
+import com.dev.lbsuhack.core.localization.resolve
 import com.dev.lbsuhack.core.navigation.layer.NavigationLayer
 import com.dev.lbsuhack.core.navigation.routes.HomeRoute
 import com.dev.lbsuhack.navigation.AppNavigator
 import org.koin.compose.getKoin
 import org.koin.compose.koinInject
 
-/**
- * Тонкий оркестратор навигации и слоёв приложения.
- * Не содержит хардкода экранов, баров и специфичных стратегий.
- * Все слои [NavigationLayer] и экраны [NavigationInstaller] подтягиваются из DI Koin.
- */
+
 @Composable
 fun AppRootScreen(
     bus: AppEventBus = koinInject(),
@@ -47,6 +45,7 @@ fun AppRootScreen(
     val backStack = rememberNavBackStack(startDestination)
     val navigator = remember(backStack) { AppNavigator(backStack, startDestination) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     val entryProvider = remember(installers) {
         entryProvider {
@@ -61,12 +60,13 @@ fun AppRootScreen(
         }
     }
 
-    LaunchedEffect(bus) {
+    LaunchedEffect(bus, context) {
         bus.events.collect { event ->
-            when (event) {
-                is AppEvent.Error -> snackbarHostState.showSnackbar(event.message)
-                is AppEvent.Toast -> snackbarHostState.showSnackbar(event.message)
+            val message = when (event) {
+                is AppEvent.Error -> event.text.resolve(context)
+                is AppEvent.Toast -> event.text.resolve(context)
             }
+            snackbarHostState.showSnackbar(message)
         }
     }
 

@@ -3,6 +3,8 @@ package com.dev.lbsuhack.feature.home.store
 import app.cash.turbine.test
 import com.arkivanov.mvikotlin.extensions.coroutines.labels
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
+import com.dev.lbsuhack.core.localization.UiText
+import com.dev.lbsuhack.feature.home.R
 import com.dev.lbsuhack.feature.home.util.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
@@ -30,6 +32,10 @@ class HomeStoreTest {
         assertFalse(store.state.isLoading)
         assertEquals(3, store.state.items.size)
         assertEquals("1", store.state.items.first().id)
+        assertEquals(
+            R.string.home_item_1_title,
+            (store.state.items.first().title as UiText.Resource).id,
+        )
     }
 
     @Test
@@ -37,13 +43,12 @@ class HomeStoreTest {
         val store = createStore()
 
         store.labels.test {
-            store.accept(HomeStore.Intent.ClickItem(id = "42", title = "Compose Guide"))
+            store.accept(HomeStore.Intent.ClickItem(id = "42"))
 
             val label = awaitItem()
             assertTrue(label is HomeStore.Label.OpenDetails)
             val details = label as HomeStore.Label.OpenDetails
             assertEquals("42", details.itemId)
-            assertEquals("Compose Guide", details.title)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -64,6 +69,9 @@ class HomeStoreTest {
         // Loading finished and 4 updated items loaded
         assertFalse(store.state.isLoading)
         assertEquals(4, store.state.items.size)
-        assertTrue(store.state.items.first().title.contains("обновлено"))
+        assertEquals(
+            R.string.home_item_1_title_refreshed,
+            (store.state.items.first().title as UiText.Resource).id,
+        )
     }
 }

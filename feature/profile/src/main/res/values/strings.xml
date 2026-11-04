@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="profile_tab_title">Profile</string>
+    <string name="profile_title">Profile</string>
+    <string name="profile_notifications">Notifications</string>
+    <string name="profile_notifications_description">Push notifications from services</string>
+    <string name="profile_notifications_enabled">Notifications enabled</string>
+    <string name="profile_notifications_disabled">Notifications disabled</string>
+    <string name="profile_add_saved">Add to saved (+1)</string>
+    <string name="profile_language">Language</string>
+    <string name="profile_language_description">Application interface language</string>
+
+    <plurals name="profile_saved_items">
+        <item quantity="one">%1$d saved item</item>
+        <item quantity="other">%1$d saved items</item>
+    </plurals>
+</resources>

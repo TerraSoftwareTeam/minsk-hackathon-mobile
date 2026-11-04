@@ -20,7 +20,7 @@ val networkModule = module {
     } bind TokenStorage::class
 
     single(named("unauthenticatedHttpClient")) {
-        AppHttpClientFactory.createUnauthenticated()
+        AppHttpClientFactory.createUnauthenticated(localeProvider = get())
     }
     single {
         TokenRefresher(
@@ -32,7 +32,10 @@ val networkModule = module {
     }
 
     single(named("authenticatedHttpClient")) {
-        AppHttpClientFactory.createAuthenticated(tokenStorage = get()) {
+        AppHttpClientFactory.createAuthenticated(
+            localeProvider = get(),
+            tokenStorage = get(),
+        ) {
             get<TokenRefresher>().refresh()
         }
     }
