@@ -1,4 +1,4 @@
-package com.dev.lbsuhack.core.localization
+package com.dev.lbsuhack.core.localization.text
 
 import android.content.Context
 import androidx.compose.runtime.Composable

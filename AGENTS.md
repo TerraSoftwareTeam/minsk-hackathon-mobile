@@ -52,6 +52,23 @@ git worktree per parallel agent.
 - `build-logic` — Gradle convention plugins. Integrator-owned.
 - `api/openapi.yaml` — shared API contract. Integrator-owned.
 
+Package layout inside the two UI-facing core modules:
+
+```text
+core/designsystem/.../designsystem/
+  theme/    HackTheme, colour schemes, typography, shapes, previews
+  mode/     AppThemeMode, ThemeModeCodec, ThemeController, ThemePreferences
+  di/       designSystemModule
+
+core/localization/.../localization/
+  language/ AppLanguage, LanguageController, AndroidLanguageController
+  text/     UiText and its Compose/Context resolvers
+  di/       localizationModule
+```
+
+Do not split these packages further until a second real concern appears;
+small flat packages are preferred over one file per package.
+
 ## Roles and file ownership
 
 ### Feature agent

@@ -37,9 +37,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.dev.lbsuhack.core.designsystem.theme.AppThemeMode
-import com.dev.lbsuhack.core.designsystem.theme.ThemeController
-import com.dev.lbsuhack.core.localization.LanguageController
+import com.dev.lbsuhack.core.designsystem.mode.AppThemeMode
+import com.dev.lbsuhack.core.designsystem.mode.ThemeController
+import com.dev.lbsuhack.core.localization.language.LanguageController
 import com.dev.lbsuhack.feature.profile.R
 import com.dev.lbsuhack.feature.profile.presentation.ProfileViewModel
 import com.dev.lbsuhack.feature.profile.store.ProfileStore

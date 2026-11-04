@@ -1,6 +1,6 @@
 package com.dev.lbsuhack.core.navigation.event
 
-import com.dev.lbsuhack.core.localization.UiText
+import com.dev.lbsuhack.core.localization.text.UiText
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow

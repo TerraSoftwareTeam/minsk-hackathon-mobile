@@ -23,7 +23,7 @@ import com.dev.lbsuhack.core.navigation.event.AppEventBus
 import com.dev.lbsuhack.core.navigation.api.LocalNavigator
 import com.dev.lbsuhack.core.navigation.api.MainTabInstaller
 import com.dev.lbsuhack.core.navigation.api.NavigationInstaller
-import com.dev.lbsuhack.core.localization.resolve
+import com.dev.lbsuhack.core.localization.text.resolve
 import com.dev.lbsuhack.core.navigation.layer.NavigationLayer
 import com.dev.lbsuhack.core.navigation.routes.HomeRoute
 import com.dev.lbsuhack.navigation.AppNavigator

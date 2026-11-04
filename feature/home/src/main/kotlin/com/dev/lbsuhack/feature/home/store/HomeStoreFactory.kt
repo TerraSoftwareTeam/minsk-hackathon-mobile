@@ -4,7 +4,7 @@ import com.arkivanov.mvikotlin.core.store.Reducer
 import com.arkivanov.mvikotlin.core.store.Store
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
-import com.dev.lbsuhack.core.localization.UiText
+import com.dev.lbsuhack.core.localization.text.UiText
 import com.dev.lbsuhack.feature.home.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch

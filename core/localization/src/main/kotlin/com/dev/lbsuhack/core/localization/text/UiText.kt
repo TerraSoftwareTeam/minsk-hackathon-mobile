@@ -1,4 +1,4 @@
-package com.dev.lbsuhack.core.localization
+package com.dev.lbsuhack.core.localization.text
 
 import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes

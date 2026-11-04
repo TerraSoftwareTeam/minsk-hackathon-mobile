@@ -3,7 +3,7 @@ package com.dev.lbsuhack.feature.home.store
 import app.cash.turbine.test
 import com.arkivanov.mvikotlin.extensions.coroutines.labels
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
-import com.dev.lbsuhack.core.localization.UiText
+import com.dev.lbsuhack.core.localization.text.UiText
 import com.dev.lbsuhack.feature.home.R
 import com.dev.lbsuhack.feature.home.util.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi

@@ -1,4 +1,4 @@
-package com.dev.lbsuhack.core.localization
+package com.dev.lbsuhack.core.localization.language
 
 import com.dev.lbsuhack.core.domain.localization.LocaleProvider
 import kotlinx.coroutines.flow.StateFlow

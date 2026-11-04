@@ -1,6 +1,7 @@
-package com.dev.lbsuhack.core.localization
+package com.dev.lbsuhack.core.localization.language
 
 import androidx.annotation.StringRes
+import com.dev.lbsuhack.core.localization.R
 
 
 enum class AppLanguage(

@@ -1,4 +1,4 @@
-package com.dev.lbsuhack.core.localization
+package com.dev.lbsuhack.core.localization.language
 
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat

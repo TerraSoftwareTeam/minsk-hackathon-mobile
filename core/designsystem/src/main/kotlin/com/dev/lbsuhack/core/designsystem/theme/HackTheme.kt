@@ -12,8 +12,10 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import com.dev.lbsuhack.core.designsystem.mode.AppThemeMode
+import com.dev.lbsuhack.core.designsystem.mode.resolveDark
 
-private val LocalHackExtras = staticCompositionLocalOf<HackExtras> {
+internal val LocalHackExtras = staticCompositionLocalOf<HackExtras> {
     error("HackTheme is not provided. Wrap the content with HackTheme { }.")
 }
 

@@ -1,4 +1,4 @@
-package com.dev.lbsuhack.core.designsystem.theme
+package com.dev.lbsuhack.core.designsystem.mode
 
 
 object ThemeModeCodec {

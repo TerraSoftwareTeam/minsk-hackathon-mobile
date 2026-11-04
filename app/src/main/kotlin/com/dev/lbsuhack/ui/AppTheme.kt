@@ -3,8 +3,8 @@ package com.dev.lbsuhack.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dev.lbsuhack.core.designsystem.mode.ThemeController
 import com.dev.lbsuhack.core.designsystem.theme.HackTheme
-import com.dev.lbsuhack.core.designsystem.theme.ThemeController
 import org.koin.compose.koinInject
 
 /**
