@@ -30,7 +30,7 @@
     <string name="auth_password">Пароль</string>
     <string name="auth_password_placeholder">Пароль Schools.by</string>
 
-    <string name="auth_login_action">Войти</string>
+    <string name="auth_login_action">Вход по schools.by</string>
     <string name="auth_register_action">Создать аккаунт</string>
     <string name="auth_no_account_prompt">Нет аккаунта?</string>
     <string name="auth_open_register">Регистрация</string>
