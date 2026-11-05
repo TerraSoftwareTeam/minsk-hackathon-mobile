@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="auth_brand">kola</string>
+    <string name="auth_welcome_subtitle">Платформа для организации 6-го школьного дня</string>
     <string name="auth_brand_tagline">Приложение для субботников</string>
     <string name="auth_brand_badge">Городское эко-движение</string>
     <string name="auth_login_title">Вход</string>
+    <string name="auth_login_pupil_title">Вход для ученика</string>
+    <string name="auth_login_teacher_title">Вход для учителя</string>
     <string name="auth_login_subtitle">Войдите через Schools.by, чтобы синхронизировать данные профиля и участвовать в событиях.</string>
     <string name="auth_register_top_title">Регистрация</string>
     <string name="auth_register_title">Присоединяйтесь к kola</string>
@@ -16,6 +19,8 @@
     <string name="auth_role_label">Роль</string>
     <string name="auth_role_pupil">Ученик</string>
     <string name="auth_role_teacher">Учитель</string>
+    <string name="auth_role_pupil_action">Я ученик</string>
+    <string name="auth_role_teacher_action">Я учитель</string>
     <string name="auth_username">Логин</string>
     <string name="auth_username_placeholder">Логин Schools.by</string>
     <string name="auth_name">Имя</string>
