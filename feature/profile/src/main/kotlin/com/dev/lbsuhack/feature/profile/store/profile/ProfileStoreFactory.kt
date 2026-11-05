@@ -30,6 +30,7 @@ class ProfileStoreFactory(
         data class Loaded(
             val name: String,
             val email: String,
+            val pupilClass: String,
             val notificationsEnabled: Boolean,
             val savedCount: Int,
         ) : Message
@@ -58,6 +59,7 @@ class ProfileStoreFactory(
                     Message.Loaded(
                         name = user?.name.orEmpty(),
                         email = user?.email.orEmpty(),
+                        pupilClass = user?.pupilClass.orEmpty(),
                         notificationsEnabled = profileRepository.isNotificationsEnabled(),
                         savedCount = profileRepository.savedCount(),
                     ),
@@ -91,6 +93,7 @@ class ProfileStoreFactory(
             is Message.Loaded -> copy(
                 name = msg.name,
                 email = msg.email,
+                pupilClass = msg.pupilClass,
                 notificationsEnabled = msg.notificationsEnabled,
                 savedCount = msg.savedCount,
                 isLoading = false,

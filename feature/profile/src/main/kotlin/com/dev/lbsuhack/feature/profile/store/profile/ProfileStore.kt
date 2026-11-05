@@ -14,6 +14,7 @@ interface ProfileStore : Store<ProfileStore.Intent, ProfileStore.State, Nothing>
     data class State(
         val name: String = "",
         val email: String = "",
+        val pupilClass: String = "",
         val notificationsEnabled: Boolean = true,
         val savedCount: Int = 0,
         val isLoading: Boolean = true,

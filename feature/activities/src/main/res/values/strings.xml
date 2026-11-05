@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="activities_title">Шестой школьный день</string>
+    <string name="activities_subtitle">Инициативы и активности на субботу</string>
+    <string name="activities_create_action">Создать мероприятие</string>
+    <string name="activities_filter_all">Все</string>
+    <string name="activities_filter_cinema">Кино</string>
+    <string name="activities_filter_board_games">Настолки</string>
+    <string name="activities_filter_sports">Спорт</string>
+    <string name="activities_filter_creativity">Творчество</string>
+    <string name="activities_filter_excursion">Экскурсии</string>
+    <string name="activities_filter_science">Наука и IT</string>
+    <string name="activities_filter_other">Другое</string>
+
+    <string name="activities_tab_all">Все заявки</string>
+    <string name="activities_tab_recruiting">Идёт набор</string>
+    <string name="activities_tab_pending_admin">На согласовании</string>
+    <string name="activities_tab_approved">Подтверждённые</string>
+    <string name="activities_tab_my_proposals">Мои заявки</string>
+    <string name="activities_tab_my_participations">Я иду</string>
+
+    <string name="activities_status_moderating">На модерации</string>
+    <string name="activities_status_recruiting">Идёт набор</string>
+    <string name="activities_status_pending_admin">Ожидает подтверждения администрации</string>
+    <string name="activities_status_approved">Подтверждено</string>
+    <string name="activities_status_rejected">Отклонено</string>
+
+    <string name="activities_organizer_prefix">Организатор:</string>
+    <string name="activities_participants_format">%1$d из %2$d участников (мин. %3$d)</string>
+    <string name="activities_join_action">Записаться</string>
+    <string name="activities_leave_action">Отменить запись</string>
+    <string name="activities_joined_badge">Вы записаны</string>
+    <string name="activities_full_badge">Мест нет</string>
+    <string name="activities_empty_title">Мероприятий пока нет</string>
+    <string name="activities_empty_desc">Станьте первым, кто предложит инициативу на эту субботу!</string>
+
+    <string name="create_activity_title">Новая инициатива</string>
+    <string name="create_activity_category_label">Тематика мероприятия</string>
+    <string name="create_activity_title_label">Название</string>
+    <string name="create_activity_title_hint">Например: Турнир по Catan и Каркассону</string>
+    <string name="create_activity_desc_label">Описание мероприятия</string>
+    <string name="create_activity_desc_hint">Расскажите, что будет происходить, для кого и что нужно взять с собой</string>
+    <string name="create_activity_limits_label">Количество участников</string>
+    <string name="create_activity_min_label">Минимум: %1$d чел.</string>
+    <string name="create_activity_max_label">Максимум: %1$d чел.</string>
+    <string name="create_activity_target_class_label">Для каких классов</string>
+    <string name="create_activity_target_class_hint">Например: 8–11 классы или Все классы</string>
+    <string name="create_activity_preferences_label">Пожелания по месту и времени</string>
+    <string name="create_activity_preferences_hint">Например: Кабинет с проектором или большой спортзал, 11:30</string>
+    <string name="create_activity_submit_action">Отправить на модерацию</string>
+    <string name="create_activity_error_title_empty">Укажите название мероприятия</string>
+    <string name="create_activity_error_desc_empty">Добавьте описание мероприятия</string>
+    <string name="create_activity_error_limits_invalid">Минимум участников не может превышать максимум</string>
+    <string name="create_activity_success_toast">Заявка отправлена на модерацию!</string>
+
+    <string name="details_title">Детали мероприятия</string>
+    <string name="details_step_created">Заявка подана</string>
+    <string name="details_step_moderated">Модерация</string>
+    <string name="details_step_recruiting">Сбор участников</string>
+    <string name="details_step_pending">Согласование администрацией</string>
+    <string name="details_step_approved">Подтверждено</string>
+
+    <string name="details_admin_approved_title">Мероприятие утверждено администрацией!</string>
+    <string name="details_admin_pending_title">Заявка ожидает подтверждения администрации</string>
+    <string name="details_admin_pending_desc">Кворум участников собран! По регламенту заявка передана в администрацию школы для выделения кабинета и графика к субботе.</string>
+    <string name="details_moderating_desc">Заявка проверяется модератором. После одобрения она станет видна всем ученикам для записи.</string>
+    <string name="details_confirmed_time_label">Время проведения:</string>
+    <string name="details_confirmed_location_label">Место проведения:</string>
+
+    <string name="details_participants_title">Участники (%1$d)</string>
+    <string name="details_participants_empty">Пока никто не записался. Будьте первым!</string>
+    <string name="details_simulate_send_admin">Смоделировать: передать в администрацию</string>
+    <string name="details_simulate_approve">Смоделировать: утвердить администрацией</string>
+    <string name="details_author_badge">Вы создатель этой заявки</string>
+</resources>

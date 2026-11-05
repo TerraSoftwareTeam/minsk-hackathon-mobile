@@ -36,10 +36,10 @@ import com.dev.lbsuhack.core.navigation.api.NavigationInstaller
 import com.dev.lbsuhack.core.navigation.event.AppEvent
 import com.dev.lbsuhack.core.navigation.event.AppEventBus
 import com.dev.lbsuhack.core.navigation.layer.NavigationLayer
+import com.dev.lbsuhack.feature.activities.navigation.ActivitiesRoute
 import com.dev.lbsuhack.feature.auth.navigation.AuthLoginRoute
 import com.dev.lbsuhack.feature.feed.navigation.FeedRoute
 import com.dev.lbsuhack.feature.profile.navigation.ProfileRoute
-import com.dev.lbsuhack.feature.tournaments.navigation.TournamentsRoute
 import com.dev.lbsuhack.navigation.AppNavigator
 import org.koin.compose.getKoin
 import org.koin.compose.koinInject
@@ -85,7 +85,7 @@ fun AppRootScreen(
 
             is SessionState.Authenticated -> key(GLOBAL_HOST_KEY) {
                 AppNavHost(
-                    startRoute = TournamentsRoute,
+                    startRoute = ActivitiesRoute,
                     installers = installers,
                     layers = layers,
                     appNavigationFactory = { navigator ->

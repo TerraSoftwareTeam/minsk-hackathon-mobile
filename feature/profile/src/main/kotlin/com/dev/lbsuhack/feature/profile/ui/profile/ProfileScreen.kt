@@ -93,12 +93,19 @@ fun ProfileScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             ProfileIdentityCard(
-                name = state.name,
-                email = state.email,
+                name = state.name.ifEmpty { "Никита Иванов" },
+                email = state.email.ifEmpty { "nikita@schools.by" },
+                pupilClass = state.pupilClass.ifEmpty { "10-А класс" },
             )
 
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                ),
+                shape = MaterialTheme.shapes.large,
+            ) {
+                Column(modifier = Modifier.padding(18.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -139,6 +146,7 @@ fun ProfileScreen(
                     OutlinedButton(
                         onClick = { viewModel.accept(ProfileStore.Intent.IncrementSaved) },
                         modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium,
                     ) {
                         Text(stringResource(R.string.profile_add_saved))
                     }
@@ -147,7 +155,13 @@ fun ProfileScreen(
 
             Button(
                 onClick = onOpenSettings,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = MaterialTheme.shapes.medium,
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                ),
             ) {
                 Icon(
                     imageVector = Icons.Default.Settings,
@@ -160,7 +174,10 @@ fun ProfileScreen(
 
             OutlinedButton(
                 onClick = { viewModel.accept(ProfileStore.Intent.Logout) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = MaterialTheme.shapes.medium,
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Logout,
@@ -178,21 +195,25 @@ fun ProfileScreen(
 private fun ProfileIdentityCard(
     name: String,
     email: String,
+    pupilClass: String,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
+        shape = MaterialTheme.shapes.large,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(18.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = Icons.Default.AccountCircle,
                 contentDescription = null,
-                modifier = Modifier.size(64.dp),
+                modifier = Modifier.size(60.dp),
                 tint = MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.size(16.dp))
@@ -201,9 +222,16 @@ private fun ProfileIdentityCard(
                     text = name,
                     style = MaterialTheme.typography.titleLarge,
                 )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = pupilClass,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = email,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
