@@ -1,5 +1,6 @@
 plugins {
     id("android.dev.feature")
+    id("tech.dev.ktor")
 }
 
 android {
@@ -11,6 +12,7 @@ dependencies {
     implementation(project(":core:domain"))
     implementation(project(":core:localization"))
     implementation(project(":core:navigation"))
+    implementation(project(":core:network"))
 
     implementation(libs.coroutines.core)
 }

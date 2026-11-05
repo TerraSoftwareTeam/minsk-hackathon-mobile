@@ -1,56 +1,1543 @@
-openapi: 3.0.3
-info:
-  title: Hackathon API
-  version: 1.0.0
+openapi: 3.0.0
 paths:
-  /users:
+  /api/v1:
     get:
-      summary: Get users
+      operationId: AppController_getHello
+      parameters: []
       responses:
-        '200':
-          description: OK
+        "200":
+          description: ""
+      tags:
+        - App
+  /api/v1/health:
+    get:
+      operationId: HealthController_healthcheck
+      parameters: []
+      responses:
+        "200":
+          description: Service is healthy
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/UserResponse'
+                $ref: "#/components/schemas/HealthResponseDto"
+      summary: Health check
+      tags:
+        - Health
+  /api/v1/auth/register:
     post:
-      summary: Create user
+      description: Creates a user linked to an existing school and returns a JWT
+        access token. Public endpoint, no auth required.
+      operationId: AuthController_register
+      parameters: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateUserRequest'
+              $ref: "#/components/schemas/RegisterDto"
+            examples:
+              pupil:
+                summary: Pupil
+                value:
+                  schoolsById: school-user-123
+                  name: Ivan
+                  surname: Ivanov
+                  fathersName: Petrovich
+                  role: PUPIL
+                  class: 10A
+                  schoolName: "School #1"
+              teacher:
+                summary: Teacher
+                value:
+                  schoolsById: school-user-456
+                  name: Maria
+                  surname: Sidorova
+                  fathersName: Ivanovna
+                  role: TEACHER
+                  class: 10A
+                  schoolName: "School #1"
       responses:
-        '200':
-          description: OK
+        "201":
+          description: User created; JWT and user returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserResponse'
+                $ref: "#/components/schemas/AuthResponseDto"
+        "400":
+          description: Validation failed (missing/invalid fields) or school does not exist
+        "409":
+          description: User with this schoolsById already exists
+      summary: Register a new user
+      tags:
+        - Auth
+  /api/v1/auth/login:
+    post:
+      description: PUPIL and TEACHER log in by schoolsById; ORGANIZATOR logs in by id.
+        Organizators cannot register, only log in. Public endpoint, no auth
+        required.
+      operationId: AuthController_login
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginDto"
+            examples:
+              pupil:
+                summary: Pupil or teacher
+                value:
+                  role: PUPIL
+                  schoolsById: school-user-123
+              organizator:
+                summary: Organizator
+                value:
+                  role: ORGANIZATOR
+                  id: 3f2c9a4e-1b7d-4e8a-9c0f-2a6b5d7e8f90
+      responses:
+        "200":
+          description: JWT and user returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponseDto"
+        "400":
+          description: Validation failed (missing schoolsById or id for the role)
+        "401":
+          description: No user with this role and identifier
+      summary: Log in
+      tags:
+        - Auth
+  /api/v1/users:
+    post:
+      description: Organizator only. PUPIL/TEACHER need schoolsById, class and
+        schoolName; ORGANIZATOR must not have them.
+      operationId: UsersController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponseDto"
+        "401":
+          description: Missing or invalid bearer token
+        "403":
+          description: Actor is not an organizator
+      security:
+        - bearer: []
+      summary: Create a user
+      tags:
+        - Users
+    get:
+      description: "Organizator: any user. Teacher: pupils and self. Pupil: self only."
+      operationId: UsersController_findAll
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserResponseDto"
+        "401":
+          description: Missing or invalid bearer token
+      security:
+        - bearer: []
+      summary: List users visible to the caller
+      tags:
+        - Users
+  /api/v1/users/{id}:
+    get:
+      description: "Organizator: any user. Teacher: pupils and self. Pupil: self only."
+      operationId: UsersController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponseDto"
+        "401":
+          description: Missing or invalid bearer token
+        "403":
+          description: Caller may not read this user
+        "404":
+          description: User not found
+      security:
+        - bearer: []
+      summary: Get a user by id
+      tags:
+        - Users
+    patch:
+      description: "Organizator: any field of any user (school fields only for
+        PUPIL/TEACHER). Pupil and teacher: own name, surname, fathersName, class
+        only."
+      operationId: UsersController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponseDto"
+        "401":
+          description: Missing or invalid bearer token
+        "403":
+          description: Caller may not change this user or these fields
+        "404":
+          description: User not found
+      security:
+        - bearer: []
+      summary: Update a user
+      tags:
+        - Users
+    delete:
+      description: "Organizator: any user. Pupil: self only. Teacher: not allowed."
+      operationId: UsersController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Missing or invalid bearer token
+        "403":
+          description: Caller may not delete this user
+        "404":
+          description: User not found
+      security:
+        - bearer: []
+      summary: Delete a user
+      tags:
+        - Users
+  /api/v1/tournaments:
+    post:
+      description: Organizator only. Only one unfinished tournament may exist. The
+        school stage starts automatically at schoolStageStartAt (Europe/Minsk if
+        no offset is given).
+      operationId: TournamentsController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTournamentDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentResponseDto"
+        "401":
+          description: Missing or invalid bearer token
+        "403":
+          description: Not an organizator
+        "409":
+          description: Another tournament is not finished yet
+      security:
+        - bearer: []
+      summary: Create (launch) a tournament
+      tags:
+        - Tournaments
+    get:
+      operationId: TournamentsController_findAll
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TournamentResponseDto"
+        "401":
+          description: Missing or invalid bearer token
+      security:
+        - bearer: []
+      summary: List tournaments
+      tags:
+        - Tournaments
+  /api/v1/tournaments/current:
+    get:
+      operationId: TournamentsController_findCurrent
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentResponseDto"
+        "401":
+          description: Missing or invalid bearer token
+        "404":
+          description: No active tournament
+      security:
+        - bearer: []
+      summary: The unfinished tournament, if any
+      tags:
+        - Tournaments
+  /api/v1/tournaments/{id}:
+    get:
+      operationId: TournamentsController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentResponseDto"
+        "401":
+          description: Missing or invalid bearer token
+        "404":
+          description: Tournament not found
+      security:
+        - bearer: []
+      tags:
+        - Tournaments
+    patch:
+      description: Organizator only, before the school stage starts. Afterwards
+        (brackets built) returns 409.
+      operationId: TournamentsController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTournamentDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentResponseDto"
+        "401":
+          description: Missing or invalid bearer token
+        "409":
+          description: School stage already started, or maxTeamSize below an existing team
+      security:
+        - bearer: []
+      summary: Change name, team sizes or school-stage start
+      tags:
+        - Tournaments
+  /api/v1/tournaments/{id}/stages/{type}:
+    get:
+      description: "SCHOOL: one bracket per school; DISTRICT: one per district; CITY:
+        one bracket plus `districts` тАФ all 9 districts with QUALIFIED /
+        NO_WINNER, so the organizator sees which districts are missing."
+      operationId: TournamentsController_getStage
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: type
+          required: true
+          in: path
+          schema:
+            enum:
+              - SCHOOL
+              - DISTRICT
+              - CITY
+            type: string
+      responses:
+        "401":
+          description: Missing or invalid bearer token
+        "404":
+          description: Tournament not found or school stage not started
+      security:
+        - bearer: []
+      summary: Stage brackets and games
+      tags:
+        - Tournaments
+  /api/v1/tournaments/{id}/tree:
+    get:
+      description: "stages (SCHOOL, DISTRICT, CITY) тЖТ brackets (per school /
+        district / city) тЖТ rounds (columns) тЖТ matches. Each match has
+        teamA/teamB slots with a ready-to-show `label`, `sourceMatchId` (feeder)
+        and `nextMatchId` (where the winner goes). `layout` gives CSS grid
+        placement: column = round - 1, rows rowStart..rowStart+rowSpan in units
+        of first-round matches; the bracket has `gridRows` rows. Filters:
+        ?stage=SCHOOL&schoolId=тАж for one school, ?stage=DISTRICT&district=тАж
+        for one district, ?stage=CITY for the final stage."
+      operationId: TournamentsController_getTree
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: stage
+          required: false
+          in: query
+          description: Only this stage
+          schema:
+            type: string
+            enum:
+              - SCHOOL
+              - DISTRICT
+              - CITY
+        - name: schoolId
+          required: false
+          in: query
+          description: Only the school-stage bracket of this school
+          schema:
+            type: string
+        - name: district
+          required: false
+          in: query
+          description: Only the district-stage bracket of this district
+          schema:
+            type: string
+            enum:
+              - CENTRAL
+              - FRUNZENSKY
+              - LENINSKY
+              - MOSKOVSKY
+              - OKTYABRSKY
+              - PERVOMAYSKY
+              - PARTIZANSKY
+              - SOVETSKY
+              - ZAVODSKOY
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentTreeDto"
+        "400":
+          description: Filter does not match the stage
+        "401":
+          description: Missing or invalid bearer token
+        "404":
+          description: Tournament not found
+      security:
+        - bearer: []
+      summary: Tournament tree for rendering brackets
+      tags:
+        - Tournaments
+  /api/v1/tournaments/{tournamentId}/teams:
+    get:
+      operationId: TeamsController_list
+      parameters:
+        - name: tournamentId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: schoolId
+          required: false
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamResponseDto"
+        "401":
+          description: Missing or invalid bearer token
+        "409":
+          description: Rosters are locked once the school stage has started
+      security:
+        - bearer: []
+      tags:
+        - Teams
+    post:
+      description: Pupils only. The creator becomes the first member.
+      operationId: TeamsController_create
+      parameters:
+        - name: tournamentId
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamNameDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamResponseDto"
+        "401":
+          description: Missing or invalid bearer token
+        "403":
+          description: Not a pupil
+        "409":
+          description: Rosters are locked once the school stage has started
+      security:
+        - bearer: []
+      summary: Create a team
+      tags:
+        - Teams
+  /api/v1/teams/{id}:
+    get:
+      operationId: TeamsController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamResponseDto"
+        "401":
+          description: Missing or invalid bearer token
+        "409":
+          description: Rosters are locked once the school stage has started
+      security:
+        - bearer: []
+      tags:
+        - Teams
+    patch:
+      description: Team creator, a teacher of the team school, or an organizator.
+      operationId: TeamsController_rename
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamNameDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamResponseDto"
+        "401":
+          description: Missing or invalid bearer token
+        "409":
+          description: Rosters are locked once the school stage has started
+      security:
+        - bearer: []
+      summary: Rename a team
+      tags:
+        - Teams
+    delete:
+      description: Team creator, a teacher of the team school, or an organizator.
+      operationId: TeamsController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Missing or invalid bearer token
+        "409":
+          description: Rosters are locked once the school stage has started
+      security:
+        - bearer: []
+      summary: Delete a team
+      tags:
+        - Teams
+  /api/v1/teams/{id}/members:
+    post:
+      description: "A pupil may join any team of their own school by passing their own
+        id. Otherwise: Team creator, a teacher of the team school, or an
+        organizator."
+      operationId: TeamsController_addMember
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddMemberDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamResponseDto"
+        "401":
+          description: Missing or invalid bearer token
+        "409":
+          description: "Team full, pupil already in a team, or: Rosters are locked once
+            the school stage has started"
+      security:
+        - bearer: []
+      summary: Add a member
+      tags:
+        - Teams
+  /api/v1/teams/{id}/members/{userId}:
+    delete:
+      description: "Anyone may remove themselves. Removing others: Team creator, a
+        teacher of the team school, or an organizator. The creator must transfer
+        rights first unless they are the only member, in which case leaving
+        deletes the team (response body is null)."
+      operationId: TeamsController_removeMember
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: userId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamResponseDto"
+        "401":
+          description: Missing or invalid bearer token
+        "409":
+          description: Rosters are locked once the school stage has started
+      security:
+        - bearer: []
+      summary: Leave or remove a member
+      tags:
+        - Teams
+  /api/v1/teams/{id}/creator:
+    post:
+      description: Team creator, a teacher of the team school, or an organizator.
+      operationId: TeamsController_transferCreator
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransferCreatorDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamResponseDto"
+        "401":
+          description: Missing or invalid bearer token
+        "409":
+          description: Rosters are locked once the school stage has started
+      security:
+        - bearer: []
+      summary: Transfer creator rights to another member
+      tags:
+        - Teams
+  /api/v1/games/{id}:
+    get:
+      operationId: GamesController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: Equal scores (no draws in playoffs)
+        "401":
+          description: Missing or invalid bearer token
+        "403":
+          description: Organizator; a teacher of the school for school-stage games; any
+            teacher for district and city games. Pupils cannot.
+      security:
+        - bearer: []
+      tags:
+        - Games
+  /api/v1/games/{id}/result:
+    post:
+      description: Organizator; a teacher of the school for school-stage games; any
+        teacher for district and city games. Pupils cannot. The winner advances
+        automatically; the last final of a stage starts the next stage.
+      operationId: GamesController_record
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GameResultDto"
+      responses:
+        "400":
+          description: Equal scores (no draws in playoffs)
+        "401":
+          description: Missing or invalid bearer token
+        "403":
+          description: Organizator; a teacher of the school for school-stage games; any
+            teacher for district and city games. Pupils cannot.
+        "409":
+          description: Game not READY or result already recorded, or stage finished
+      security:
+        - bearer: []
+      summary: Record the result of a READY game
+      tags:
+        - Games
+    put:
+      description: Organizator; a teacher of the school for school-stage games; any
+        teacher for district and city games. Pupils cannot. Allowed while the
+        stage is in progress and, if the winner changes, only if the old winner
+        has not played the next game.
+      operationId: GamesController_correct
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GameResultDto"
+      responses:
+        "400":
+          description: Equal scores (no draws in playoffs)
+        "401":
+          description: Missing or invalid bearer token
+        "403":
+          description: Organizator; a teacher of the school for school-stage games; any
+            teacher for district and city games. Pupils cannot.
+        "409":
+          description: Next game already played, or stage finished
+      security:
+        - bearer: []
+      summary: Correct the result of a finished game
+      tags:
+        - Games
+info:
+  title: Minsk Hackathon Backend
+  description: Backend documentation
+  version: "1.0"
+  contact: {}
+tags: []
+servers: []
 components:
+  securitySchemes:
+    bearer:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
   schemas:
-    CreateUserRequest:
+    HealthResponseDto:
       type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+          description: Health check status
+      required:
+        - ok
+    RegisterDto:
+      type: object
+      properties:
+        schoolsById:
+          type: string
+          example: school-user-123
+          description: User ID in the school system (unique)
+        name:
+          type: string
+          example: Ivan
+          description: First name
+        surname:
+          type: string
+          example: Ivanov
+          description: Last name
+        fathersName:
+          type: string
+          example: Petrovich
+          description: Father's name
+        role:
+          type: string
+          enum:
+            - PUPIL
+            - TEACHER
+          example: PUPIL
+          description: User role (PUPIL or TEACHER)
+        class:
+          type: string
+          example: 10A
+          description: Class name
+        schoolName:
+          type: string
+          example: "School #1"
+          description: Name of an existing school (must exist in the database)
+      required:
+        - schoolsById
+        - name
+        - surname
+        - fathersName
+        - role
+        - class
+        - schoolName
+    UserResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 3f2c9a4e-1b7d-4e8a-9c0f-2a6b5d7e8f90
+        schoolsById:
+          type: string
+          example: school-user-123
+          nullable: true
+        name:
+          type: string
+          example: Ivan
+        surname:
+          type: string
+          example: Ivanov
+        fathersName:
+          type: string
+          example: Petrovich
+        class:
+          type: string
+          example: 10A
+          nullable: true
+        role:
+          type: string
+          enum:
+            - ORGANIZATOR
+            - PUPIL
+            - TEACHER
+          example: PUPIL
+        schoolName:
+          type: string
+          example: "School #1"
+          nullable: true
+      required:
+        - id
+        - schoolsById
+        - name
+        - surname
+        - fathersName
+        - class
+        - role
+        - schoolName
+    AuthResponseDto:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: JWT access token
+        user:
+          $ref: "#/components/schemas/UserResponseDto"
+      required:
+        - accessToken
+        - user
+    LoginDto:
+      type: object
+      properties:
+        role:
+          type: string
+          enum:
+            - ORGANIZATOR
+            - PUPIL
+            - TEACHER
+          example: PUPIL
+          description: Role of the user logging in
+        schoolsById:
+          type: string
+          example: school-user-123
+          description: School-system ID. Required for PUPIL and TEACHER
+        id:
+          type: string
+          example: 3f2c9a4e-1b7d-4e8a-9c0f-2a6b5d7e8f90
+          description: User id (UUID). Required for ORGANIZATOR
+      required:
+        - role
+    CreateUserDto:
+      type: object
+      properties:
+        schoolsById:
+          type: string
+          example: school-user-123
+          description: School-system ID (unique). Required for PUPIL/TEACHER, forbidden
+            for ORGANIZATOR
+        name:
+          type: string
+          example: Ivan
+        surname:
+          type: string
+          example: Ivanov
+        fathersName:
+          type: string
+          example: Petrovich
+        role:
+          type: string
+          enum:
+            - ORGANIZATOR
+            - PUPIL
+            - TEACHER
+          example: PUPIL
+        class:
+          type: string
+          example: 10A
+          description: Class. Required for PUPIL/TEACHER, forbidden for ORGANIZATOR
+        schoolName:
+          type: string
+          example: "School #1"
+          description: Existing school. Required for PUPIL/TEACHER, forbidden for
+            ORGANIZATOR
       required:
         - name
+        - surname
+        - fathersName
+        - role
+    UpdateUserDto:
+      type: object
+      properties:
+        schoolsById:
+          type: string
+          example: school-user-123
+          description: School-system ID (unique). Required for PUPIL/TEACHER, forbidden
+            for ORGANIZATOR
+        name:
+          type: string
+          example: Ivan
+        surname:
+          type: string
+          example: Ivanov
+        fathersName:
+          type: string
+          example: Petrovich
+        role:
+          type: string
+          enum:
+            - ORGANIZATOR
+            - PUPIL
+            - TEACHER
+          example: PUPIL
+        class:
+          type: string
+          example: 10A
+          description: Class. Required for PUPIL/TEACHER, forbidden for ORGANIZATOR
+        schoolName:
+          type: string
+          example: "School #1"
+          description: Existing school. Required for PUPIL/TEACHER, forbidden for
+            ORGANIZATOR
+    CreateTournamentDto:
+      type: object
       properties:
         name:
           type: string
-        email:
+          example: ╨У╨╛╤А╨╛╨┤╤Б╨║╨╛╨╣ ╤В╤Г╤А╨╜╨╕╤А 2026
+        minTeamSize:
+          type: number
+          example: 3
+          description: "MIN_TEAM_SIZE: a team with fewer members is removed at
+            school-stage start"
+        maxTeamSize:
+          type: number
+          example: 5
+          description: MAX_TEAM_SIZE, >= minTeamSize
+        schoolStageStartAt:
           type: string
-    UserResponse:
+          example: 2026-12-01T09:00
+          description: School-stage start, ISO 8601. Without an offset it is read as
+            Europe/Minsk local time. Stored in UTC. Must be in the future.
+      required:
+        - name
+        - minTeamSize
+        - maxTeamSize
+        - schoolStageStartAt
+    TournamentResponseDto:
       type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+            - REGISTRATION
+            - IN_PROGRESS
+            - FINISHED
+        minTeamSize:
+          type: number
+        maxTeamSize:
+          type: number
+        schoolStageStartAt:
+          format: date-time
+          type: string
+          description: UTC
+        currentStage:
+          type: string
+          enum:
+            - SCHOOL
+            - DISTRICT
+            - CITY
+          nullable: true
+        winnerTeamId:
+          type: object
+          nullable: true
+        finishedAt:
+          type: object
+          nullable: true
+        timeZone:
+          type: string
+          example: Europe/Minsk
       required:
         - id
         - name
+        - status
+        - minTeamSize
+        - maxTeamSize
+        - schoolStageStartAt
+        - timeZone
+    UpdateTournamentDto:
+      type: object
       properties:
-        id:
-          type: integer
-          format: int64
         name:
           type: string
-        email:
+          example: ╨У╨╛╤А╨╛╨┤╤Б╨║╨╛╨╣ ╤В╤Г╤А╨╜╨╕╤А 2026
+        minTeamSize:
+          type: number
+          example: 3
+          description: "MIN_TEAM_SIZE: a team with fewer members is removed at
+            school-stage start"
+        maxTeamSize:
+          type: number
+          example: 5
+          description: MAX_TEAM_SIZE, >= minTeamSize
+        schoolStageStartAt:
           type: string
+          example: 2026-12-01T09:00
+          description: School-stage start, ISO 8601. Without an offset it is read as
+            Europe/Minsk local time. Stored in UTC. Must be in the future.
+    TreeSchoolDto:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        district:
+          type: string
+          enum:
+            - CENTRAL
+            - FRUNZENSKY
+            - LENINSKY
+            - MOSKOVSKY
+            - OKTYABRSKY
+            - PERVOMAYSKY
+            - PARTIZANSKY
+            - SOVETSKY
+            - ZAVODSKOY
+      required:
+        - id
+        - name
+        - district
+    TreeTeamDto:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        school:
+          $ref: "#/components/schemas/TreeSchoolDto"
+      required:
+        - id
+        - name
+        - school
+    TreeSlotDto:
+      type: object
+      properties:
+        team:
+          nullable: true
+          description: Null while unknown, or for the empty side of a BYE
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/TreeTeamDto"
+        score:
+          type: object
+          nullable: true
+        isWinner:
+          type: boolean
+          description: This side won the match (or advanced by BYE)
+        sourceMatchId:
+          type: object
+          nullable: true
+          description: Match whose winner fills this slot; null in round 1
+        label:
+          type: string
+          example: ╨Я╨╛╨▒╨╡╨┤╨╕╤В╨╡╨╗╤М 1/4 ╤Д╨╕╨╜╨░╨╗╨░, ╨╝╨░╤В╤З 2
+          description: 'Ready-to-show text: team name, "BYE", or where the team will come
+            from'
+      required:
+        - isWinner
+        - label
+    TreeLayoutDto:
+      type: object
+      properties:
+        column:
+          type: number
+          description: 0-based column (= round - 1)
+        rowStart:
+          type: number
+          description: "0-based start row in units of a first-round match. Use CSS grid:
+            grid-row: rowStart + 1 / span rowSpan"
+        rowSpan:
+          type: number
+          description: "2^(round-1): how many first-round rows this match spans"
+      required:
+        - column
+        - rowStart
+        - rowSpan
+    TreeMatchDto:
+      type: object
+      properties:
+        id:
+          type: string
+        round:
+          type: number
+          description: 1-based
+        position:
+          type: number
+          description: 0-based, top to bottom
+        label:
+          type: string
+          example: ╨Ь╨░╤В╤З 1
+          description: 1-based number within the round
+        status:
+          type: string
+          enum:
+            - PENDING
+            - READY
+            - FINISHED
+            - BYE
+        isBye:
+          type: boolean
+        isFinal:
+          type: boolean
+        teamA:
+          $ref: "#/components/schemas/TreeSlotDto"
+        teamB:
+          $ref: "#/components/schemas/TreeSlotDto"
+        winnerTeamId:
+          type: object
+          nullable: true
+        nextMatchId:
+          type: object
+          nullable: true
+          description: Where the winner goes; null for the final
+        nextSlot:
+          type: string
+          enum:
+            - A
+            - B
+          nullable: true
+        layout:
+          $ref: "#/components/schemas/TreeLayoutDto"
+        finishedAt:
+          type: object
+          nullable: true
+      required:
+        - id
+        - round
+        - position
+        - label
+        - status
+        - isBye
+        - isFinal
+        - teamA
+        - teamB
+        - layout
+    TreeRoundDto:
+      type: object
+      properties:
+        round:
+          type: number
+          description: 1-based
+        name:
+          type: string
+          example: ╨Я╨╛╨╗╤Г╤Д╨╕╨╜╨░╨╗
+        matches:
+          description: Ordered by position (top to bottom)
+          type: array
+          items:
+            $ref: "#/components/schemas/TreeMatchDto"
+      required:
+        - round
+        - name
+        - matches
+    TreeBracketDto:
+      type: object
+      properties:
+        id:
+          type: string
+        stage:
+          type: string
+          enum:
+            - SCHOOL
+            - DISTRICT
+            - CITY
+        title:
+          type: string
+          example: ╨и╨║╨╛╨╗╨░ тДЦ1
+          description: School name, district name or "╨У╨╛╤А╨╛╨┤"
+        school:
+          nullable: true
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/TreeSchoolDto"
+        district:
+          type: string
+          enum:
+            - CENTRAL
+            - FRUNZENSKY
+            - LENINSKY
+            - MOSKOVSKY
+            - OKTYABRSKY
+            - PERVOMAYSKY
+            - PARTIZANSKY
+            - SOVETSKY
+            - ZAVODSKOY
+          nullable: true
+        status:
+          type: string
+          enum:
+            - IN_PROGRESS
+            - FINISHED
+        participantsCount:
+          type: number
+        size:
+          type: number
+          description: Power of two, 0 if no participants
+        roundsCount:
+          type: number
+          description: Number of rounds (columns); 0 when N <= 1
+        gridRows:
+          type: number
+          description: Grid height in first-round rows = size / 2
+        winner:
+          nullable: true
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/TreeTeamDto"
+        outcome:
+          type: string
+          enum:
+            - PLAYING
+            - WINNER
+            - WALKOVER
+            - NO_PARTICIPANTS
+          description: "WALKOVER: one participant, won without games. NO_PARTICIPANTS: N =
+            0, no winner"
+        rounds:
+          type: array
+          items:
+            $ref: "#/components/schemas/TreeRoundDto"
+      required:
+        - id
+        - stage
+        - title
+        - status
+        - participantsCount
+        - size
+        - roundsCount
+        - gridRows
+        - outcome
+        - rounds
+    TreeDistrictDto:
+      type: object
+      properties:
+        district:
+          type: string
+          enum:
+            - CENTRAL
+            - FRUNZENSKY
+            - LENINSKY
+            - MOSKOVSKY
+            - OKTYABRSKY
+            - PERVOMAYSKY
+            - PARTIZANSKY
+            - SOVETSKY
+            - ZAVODSKOY
+        name:
+          type: string
+          example: ╨ж╨╡╨╜╤В╤А╨░╨╗╤М╨╜╤Л╨╣
+        status:
+          type: string
+          enum:
+            - QUALIFIED
+            - NO_WINNER
+            - PENDING
+        team:
+          nullable: true
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/TreeTeamDto"
+      required:
+        - district
+        - name
+        - status
+    TreeStageDto:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - SCHOOL
+            - DISTRICT
+            - CITY
+        name:
+          type: string
+          example: ╨и╨║╨╛╨╗╤М╨╜╤Л╨╣ ╤Н╤В╨░╨┐
+        status:
+          type: string
+          enum:
+            - PENDING
+            - IN_PROGRESS
+            - FINISHED
+        startedAt:
+          type: object
+          nullable: true
+        finishedAt:
+          type: object
+          nullable: true
+        brackets:
+          description: Empty while the stage is PENDING
+          type: array
+          items:
+            $ref: "#/components/schemas/TreeBracketDto"
+        districts:
+          description: "CITY only: all 9 districts, so missing ones (NO_WINNER) can be
+            shown"
+          type: array
+          items:
+            $ref: "#/components/schemas/TreeDistrictDto"
+      required:
+        - type
+        - name
+        - status
+        - brackets
+    TournamentTreeDto:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+            - REGISTRATION
+            - IN_PROGRESS
+            - FINISHED
+        currentStage:
+          type: string
+          enum:
+            - SCHOOL
+            - DISTRICT
+            - CITY
+          nullable: true
+        schoolStageStartAt:
+          format: date-time
+          type: string
+          description: UTC
+        timeZone:
+          type: string
+          example: Europe/Minsk
+        winner:
+          nullable: true
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/TreeTeamDto"
+        stages:
+          description: Always in order SCHOOL, DISTRICT, CITY (filtered by ?stage)
+          type: array
+          items:
+            $ref: "#/components/schemas/TreeStageDto"
+      required:
+        - id
+        - name
+        - status
+        - schoolStageStartAt
+        - timeZone
+        - stages
+    TeamMemberResponseDto:
+      type: object
+      properties:
+        userId:
+          type: string
+        name:
+          type: string
+        surname:
+          type: string
+        class:
+          type: object
+          nullable: true
+        joinedAt:
+          format: date-time
+          type: string
+      required:
+        - userId
+        - name
+        - surname
+        - joinedAt
+    TeamResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        tournamentId:
+          type: string
+        schoolId:
+          type: string
+        schoolName:
+          type: string
+        creatorId:
+          type: object
+          nullable: true
+        isFull:
+          type: boolean
+          description: members >= MIN_TEAM_SIZE
+        isLocked:
+          type: boolean
+          description: Roster is locked once the school stage has started
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamMemberResponseDto"
+      required:
+        - id
+        - name
+        - tournamentId
+        - schoolId
+        - schoolName
+        - isFull
+        - isLocked
+        - members
+    TeamNameDto:
+      type: object
+      properties:
+        name:
+          type: string
+          example: ╨б╨╛╨▓╤Л
+      required:
+        - name
+    AddMemberDto:
+      type: object
+      properties:
+        userId:
+          type: string
+          description: Pupil to add. A pupil joining by themselves passes their own id.
+      required:
+        - userId
+    TransferCreatorDto:
+      type: object
+      properties:
+        userId:
+          type: string
+          description: A current member of the team (pupil)
+      required:
+        - userId
+    GameResultDto:
+      type: object
+      properties:
+        scoreA:
+          type: number
+          example: 3
+        scoreB:
+          type: number
+          example: 1
+          description: "Must differ from scoreA: there are no draws in playoffs"
+      required:
+        - scoreA
+        - scoreB

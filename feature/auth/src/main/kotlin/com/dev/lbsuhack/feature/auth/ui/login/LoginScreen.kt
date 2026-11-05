@@ -124,41 +124,47 @@ fun LoginScreen(
                             onRoleSelected = { viewModel.accept(LoginStore.Intent.RoleChanged(it)) },
                         )
 
+                        val isOrganizer = state.role == com.dev.lbsuhack.core.domain.model.UserRole.ORGANIZATOR
+
                         AuthTextField(
                             value = state.username,
                             onValueChange = { viewModel.accept(LoginStore.Intent.UsernameChanged(it)) },
-                            label = stringResource(R.string.auth_username),
-                            placeholder = stringResource(R.string.auth_username_placeholder),
+                            label = if (isOrganizer) stringResource(R.string.auth_username_organizer) else stringResource(R.string.auth_username),
+                            placeholder = if (isOrganizer) stringResource(R.string.auth_username_organizer_placeholder) else stringResource(R.string.auth_username_placeholder),
                             leadingIcon = Icons.Rounded.Person,
                             keyboardType = KeyboardType.Text,
-                            imeAction = ImeAction.Next,
+                            imeAction = if (isOrganizer) ImeAction.Done else ImeAction.Next,
                         )
 
-                        AuthPasswordField(
-                            value = state.password,
-                            onValueChange = { viewModel.accept(LoginStore.Intent.PasswordChanged(it)) },
-                            imeAction = ImeAction.Done,
-                            onImeAction = { viewModel.accept(LoginStore.Intent.Submit) },
-                        )
+                        if (!isOrganizer) {
+                            AuthPasswordField(
+                                value = state.password,
+                                onValueChange = { viewModel.accept(LoginStore.Intent.PasswordChanged(it)) },
+                                imeAction = ImeAction.Done,
+                                onImeAction = { viewModel.accept(LoginStore.Intent.Submit) },
+                            )
+                        }
 
                         AuthError(error = state.error)
 
                         AuthPrimaryButton(
-                            text = stringResource(R.string.auth_login_action),
+                            text = if (isOrganizer) stringResource(R.string.auth_login_action_organizer) else stringResource(R.string.auth_login_action),
                             isLoading = state.isLoading,
                             onClick = { viewModel.accept(LoginStore.Intent.Submit) },
                         )
                     }
                 }
 
-                AuthDemoBanner()
+                if (state.role != com.dev.lbsuhack.core.domain.model.UserRole.ORGANIZATOR) {
+                    AuthDemoBanner()
 
-                AuthSwitchPrompt(
-                    promptText = stringResource(R.string.auth_no_account_prompt),
-                    actionText = stringResource(R.string.auth_open_register),
-                    onActionClick = { viewModel.accept(LoginStore.Intent.OpenRegister) },
-                    enabled = !state.isLoading,
-                )
+                    AuthSwitchPrompt(
+                        promptText = stringResource(R.string.auth_no_account_prompt),
+                        actionText = stringResource(R.string.auth_open_register),
+                        onActionClick = { viewModel.accept(LoginStore.Intent.OpenRegister) },
+                        enabled = !state.isLoading,
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
             }

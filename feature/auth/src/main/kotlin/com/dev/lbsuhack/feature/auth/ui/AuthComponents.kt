@@ -463,6 +463,12 @@ internal fun AuthRoleSelector(
                 onClick = { onRoleSelected(UserRole.TEACHER) },
                 modifier = Modifier.weight(1f),
             )
+            RoleOption(
+                label = stringResource(R.string.auth_role_organizator),
+                isSelected = selectedRole == UserRole.ORGANIZATOR,
+                onClick = { onRoleSelected(UserRole.ORGANIZATOR) },
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }

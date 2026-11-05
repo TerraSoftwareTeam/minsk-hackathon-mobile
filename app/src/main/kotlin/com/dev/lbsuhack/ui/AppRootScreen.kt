@@ -85,7 +85,7 @@ fun AppRootScreen(
 
             is SessionState.Authenticated -> key(GLOBAL_HOST_KEY) {
                 AppNavHost(
-                    startRoute = TournamentsRoute,
+                    startRoute = FeedRoute,
                     installers = installers,
                     layers = layers,
                     appNavigationFactory = { navigator ->

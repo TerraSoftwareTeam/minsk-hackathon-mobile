@@ -16,8 +16,11 @@
     <string name="auth_role_label">I am a</string>
     <string name="auth_role_pupil">Pupil</string>
     <string name="auth_role_teacher">Teacher</string>
+    <string name="auth_role_organizator">Organizer</string>
     <string name="auth_username">Schools.by Login</string>
     <string name="auth_username_placeholder">e.g. 002</string>
+    <string name="auth_username_organizer">Organizer ID</string>
+    <string name="auth_username_organizer_placeholder">UUID (e.g. 3f2c9a4e-...)</string>
     <string name="auth_name">Name</string>
     <string name="auth_name_placeholder">Your name</string>
     <string name="auth_email">Email</string>
@@ -26,6 +29,7 @@
     <string name="auth_password_placeholder">Enter password</string>
 
     <string name="auth_login_action">Sign in via Schools.by</string>
+    <string name="auth_login_action_organizer">Sign in as Organizer</string>
     <string name="auth_register_action">Create account</string>
     <string name="auth_no_account_prompt">Don\'t have an account?</string>
     <string name="auth_open_register">Register</string>

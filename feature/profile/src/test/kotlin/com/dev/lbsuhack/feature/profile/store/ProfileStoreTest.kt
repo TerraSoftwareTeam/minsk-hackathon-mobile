@@ -26,9 +26,9 @@ class ProfileStoreTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val sessionUser = SessionUser(
-        id = 7L,
+        id = "7",
         name = "Nikita",
-        email = "nikita@example.com",
+        schoolName = "School #1",
     )
 
     private val sessionRepository = FakeSessionRepository(
@@ -54,7 +54,7 @@ class ProfileStoreTest {
 
             assertFalse(store.state.isLoading)
             assertEquals("Nikita", store.state.name)
-            assertEquals("nikita@example.com", store.state.email)
+            assertEquals("School #1", store.state.email)
             assertEquals(0, store.state.savedCount)
             assertTrue(store.state.notificationsEnabled)
         }
