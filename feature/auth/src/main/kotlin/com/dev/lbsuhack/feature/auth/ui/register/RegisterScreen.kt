@@ -107,8 +107,8 @@ fun RegisterScreen(
                     .background(
                         brush = Brush.verticalGradient(
                             colors = listOf(
-                                MaterialTheme.hack.glow,
-                                MaterialTheme.colorScheme.background,
+                                MaterialTheme.hack.glow.copy(alpha = 0.4f),
+                                androidx.compose.ui.graphics.Color.Transparent,
                             ),
                         ),
                     ),

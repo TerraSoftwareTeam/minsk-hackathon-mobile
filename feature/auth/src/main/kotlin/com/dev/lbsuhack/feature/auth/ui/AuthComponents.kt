@@ -1,8 +1,9 @@
 package com.dev.lbsuhack.feature.auth.ui
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,17 +17,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.rounded.AlternateEmail
-import androidx.compose.material.icons.rounded.Eco
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -46,7 +45,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -59,8 +57,6 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.dev.lbsuhack.core.designsystem.theme.HackMonoTextStyle
-import com.dev.lbsuhack.core.designsystem.theme.hack
 import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.localization.text.UiText
 import com.dev.lbsuhack.core.localization.text.asString
@@ -75,13 +71,13 @@ internal fun AuthBrandHero(
     showBadges: Boolean = true,
 ) {
     val brandAnnotated = buildAnnotatedString {
-        withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+        withStyle(SpanStyle(color = MaterialTheme.colorScheme.onBackground)) {
             append("ko")
         }
-        withStyle(SpanStyle(color = MaterialTheme.colorScheme.secondary)) {
+        withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
             append("la")
         }
-        withStyle(SpanStyle(color = MaterialTheme.hack.success)) {
+        withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
             append(" •")
         }
     }
@@ -92,46 +88,44 @@ internal fun AuthBrandHero(
     ) {
         Surface(
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Eco,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.secondary,
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
                 )
                 Text(
                     text = stringResource(R.string.auth_brand_badge).uppercase(),
-                    style = HackMonoTextStyle.copy(
-                        fontSize = 11.sp,
+                    style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp,
+                        letterSpacing = 0.8.sp,
                     ),
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
 
         Text(
             text = brandAnnotated,
-            style = MaterialTheme.typography.displayLarge.copy(
-                fontSize = 48.sp,
+            style = MaterialTheme.typography.displayMedium.copy(
+                fontSize = 42.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = (-1.5).sp,
-                lineHeight = 50.sp,
             ),
         )
 
         Text(
             text = stringResource(R.string.auth_brand_tagline),
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary,
         )
 
@@ -163,12 +157,12 @@ private fun AuthFeatureBadge(
 ) {
     Surface(
         modifier = modifier,
-        shape = MaterialTheme.shapes.small,
+        shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        border = BorderStroke(1.dp, MaterialTheme.hack.gridLine),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
@@ -176,11 +170,12 @@ private fun AuthFeatureBadge(
                 modifier = Modifier
                     .size(6.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.secondary),
+                    .background(MaterialTheme.colorScheme.primary),
             )
             Text(
                 text = text,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
@@ -204,7 +199,12 @@ internal fun AuthTextField(
         onValueChange = onValueChange,
         modifier = modifier.fillMaxWidth(),
         label = { Text(label) },
-        placeholder = { Text(placeholder) },
+        placeholder = {
+            Text(
+                text = placeholder,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            )
+        },
         leadingIcon = {
             Icon(
                 imageVector = leadingIcon,
@@ -213,7 +213,7 @@ internal fun AuthTextField(
             )
         },
         singleLine = true,
-        shape = MaterialTheme.shapes.medium,
+        shape = RoundedCornerShape(16.dp),
         keyboardOptions = KeyboardOptions(
             keyboardType = keyboardType,
             imeAction = imeAction,
@@ -224,9 +224,13 @@ internal fun AuthTextField(
         ),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+            focusedLabelColor = MaterialTheme.colorScheme.primary,
+            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ),
     )
 }
@@ -246,7 +250,12 @@ internal fun AuthPasswordField(
         onValueChange = onValueChange,
         modifier = modifier.fillMaxWidth(),
         label = { Text(stringResource(R.string.auth_password)) },
-        placeholder = { Text(stringResource(R.string.auth_password_placeholder)) },
+        placeholder = {
+            Text(
+                text = stringResource(R.string.auth_password_placeholder),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            )
+        },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Rounded.Lock,
@@ -266,7 +275,7 @@ internal fun AuthPasswordField(
             }
         },
         singleLine = true,
-        shape = MaterialTheme.shapes.medium,
+        shape = RoundedCornerShape(16.dp),
         visualTransformation = if (visible) {
             VisualTransformation.None
         } else {
@@ -281,9 +290,13 @@ internal fun AuthPasswordField(
         ),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+            focusedLabelColor = MaterialTheme.colorScheme.primary,
+            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ),
     )
 }
@@ -297,25 +310,26 @@ internal fun AuthError(
 
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.small,
-        color = MaterialTheme.colorScheme.errorContainer,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.6f)),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Icon(
                 imageVector = Icons.Rounded.ErrorOutline,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onErrorContainer,
+                tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.size(20.dp),
             )
             Text(
                 text = error.asString(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onErrorContainer,
+                fontWeight = FontWeight.Medium,
                 lineHeight = 18.sp,
             )
         }
@@ -335,11 +349,14 @@ internal fun AuthPrimaryButton(
             .fillMaxWidth()
             .height(54.dp),
         enabled = !isLoading,
-        shape = MaterialTheme.shapes.medium,
+        shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
+            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+            disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
         ),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
     ) {
         if (isLoading) {
             CircularProgressIndicator(
@@ -363,9 +380,9 @@ internal fun AuthDemoBanner(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
+        shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        border = BorderStroke(1.dp, MaterialTheme.hack.gridLine),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
     ) {
         Row(
             modifier = Modifier.padding(14.dp),
@@ -375,7 +392,7 @@ internal fun AuthDemoBanner(
             Icon(
                 imageVector = Icons.Rounded.Info,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.secondary,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp),
             )
             Text(
@@ -433,31 +450,22 @@ internal fun AuthRoleSelector(
     ) {
         Text(
             text = stringResource(R.string.auth_role_label),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
         )
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceContainerLow,
-                    shape = MaterialTheme.shapes.medium,
-                )
-                .border(
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    shape = MaterialTheme.shapes.medium,
-                )
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            RoleOption(
+            RoleChip(
                 label = stringResource(R.string.auth_role_pupil),
                 isSelected = selectedRole == UserRole.PUPIL,
                 onClick = { onRoleSelected(UserRole.PUPIL) },
                 modifier = Modifier.weight(1f),
             )
-            RoleOption(
+            RoleChip(
                 label = stringResource(R.string.auth_role_teacher),
                 isSelected = selectedRole == UserRole.TEACHER,
                 onClick = { onRoleSelected(UserRole.TEACHER) },
@@ -468,23 +476,38 @@ internal fun AuthRoleSelector(
 }
 
 @Composable
-private fun RoleOption(
+private fun RoleChip(
     label: String,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh,
+        animationSpec = tween(durationMillis = 180),
+        label = "roleBg",
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = tween(durationMillis = 180),
+        label = "roleContent",
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+        animationSpec = tween(durationMillis = 180),
+        label = "roleBorder",
+    )
+
     Surface(
         onClick = onClick,
-        modifier = modifier,
-        shape = MaterialTheme.shapes.small,
-        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-        contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier.height(46.dp),
+        shape = RoundedCornerShape(14.dp),
+        color = backgroundColor,
+        contentColor = contentColor,
+        border = BorderStroke(1.dp, borderColor),
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 10.dp),
+            modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center,
         ) {
             Text(
