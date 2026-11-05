@@ -36,7 +36,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -284,7 +284,7 @@ private fun ActivitiesTabRow(
     selectedTab: ActivityTab,
     onSelectTab: (ActivityTab) -> Unit,
 ) {
-    ScrollableTabRow(
+    SecondaryScrollableTabRow(
         selectedTabIndex = selectedTab.ordinal,
         containerColor = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.primary,
@@ -298,8 +298,10 @@ private fun ActivitiesTabRow(
                 text = {
                     Text(
                         text = stringResource(tab.labelRes()),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = if (selectedTab == tab) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal,
+                        ),
+                        color = if (selectedTab == tab) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 },
             )
@@ -334,8 +336,8 @@ private fun ActivityCard(
         ) {
             Text(
                 text = "${proposal.category.emoji()} ${stringResource(proposal.category.labelRes())}",
-                style = HackMonoTextStyle.copy(fontSize = 12.sp),
-                color = MaterialTheme.colorScheme.primary,
+                style = HackMonoTextStyle.copy(fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
             StatusBadge(status = proposal.status)
@@ -375,7 +377,7 @@ private fun ActivityCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        MaterialTheme.hack.success.copy(alpha = 0.12f),
+                        MaterialTheme.colorScheme.surfaceContainerLow,
                         MaterialTheme.shapes.small,
                     )
                     .padding(horizontal = 10.dp, vertical = 8.dp),
@@ -385,13 +387,13 @@ private fun ActivityCard(
                     imageVector = Icons.Default.Schedule,
                     contentDescription = null,
                     modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.hack.success,
+                    tint = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = proposal.confirmedTime,
                     style = HackMonoTextStyle.copy(fontSize = 11.sp),
-                    color = MaterialTheme.hack.success,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 if (proposal.confirmedLocation != null) {
@@ -399,13 +401,13 @@ private fun ActivityCard(
                         imageVector = Icons.Default.LocationOn,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.hack.success,
+                        tint = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = proposal.confirmedLocation,
                         style = HackMonoTextStyle.copy(fontSize = 11.sp),
-                        color = MaterialTheme.hack.success,
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -435,7 +437,7 @@ private fun ActivityCard(
                 Text(
                     text = "Кворум набран",
                     style = HackMonoTextStyle.copy(fontSize = 11.sp),
-                    color = MaterialTheme.hack.success,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -448,7 +450,7 @@ private fun ActivityCard(
                 .fillMaxWidth()
                 .height(6.dp)
                 .clip(MaterialTheme.shapes.extraSmall),
-            color = if (proposal.status == ActivityStatus.APPROVED) MaterialTheme.hack.success else MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.primary,
             trackColor = MaterialTheme.colorScheme.surfaceVariant,
         )
 
@@ -468,7 +470,7 @@ private fun ActivityCard(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.hack.success,
+                        tint = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
@@ -501,28 +503,28 @@ private fun ActivityCard(
 internal fun StatusBadge(status: ActivityStatus) {
     val (bgColor, textColor, textRes) = when (status) {
         ActivityStatus.MODERATING -> Triple(
-            Color(0xFF382F10),
-            Color(0xFFFFC107),
+            MaterialTheme.colorScheme.surfaceVariant,
+            Color.White,
             R.string.activities_status_moderating,
         )
         ActivityStatus.RECRUITING -> Triple(
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.28f),
+            Color.White,
             R.string.activities_status_recruiting,
         )
         ActivityStatus.PENDING_ADMIN -> Triple(
-            Color(0xFF3E2310),
-            Color(0xFFFF9800),
+            MaterialTheme.colorScheme.surfaceVariant,
+            Color.White,
             R.string.activities_status_pending_admin,
         )
         ActivityStatus.APPROVED -> Triple(
-            Color(0xFF103319),
-            Color(0xFF4CAF50),
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.28f),
+            Color.White,
             R.string.activities_status_approved,
         )
         ActivityStatus.REJECTED -> Triple(
-            Color(0xFF3B1515),
-            Color(0xFFF44336),
+            MaterialTheme.colorScheme.surfaceVariant,
+            Color.White,
             R.string.activities_status_rejected,
         )
     }
