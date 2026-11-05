@@ -16,12 +16,14 @@ plugins {
 // When a new module is added, register it here too.
 dependencies {
     kover(project(":app"))
+    kover(project(":core:data"))
     kover(project(":core:designsystem"))
     kover(project(":core:domain"))
     kover(project(":core:localization"))
     kover(project(":core:navigation"))
     kover(project(":core:network"))
-    kover(project(":feature:home"))
+    kover(project(":feature:auth"))
+    kover(project(":feature:feed"))
     kover(project(":feature:profile"))
     kover(project(":layers"))
 }

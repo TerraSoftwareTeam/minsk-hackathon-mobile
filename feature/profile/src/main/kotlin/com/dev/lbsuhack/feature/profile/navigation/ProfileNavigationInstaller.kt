@@ -1,27 +1,32 @@
 package com.dev.lbsuhack.feature.profile.navigation
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import com.dev.lbsuhack.core.navigation.layer.MainLayerMeta
-import com.dev.lbsuhack.core.navigation.api.MainTabInstaller
-import com.dev.lbsuhack.core.navigation.routes.ProfileRoute
-import com.dev.lbsuhack.feature.profile.R
-import com.dev.lbsuhack.feature.profile.ui.ProfileScreen
+import com.dev.lbsuhack.core.navigation.api.LocalNavigator
+import com.dev.lbsuhack.core.navigation.api.NavigationInstaller
+import com.dev.lbsuhack.core.navigation.layer.GlobalLayerMeta
+import com.dev.lbsuhack.feature.profile.ui.profile.ProfileScreen
+import com.dev.lbsuhack.feature.profile.ui.settings.ProfileSettingsScreen
 
-class ProfileNavigationInstaller : MainTabInstaller {
-    override val id: String = "profile"
-    override val rootRoute: NavKey = ProfileRoute
-    override val titleRes: Int = R.string.profile_tab_title
-    override val icon: ImageVector = Icons.Default.Person
-    override val order: Int = 1
+class ProfileNavigationInstaller : NavigationInstaller {
 
     override fun install(scope: EntryProviderScope<NavKey>) {
         with(scope) {
-            entry<ProfileRoute>(metadata = MainLayerMeta.tab("profile")) {
-                ProfileScreen()
+            entry<ProfileRoute>(metadata = GlobalLayerMeta.entry()) {
+                val navigator = LocalNavigator.current
+
+                ProfileScreen(
+                    onBack = navigator::back,
+                    onOpenSettings = { navigator.navigate(ProfileSettingsRoute) },
+                )
+            }
+
+            entry<ProfileSettingsRoute>(metadata = GlobalLayerMeta.entry()) {
+                val navigator = LocalNavigator.current
+
+                ProfileSettingsScreen(
+                    onBack = navigator::back,
+                )
             }
         }
     }

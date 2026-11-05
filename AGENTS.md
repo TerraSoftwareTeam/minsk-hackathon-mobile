@@ -37,18 +37,25 @@ git worktree per parallel agent.
 ## Module map
 
 - `app` — application shell and composition root. Owns `App.kt`,
-  `MainActivity`, `AppRootScreen`, `AppTheme` (the controller → theme bridge),
-  and the final registration of features.
+  `MainActivity`, `AppRootScreen` (the session gate), `AppTheme` (the
+  controller → theme bridge), and the final registration of features.
 - `core:designsystem` — the single app design system. Owns `HackTheme`, the
   dark and light colour schemes, `HackExtras`, typography, shapes, and the
   persisted `ThemeController`. Shared by `app` and any feature that needs UI.
+- `core:domain` — pure session contract (`SessionRepository`, `SessionState`,
+  `SessionUser`) and the session use cases, plus result/error primitives and
+  global value objects. Core logic is exposed only through use cases.
+- `core:data` — app-level data implementations. Currently owns
+  `DefaultSessionRepository` and `dataModule`.
 - `feature:<name>` — vertical feature slice. Owns domain, data, presentation,
-  UI, navigation, DI, resources, and tests for that feature.
+  UI, navigation, DI, resources, and tests for that feature. Current features:
+  `feature:auth`, `feature:feed`, `feature:profile`.
 - `core:<infra>` — technical infrastructure without business knowledge:
   navigation engine, network engine, localization, testing utilities.
 - `core:<capability>` — shared business capability used by two or more
   features, with a single owner.
-- `layers` — app-level navigation shell. Treat as integrator-owned.
+- `layers` — app-level navigation layers. Owns `AuthLayer`, `GlobalLayer`, and
+  the shared `LayerScene` / `LayerSceneStrategy`. There is no bottom bar.
 - `build-logic` — Gradle convention plugins. Integrator-owned.
 - `api/openapi.yaml` — shared API contract. Integrator-owned.
 
@@ -106,6 +113,15 @@ The integrator owns all shared files and performs the final wiring:
 
 ## Architecture rules
 
+### Code style
+
+- No comments in code. No KDoc, no inline `//`, no section markers, no `TODO`
+  comments. This applies to main and test sources.
+- Names, types, and structure must carry the intent. If a rule needs an
+  explanation, document it in this file, not in the source.
+- Comments in files that predate this rule are legacy. Do not copy the pattern
+  and do not add new ones.
+
 ### Feature slice
 
 Use this package layout inside a feature:
@@ -113,10 +129,10 @@ Use this package layout inside a feature:
 ```text
 feature/<name>/src/main/kotlin/.../feature/<name>/
   data/          DTOs, mappers, API services, repository implementations
-  domain/        models, repository interfaces, use cases (pure Kotlin)
-  presentation/  ViewModel and UI state mapping
-  store/         MVIKotlin Store contract and factory
-  ui/            Compose screens and components
+  domain/        models and repository interfaces (pure Kotlin, no use cases)
+  presentation/  one subpackage per screen, ViewModel per screen
+  store/         one subpackage per screen, Store contract and factory per screen
+  ui/            one subpackage per screen, Compose screens and components
   navigation/    routes and NavigationInstaller
   di/            Koin module
 ```
@@ -126,6 +142,16 @@ feature/<name>/src/main/kotlin/.../feature/<name>/
 - UI must not contain business logic. Put it in the store or domain.
 - Keep one public Koin module per feature: `val <name>Module = module { ... }`.
 - Use constructor injection. Do not use a service locator inside features.
+- One screen owns exactly one route, one `ViewModel`, and one `Store`. Stores
+  are per-screen and are never shared between screens. DI registers the store
+  *factory* as a `single`; the `ViewModel` creates and disposes its own store.
+- A feature exposes its business operations through its own repository. Stores
+  call that repository directly. Do not add use case classes inside a feature:
+  the logic is local, so the extra layer only adds indirection.
+- `core:domain` is the exception. Any core repository is consumed through a
+  narrow use case, one per operation, so a consumer never receives the whole
+  repository API. Use cases live in `core:domain`; their DI registration lives
+  in the module that owns the implementation (`core:data`).
 
 ### Feature isolation
 
@@ -135,19 +161,41 @@ feature/<name>/src/main/kotlin/.../feature/<name>/
 - Do not share entities, DTOs, stores, or UI components between features by
   copying them into `core:domain`. Extract a `core:<capability>` only after
   two or more real usages.
-- `core:domain` stays small: result/error primitives and truly global value
-  objects only.
+- `core:domain` stays small: result/error primitives, the session contract with
+  its use cases, and truly global value objects only.
+
+### Session and layers
+
+- `core:domain` owns the `SessionRepository` contract, `SessionState`
+  (`Unknown`, `Unauthenticated`, `Authenticated`), and the session use cases
+  (`ObserveSessionUseCase`, `RestoreSessionUseCase`, `SaveSessionUseCase`,
+  `ClearSessionUseCase`). `core:data` owns the persisted implementation and
+  registers the use cases. Features and `app` consume the session through the
+  use cases, never through `SessionRepository` directly.
+- Features write the session; they never navigate across features to log in or
+  out.
+- `AppRootScreen` is the session gate: `Unknown` shows a splash,
+  `Unauthenticated` shows the auth nav host, `Authenticated` shows the global
+  nav host. The gate re-keys the host so login and logout reset the back stack.
+- `Authentication` starts at `AuthLoginRoute`; the authenticated app starts at
+  `FeedRoute`.
+- Screens register a layer with `AuthLayerMeta.entry()` or
+  `GlobalLayerMeta.entry()`. `layers` renders the matching `LayerScene`.
+- There is no bottom bar and no tab concept. Do not reintroduce one without an
+  explicit request.
 
 ### Navigation
 
 - New routes belong to the feature that owns the screen:
   `feature/<name>/navigation/Routes.kt`.
-- Do not add new routes to `core/navigation/.../Routes.kt`. That file is
-  legacy and is being phased out.
-- Register screens through `NavigationInstaller` / `MainTabInstaller`.
-- Tab metadata uses `MainLayerMeta.tab("<id>")`.
-- Do not make a feature depend on another feature just to navigate. Report the
-  needed cross-feature navigation to the integrator.
+- Register screens through `NavigationInstaller`.
+- Do not make a feature depend on another feature just to navigate. Expose the
+  destination through `AppNavigation` / `LocalAppNavigation` in
+  `core:navigation` and implement it in `app`, where all feature routes are
+  visible.
+- Each NavEntry receives its own `ViewModelStore` through
+  `rememberViewModelStoreNavEntryDecorator`. Keep it in `AppRootScreen` so
+  per-screen ViewModels never share the Activity scope.
 
 ### Networking
 
@@ -208,7 +256,7 @@ A feature agent must hand off:
 1. The exact module name, for example `:feature:search`.
 2. The `build.gradle.kts` with `id("android.dev.feature")` and the namespace.
 3. The Koin module name and the DI file path.
-4. The `NavigationInstaller` and whether it is a main tab.
+4. The `NavigationInstaller` and the navigation layer (`auth` or `global`).
 5. The routes it owns.
 6. The test command that passes.
 7. Any shared contract or dependency the integrator must add.
@@ -221,10 +269,6 @@ The integrator then adds the registration lines (`settings.gradle.kts`,
 
 Do not copy these patterns into new code:
 
-- `core/navigation/.../Routes.kt` still contains feature routes. New routes
-  go into the owning feature.
-- `SurveyContext`, `SurveyStepInstaller`, and `SurveyLayerMeta` in
-  `core:navigation` are unused legacy. Do not use them as a pattern.
 - `AppEventBus` lives in `core:navigation/event`. Use it only for global UI
   events (snackbar/toast), never for business data.
 - The launch window background is always the dark brand colour
@@ -234,6 +278,8 @@ Do not copy these patterns into new code:
   stored mode before `setContent`.
 - `MainDispatcherRule` is duplicated in each feature. Keep it local for now;
   do not extract it without the integrator's approval.
+- `feature/home` build artifacts may remain locally after the module was
+  removed; the directory is git-ignored. Do not re-add the module.
 
 ## Testing
 

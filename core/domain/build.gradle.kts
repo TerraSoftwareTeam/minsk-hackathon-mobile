@@ -4,5 +4,6 @@ plugins {
 }
 
 dependencies {
-    // Basic Kotlin standard library dependencies
+    // The session contract exposes StateFlow, so coroutines are part of the API.
+    api(libs.coroutines.core)
 }

@@ -8,6 +8,9 @@ android {
 
 dependencies {
     implementation(project(":core:designsystem"))
-    implementation(project(":core:navigation"))
+    implementation(project(":core:domain"))
     implementation(project(":core:localization"))
+    implementation(project(":core:navigation"))
+
+    implementation(libs.coroutines.core)
 }

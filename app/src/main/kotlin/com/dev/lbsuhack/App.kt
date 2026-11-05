@@ -3,10 +3,12 @@ package com.dev.lbsuhack
 import android.app.Application
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
+import com.dev.lbsuhack.core.data.di.dataModule
 import com.dev.lbsuhack.core.designsystem.di.designSystemModule
 import com.dev.lbsuhack.core.localization.di.localizationModule
 import com.dev.lbsuhack.core.network.di.networkModule
-import com.dev.lbsuhack.feature.home.di.homeModule
+import com.dev.lbsuhack.feature.auth.di.authModule
+import com.dev.lbsuhack.feature.feed.di.feedModule
 import com.dev.lbsuhack.feature.profile.di.profileModule
 import com.dev.lbsuhack.layers.di.layersModule
 import org.koin.android.ext.koin.androidContext
@@ -27,10 +29,12 @@ class App : Application() {
             modules(
                 appModule,
                 designSystemModule,
+                dataModule,
                 localizationModule,
                 layersModule,
                 networkModule,
-                homeModule,
+                authModule,
+                feedModule,
                 profileModule,
             )
         }

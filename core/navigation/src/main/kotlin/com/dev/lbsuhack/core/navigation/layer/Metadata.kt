@@ -2,21 +2,14 @@ package com.dev.lbsuhack.core.navigation.layer
 
 object LayerKeys {
     const val LAYER = "layer"
-    const val MAIN = "main"
-    const val SURVEY = "survey"
-
-    const val TAB_ID = "tabId"
+    const val AUTH = "auth"
+    const val GLOBAL = "global"
 }
 
-object MainLayerMeta {
-    fun entry(): Map<String, Any> = mapOf(LayerKeys.LAYER to LayerKeys.MAIN)
-
-    fun tab(id: String): Map<String, Any> = mapOf(
-        LayerKeys.LAYER to LayerKeys.MAIN,
-        LayerKeys.TAB_ID to id,
-    )
+object AuthLayerMeta {
+    fun entry(): Map<String, Any> = mapOf(LayerKeys.LAYER to LayerKeys.AUTH)
 }
 
-object SurveyLayerMeta {
-    fun entry(): Map<String, Any> = mapOf(LayerKeys.LAYER to LayerKeys.SURVEY)
+object GlobalLayerMeta {
+    fun entry(): Map<String, Any> = mapOf(LayerKeys.LAYER to LayerKeys.GLOBAL)
 }

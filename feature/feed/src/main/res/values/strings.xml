@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feed_title">Feed</string>
+    <string name="feed_refresh">Refresh</string>
+    <string name="feed_open_profile">Open profile</string>
+    <string name="feed_retry">Try again</string>
+
+    <string name="feed_error_title">Could not load the feed</string>
+    <string name="feed_empty_title">Nothing here yet</string>
+    <string name="feed_empty_description">New posts will appear in the feed.</string>
+
+    <string name="feed_error_network">Check your connection and try again.</string>
+    <string name="feed_error_not_found">This post could not be found.</string>
+    <string name="feed_error_unauthorized">Please sign in again.</string>
+    <string name="feed_error_forbidden">You do not have access to this post.</string>
+    <string name="feed_error_unknown">Something went wrong. Please try again.</string>
+
+    <string name="feed_details_title">Post</string>
+    <string name="feed_details_back">Back</string>
+    <string name="feed_details_meta">%1$s · %2$s</string>
+</resources>

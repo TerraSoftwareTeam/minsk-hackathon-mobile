@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="auth_brand">kola</string>
+    <string name="auth_brand_tagline">Приложение для субботников</string>
+    <string name="auth_brand_badge">Городское эко-движение</string>
+    <string name="auth_login_title">С возвращением</string>
+    <string name="auth_login_subtitle">Участвуйте в субботниках, объединяйтесь с соседями и делайте город чище.</string>
+    <string name="auth_register_top_title">Регистрация</string>
+    <string name="auth_register_title">Присоединяйтесь к kola</string>
+    <string name="auth_register_subtitle">Создайте профиль эковолонтёра, организуйте уборки и меняйте город к лучшему.</string>
+
+    <string name="auth_feature_cleanup">Субботники</string>
+    <string name="auth_feature_teams">Эко-команды</string>
+    <string name="auth_feature_points">Вклад в природу</string>
+
+    <string name="auth_name">Имя</string>
+    <string name="auth_name_placeholder">Как к вам обращаться?</string>
+    <string name="auth_email">Почта</string>
+    <string name="auth_email_placeholder">name@example.com</string>
+    <string name="auth_password">Пароль</string>
+    <string name="auth_password_placeholder">Не менее 6 символов</string>
+
+    <string name="auth_login_action">Войти в kola</string>
+    <string name="auth_register_action">Создать профиль</string>
+    <string name="auth_no_account_prompt">Ещё нет аккаунта?</string>
+    <string name="auth_open_register">Зарегистрироваться</string>
+    <string name="auth_has_account_prompt">Уже есть аккаунт?</string>
+    <string name="auth_open_login">Войти</string>
+    <string name="auth_back">Назад</string>
+
+    <string name="auth_demo_hint">Демо-режим: подходит любая почта и пароль от 6 символов. Бэкенд пока не подключён.</string>
+
+    <string name="auth_error_validation">Проверьте данные: нужна корректная почта и пароль не короче 6 символов.</string>
+    <string name="auth_error_network">Сеть недоступна. Попробуйте ещё раз.</string>
+    <string name="auth_error_credentials">Неверная почта или пароль.</string>
+    <string name="auth_error_forbidden">Доступ запрещён.</string>
+    <string name="auth_error_unknown">Что-то пошло не так. Попробуйте ещё раз.</string>
+
+    <string name="auth_password_show">Показать пароль</string>
+    <string name="auth_password_hide">Скрыть пароль</string>
+</resources>

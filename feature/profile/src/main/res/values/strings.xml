@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="profile_tab_title">Profile</string>
     <string name="profile_title">Profile</string>
+    <string name="profile_back">Back</string>
     <string name="profile_notifications">Notifications</string>
     <string name="profile_notifications_description">Push notifications from services</string>
-    <string name="profile_notifications_enabled">Notifications enabled</string>
-    <string name="profile_notifications_disabled">Notifications disabled</string>
     <string name="profile_add_saved">Add to saved (+1)</string>
+    <string name="profile_open_settings">Settings</string>
+    <string name="profile_logout">Sign out</string>
+
+    <string name="profile_settings_title">Settings</string>
     <string name="profile_language">Language</string>
     <string name="profile_language_description">Application interface language</string>
     <string name="profile_theme">Theme</string>

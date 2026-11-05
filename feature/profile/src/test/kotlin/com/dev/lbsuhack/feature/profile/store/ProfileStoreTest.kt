@@ -1,10 +1,17 @@
 package com.dev.lbsuhack.feature.profile.store
 
-import app.cash.turbine.test
-import com.arkivanov.mvikotlin.extensions.coroutines.labels
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
+import com.dev.lbsuhack.core.domain.session.ClearSessionUseCase
+import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
+import com.dev.lbsuhack.core.domain.session.SessionState
+import com.dev.lbsuhack.core.domain.session.SessionUser
+import com.dev.lbsuhack.feature.profile.data.ProfileRepositoryImpl
+import com.dev.lbsuhack.feature.profile.store.profile.ProfileStore
+import com.dev.lbsuhack.feature.profile.store.profile.ProfileStoreFactory
+import com.dev.lbsuhack.feature.profile.util.FakeSessionRepository
 import com.dev.lbsuhack.feature.profile.util.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -18,53 +25,70 @@ class ProfileStoreTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private fun createStore(): ProfileStore =
-        ProfileStoreFactory(storeFactory = DefaultStoreFactory()).create()
+    private val sessionUser = SessionUser(
+        id = 7L,
+        name = "Nikita",
+        email = "nikita@example.com",
+    )
+
+    private val sessionRepository = FakeSessionRepository(
+        initialState = SessionState.Authenticated(sessionUser),
+    )
+
+    private val profileRepository = ProfileRepositoryImpl()
+
+    private fun createStore(): ProfileStore = ProfileStoreFactory(
+        storeFactory = DefaultStoreFactory(),
+        profileRepository = profileRepository,
+        observeSession = ObserveSessionUseCase(sessionRepository),
+        clearSession = ClearSessionUseCase(sessionRepository),
+    ).create()
 
     @Test
-    fun `initial state has expected default profile values`() {
-        val store = createStore()
+    fun `load fills the state with the session user`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val store = createStore()
 
-        assertEquals("HackathonDev", store.state.username)
-        assertEquals("dev@hackathon.org", store.state.email)
-        assertTrue(store.state.notificationsEnabled)
-        assertEquals(12, store.state.savedItemsCount)
-    }
+            store.accept(ProfileStore.Intent.Load)
+            runCurrent()
 
-    @Test
-    fun `when SetUsername intent is dispatched then state username is updated`() {
-        val store = createStore()
-
-        store.accept(ProfileStore.Intent.SetUsername("AndroidChampion"))
-
-        assertEquals("AndroidChampion", store.state.username)
-    }
+            assertFalse(store.state.isLoading)
+            assertEquals("Nikita", store.state.name)
+            assertEquals("nikita@example.com", store.state.email)
+            assertEquals(0, store.state.savedCount)
+            assertTrue(store.state.notificationsEnabled)
+        }
 
     @Test
-    fun `when ToggleNotifications intent is dispatched then status is toggled and label is emitted`() = runTest(mainDispatcherRule.testDispatcher) {
-        val store = createStore()
-        assertTrue(store.state.notificationsEnabled)
+    fun `toggle notifications flips the flag`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val store = createStore()
 
-        store.labels.test {
             store.accept(ProfileStore.Intent.ToggleNotifications)
+            runCurrent()
 
             assertFalse(store.state.notificationsEnabled)
-            val label = awaitItem()
-            assertTrue(label is ProfileStore.Label.NotificationToggled)
-            assertFalse((label as ProfileStore.Label.NotificationToggled).enabled)
-            cancelAndIgnoreRemainingEvents()
         }
-    }
 
     @Test
-    fun `when IncrementSaved intent is dispatched then saved count increases`() {
-        val store = createStore()
-        val initialCount = store.state.savedItemsCount
+    fun `increment saved updates the counter`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val store = createStore()
 
-        store.accept(ProfileStore.Intent.IncrementSaved)
-        assertEquals(initialCount + 1, store.state.savedItemsCount)
+            store.accept(ProfileStore.Intent.IncrementSaved)
+            runCurrent()
 
-        store.accept(ProfileStore.Intent.IncrementSaved)
-        assertEquals(initialCount + 2, store.state.savedItemsCount)
-    }
+            assertEquals(1, store.state.savedCount)
+        }
+
+    @Test
+    fun `logout clears the session`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val store = createStore()
+
+            store.accept(ProfileStore.Intent.Logout)
+            runCurrent()
+
+            assertTrue(sessionRepository.cleared)
+        }
 }

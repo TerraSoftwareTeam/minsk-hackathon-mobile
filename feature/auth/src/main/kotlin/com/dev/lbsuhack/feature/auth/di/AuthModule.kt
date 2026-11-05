@@ -1,0 +1,37 @@
+package com.dev.lbsuhack.feature.auth.di
+
+import com.dev.lbsuhack.core.navigation.api.NavigationInstaller
+import com.dev.lbsuhack.feature.auth.data.AuthRepositoryImpl
+import com.dev.lbsuhack.feature.auth.domain.AuthRepository
+import com.dev.lbsuhack.feature.auth.navigation.AuthNavigationInstaller
+import com.dev.lbsuhack.feature.auth.presentation.login.LoginViewModel
+import com.dev.lbsuhack.feature.auth.presentation.register.RegisterViewModel
+import com.dev.lbsuhack.feature.auth.store.login.LoginStoreFactory
+import com.dev.lbsuhack.feature.auth.store.register.RegisterStoreFactory
+import org.koin.core.module.dsl.viewModelOf
+import org.koin.dsl.bind
+import org.koin.dsl.module
+
+val authModule = module {
+    single<AuthRepository> { AuthRepositoryImpl() }
+
+    single {
+        LoginStoreFactory(
+            storeFactory = get(),
+            authRepository = get(),
+            saveSession = get(),
+        )
+    }
+    single {
+        RegisterStoreFactory(
+            storeFactory = get(),
+            authRepository = get(),
+            saveSession = get(),
+        )
+    }
+
+    viewModelOf(::LoginViewModel)
+    viewModelOf(::RegisterViewModel)
+
+    single { AuthNavigationInstaller() } bind NavigationInstaller::class
+}

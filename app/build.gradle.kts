@@ -91,6 +91,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
@@ -109,12 +110,15 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     // Core & Feature Modules
+    implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
+    implementation(project(":core:domain"))
     implementation(project(":core:localization"))
     implementation(project(":core:navigation"))
     implementation(project(":core:network"))
     implementation(project(":layers"))
-    implementation(project(":feature:home"))
+    implementation(project(":feature:auth"))
+    implementation(project(":feature:feed"))
     implementation(project(":feature:profile"))
 
     // MVIKotlin

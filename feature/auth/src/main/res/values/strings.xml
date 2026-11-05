@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="auth_brand">kola</string>
+    <string name="auth_brand_tagline">Cleanups &amp; Eco Community</string>
+    <string name="auth_brand_badge">Urban Eco Movement</string>
+    <string name="auth_login_title">Welcome back</string>
+    <string name="auth_login_subtitle">Join cleanups, team up with neighbors, and make your city cleaner.</string>
+    <string name="auth_register_top_title">Registration</string>
+    <string name="auth_register_title">Join kola</string>
+    <string name="auth_register_subtitle">Create your eco-volunteer account and start organizing or joining local cleanups.</string>
+
+    <string name="auth_feature_cleanup">City cleanups</string>
+    <string name="auth_feature_teams">Eco teams</string>
+    <string name="auth_feature_points">Green impact</string>
+
+    <string name="auth_name">Name</string>
+    <string name="auth_name_placeholder">Your name</string>
+    <string name="auth_email">Email</string>
+    <string name="auth_email_placeholder">name@example.com</string>
+    <string name="auth_password">Password</string>
+    <string name="auth_password_placeholder">At least 6 characters</string>
+
+    <string name="auth_login_action">Sign in to kola</string>
+    <string name="auth_register_action">Create account</string>
+    <string name="auth_no_account_prompt">Don\'t have an account?</string>
+    <string name="auth_open_register">Register</string>
+    <string name="auth_has_account_prompt">Already have an account?</string>
+    <string name="auth_open_login">Sign in</string>
+    <string name="auth_back">Back</string>
+
+    <string name="auth_demo_hint">Demo mode: enter any valid email and 6+ character password to enter.</string>
+
+    <string name="auth_error_validation">Please check your input: valid email and at least 6 password characters required.</string>
+    <string name="auth_error_network">Network is unavailable. Please try again.</string>
+    <string name="auth_error_credentials">Email or password is incorrect.</string>
+    <string name="auth_error_forbidden">Access is denied.</string>
+    <string name="auth_error_unknown">Something went wrong. Please try again.</string>
+
+    <string name="auth_password_show">Show password</string>
+    <string name="auth_password_hide">Hide password</string>
+</resources>
