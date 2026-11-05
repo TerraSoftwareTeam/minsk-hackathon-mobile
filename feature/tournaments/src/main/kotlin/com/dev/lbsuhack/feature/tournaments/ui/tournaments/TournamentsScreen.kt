@@ -1,27 +1,15 @@
 package com.dev.lbsuhack.feature.tournaments.ui.tournaments
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -35,9 +23,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.dev.lbsuhack.core.designsystem.theme.HackMonoTextStyle
 import com.dev.lbsuhack.core.designsystem.theme.hack
 import com.dev.lbsuhack.core.localization.text.asString
 import com.dev.lbsuhack.feature.tournaments.R
@@ -65,53 +51,11 @@ fun TournamentsScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(2.dp),
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(width = 4.dp, height = 18.dp),
-                        ) {}
-                        Column {
-                            Text(
-                                text = "ЛІГА // СЕТКА ТУРНИРА",
-                                style = HackMonoTextStyle.copy(
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 0.5.sp,
-                                ),
-                                color = MaterialTheme.colorScheme.onBackground,
-                            )
-                            Text(
-                                text = "ИНТЕРАКТИВНАЯ ДОСКА ПЛЕЙ-ОФФ",
-                                style = HackMonoTextStyle.copy(
-                                    fontSize = 9.sp,
-                                    letterSpacing = 0.5.sp,
-                                ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                },
-                actions = {
-                    Surface(
-                        shape = RoundedCornerShape(2.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
-                        modifier = Modifier.padding(end = 16.dp),
-                    ) {
-                        Text(
-                            text = "v1.0",
-                            style = HackMonoTextStyle.copy(
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.SemiBold,
-                            ),
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        )
-                    }
+                    Text(
+                        text = stringResource(R.string.tournaments_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
@@ -161,28 +105,16 @@ fun TournamentsScreen(
                             thickness = 1.dp,
                         )
 
-                        AnimatedContent(
-                            targetState = state.bracket,
-                            transitionSpec = {
-                                (fadeIn(animationSpec = tween(220)) + slideInHorizontally { width -> (width * 0.08f).toInt() })
-                                    .togetherWith(fadeOut(animationSpec = tween(180)))
-                            },
-                            label = "bracketTransition",
+                        TournamentBracketBoard(
+                            bracket = state.bracket!!,
+                            selectedMatchId = state.selectedMatch?.id,
+                            onSelectMatch = { viewModel.accept(TournamentsStore.Intent.SelectMatch(it)) },
+                            resetTrigger = state.resetViewportTrigger,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .weight(1f)
                                 .clipToBounds(),
-                        ) { targetBracket ->
-                            if (targetBracket != null) {
-                                TournamentBracketBoard(
-                                    bracket = targetBracket,
-                                    selectedMatchId = state.selectedMatch?.id,
-                                    onSelectMatch = { viewModel.accept(TournamentsStore.Intent.SelectMatch(it)) },
-                                    resetTrigger = state.resetViewportTrigger,
-                                    modifier = Modifier.fillMaxSize(),
-                                )
-                            }
-                        }
+                        )
                     }
                 }
             }

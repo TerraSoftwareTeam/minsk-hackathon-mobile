@@ -1,26 +1,15 @@
 package com.dev.lbsuhack.feature.tournaments.ui.board
 
-import androidx.compose.animation.core.EaseInOut
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -37,7 +26,6 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
@@ -194,18 +182,7 @@ internal fun TournamentBracketBoard(
 
     val primaryColor = MaterialTheme.colorScheme.primary
     val outlineColor = MaterialTheme.colorScheme.outlineVariant
-    val glowColor = MaterialTheme.hack.glow
-
-    val infiniteTransition = rememberInfiniteTransition(label = "connectorPulse")
-    val glowPulse by infiniteTransition.animateFloat(
-        initialValue = 0.2f,
-        targetValue = 0.6f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1100, easing = EaseInOut),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "glowPulse",
-    )
+    val successColor = MaterialTheme.hack.success
 
     Box(
         modifier = modifier
@@ -261,43 +238,11 @@ internal fun TournamentBracketBoard(
                             lineTo(currLeftX, currSlot1Y)
                         }
 
-                        if (isP1Winner) {
-                            drawPath(
-                                path = path1,
-                                color = glowColor.copy(alpha = glowPulse),
-                                style = Stroke(
-                                    width = 5.5f * density * scale,
-                                    cap = StrokeCap.Round,
-                                ),
-                            )
-                            drawPath(
-                                path = path1,
-                                color = primaryColor,
-                                style = Stroke(
-                                    width = 2.2f * density * scale,
-                                    cap = StrokeCap.Square,
-                                ),
-                            )
-                            drawCircle(
-                                color = primaryColor,
-                                radius = 3.5f * density * scale,
-                                center = Offset(currLeftX, currSlot1Y),
-                            )
-                        } else {
-                            drawPath(
-                                path = path1,
-                                color = outlineColor.copy(alpha = 0.45f),
-                                style = Stroke(
-                                    width = 1.2f * density * scale,
-                                    cap = StrokeCap.Square,
-                                ),
-                            )
-                            drawCircle(
-                                color = outlineColor.copy(alpha = 0.6f),
-                                radius = 2.5f * density * scale,
-                                center = Offset(currLeftX, currSlot1Y),
-                            )
-                        }
+                        drawPath(
+                            path = path1,
+                            color = if (isP1Winner) primaryColor else outlineColor.copy(alpha = 0.5f),
+                            style = Stroke(width = if (isP1Winner) 2.5f * density * scale else 1.5f * density * scale),
+                        )
                     }
 
                     if (parent2 != null) {
@@ -315,43 +260,11 @@ internal fun TournamentBracketBoard(
                             lineTo(currLeftX, currSlot2Y)
                         }
 
-                        if (isP2Winner) {
-                            drawPath(
-                                path = path2,
-                                color = glowColor.copy(alpha = glowPulse),
-                                style = Stroke(
-                                    width = 5.5f * density * scale,
-                                    cap = StrokeCap.Round,
-                                ),
-                            )
-                            drawPath(
-                                path = path2,
-                                color = primaryColor,
-                                style = Stroke(
-                                    width = 2.2f * density * scale,
-                                    cap = StrokeCap.Square,
-                                ),
-                            )
-                            drawCircle(
-                                color = primaryColor,
-                                radius = 3.5f * density * scale,
-                                center = Offset(currLeftX, currSlot2Y),
-                            )
-                        } else {
-                            drawPath(
-                                path = path2,
-                                color = outlineColor.copy(alpha = 0.45f),
-                                style = Stroke(
-                                    width = 1.2f * density * scale,
-                                    cap = StrokeCap.Square,
-                                ),
-                            )
-                            drawCircle(
-                                color = outlineColor.copy(alpha = 0.6f),
-                                radius = 2.5f * density * scale,
-                                center = Offset(currLeftX, currSlot2Y),
-                            )
-                        }
+                        drawPath(
+                            path = path2,
+                            color = if (isP2Winner) primaryColor else outlineColor.copy(alpha = 0.5f),
+                            style = Stroke(width = if (isP2Winner) 2.5f * density * scale else 1.5f * density * scale),
+                        )
                     }
                 }
             }
@@ -382,7 +295,7 @@ internal fun TournamentBracketBoard(
 
         val stickyY = (12f * density).roundToInt()
 
-        roundHeaders.forEachIndexed { rIndex, header ->
+        roundHeaders.forEach { header ->
             val screenX = (header.boardX * scale + panOffset.x).roundToInt()
 
             Surface(
@@ -394,31 +307,21 @@ internal fun TournamentBracketBoard(
                         transformOrigin = TransformOrigin(0f, 0f)
                     }
                     .zIndex(2f),
-                shape = RoundedCornerShape(2.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.95f),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
+                shape = MaterialTheme.shapes.small,
+                color = MaterialTheme.colorScheme.surface,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 shadowElevation = 4.dp,
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(1.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(width = 3.dp, height = 10.dp),
-                    ) {}
-                    Text(
-                        text = "[ 0${rIndex + 1} // ${header.title.uppercase()} ]",
-                        style = HackMonoTextStyle.copy(
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.8.sp,
-                        ),
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
+                Text(
+                    text = header.title.uppercase(),
+                    style = HackMonoTextStyle.copy(
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                    ),
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                )
             }
         }
 
@@ -456,18 +359,21 @@ private fun FloatingBoardControls(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(4.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.96f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
-        shadowElevation = 6.dp,
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shadowElevation = 4.dp,
     ) {
         Column(
-            modifier = Modifier.width(38.dp),
+            modifier = Modifier.padding(4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            IconButton(
+            FilledTonalIconButton(
                 onClick = onZoomIn,
-                modifier = Modifier.size(36.dp),
+                modifier = Modifier.size(38.dp),
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = Color.Transparent,
+                ),
             ) {
                 Text(
                     text = "+",
@@ -476,14 +382,12 @@ private fun FloatingBoardControls(
                 )
             }
 
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                thickness = 1.dp,
-            )
-
-            IconButton(
+            FilledTonalIconButton(
                 onClick = onZoomOut,
-                modifier = Modifier.size(36.dp),
+                modifier = Modifier.size(38.dp),
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = Color.Transparent,
+                ),
             ) {
                 Text(
                     text = "–",
@@ -492,22 +396,16 @@ private fun FloatingBoardControls(
                 )
             }
 
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                thickness = 1.dp,
-            )
-
-            IconButton(
+            FilledTonalIconButton(
                 onClick = onReset,
-                modifier = Modifier.size(36.dp),
+                modifier = Modifier.size(38.dp),
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = Color.Transparent,
+                ),
             ) {
                 Text(
                     text = "1:1",
-                    style = HackMonoTextStyle.copy(
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp,
-                    ),
+                    style = HackMonoTextStyle.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
