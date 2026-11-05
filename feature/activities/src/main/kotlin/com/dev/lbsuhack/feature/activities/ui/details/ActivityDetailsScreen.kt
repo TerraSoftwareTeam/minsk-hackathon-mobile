@@ -44,7 +44,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -221,7 +220,6 @@ private fun StatusTimelineCard(status: ActivityStatus) {
                             .clip(CircleShape)
                             .background(
                                 when {
-                                    isCurrent && status == ActivityStatus.APPROVED -> MaterialTheme.hack.success
                                     isCurrent -> MaterialTheme.colorScheme.primary
                                     isCompleted -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                                     else -> MaterialTheme.colorScheme.surfaceVariant
@@ -263,58 +261,69 @@ private fun ApprovedBanner(proposal: ActivityProposal) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.large)
-            .background(Color(0xFF103319))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .padding(18.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = Icons.Default.CheckCircle,
                 contentDescription = null,
-                tint = Color(0xFF4CAF50),
-                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(22.dp),
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
                 text = stringResource(R.string.details_admin_approved_title),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = Color(0xFF4CAF50),
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        if (proposal.confirmedTime != null || proposal.confirmedLocation != null) {
+            Spacer(modifier = Modifier.height(14.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        MaterialTheme.colorScheme.surfaceContainerLow,
+                        MaterialTheme.shapes.medium,
+                    )
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (proposal.confirmedTime != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "${stringResource(R.string.details_confirmed_time_label)} ${proposal.confirmedTime}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
 
-        if (proposal.confirmedTime != null) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Schedule,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "${stringResource(R.string.details_confirmed_time_label)} ${proposal.confirmedTime}",
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = Color.White,
-                )
-            }
-        }
-
-        if (proposal.confirmedLocation != null) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "${stringResource(R.string.details_confirmed_location_label)} ${proposal.confirmedLocation}",
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = Color.White,
-                )
+                if (proposal.confirmedLocation != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "${stringResource(R.string.details_confirmed_location_label)} ${proposal.confirmedLocation}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
             }
         }
     }
@@ -326,28 +335,28 @@ private fun PendingAdminBanner() {
         modifier = Modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.large)
-            .background(Color(0xFF3E2310))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .padding(18.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = Icons.Default.HourglassEmpty,
                 contentDescription = null,
-                tint = Color(0xFFFF9800),
-                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(22.dp),
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
                 text = stringResource(R.string.details_admin_pending_title),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = Color(0xFFFF9800),
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = stringResource(R.string.details_admin_pending_desc),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -358,19 +367,28 @@ private fun ModeratingBanner() {
         modifier = Modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.large)
-            .background(Color(0xFF382F10))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .padding(18.dp),
     ) {
-        Text(
-            text = "🟡 ${stringResource(R.string.activities_status_moderating)}",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = Color(0xFFFFC107),
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Default.HourglassEmpty,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(22.dp),
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = stringResource(R.string.activities_status_moderating),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = stringResource(R.string.details_moderating_desc),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -391,8 +409,8 @@ private fun ActivityMainInfoCard(proposal: ActivityProposal) {
         ) {
             Text(
                 text = "${proposal.category.emoji()} ${stringResource(proposal.category.labelRes())}",
-                style = HackMonoTextStyle.copy(fontSize = 13.sp),
-                color = MaterialTheme.colorScheme.primary,
+                style = HackMonoTextStyle.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface,
             )
             StatusBadge(status = proposal.status)
         }
@@ -560,16 +578,19 @@ private fun InteractiveSimulationSection(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.medium,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.hack.success,
+                    containerColor = MaterialTheme.colorScheme.primary,
                 ),
             ) {
-                Text(stringResource(R.string.details_simulate_approve))
+                Text(
+                    text = stringResource(R.string.details_simulate_approve),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
             }
         } else if (status == ActivityStatus.APPROVED) {
             Text(
                 text = "✓ Заявка прошла все стадии и утверждена школой.",
                 style = HackMonoTextStyle.copy(fontSize = 12.sp),
-                color = MaterialTheme.hack.success,
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
     }
@@ -596,7 +617,7 @@ private fun DetailsBottomBar(
                 Text(
                     text = stringResource(R.string.details_author_badge),
                     style = HackMonoTextStyle.copy(fontSize = 11.sp),
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 6.dp),
                 )
             }
@@ -613,7 +634,7 @@ private fun DetailsBottomBar(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.hack.success,
+                        tint = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(

@@ -226,7 +226,7 @@ private fun ProfileIdentityCard(
                 Text(
                     text = pupilClass,
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
