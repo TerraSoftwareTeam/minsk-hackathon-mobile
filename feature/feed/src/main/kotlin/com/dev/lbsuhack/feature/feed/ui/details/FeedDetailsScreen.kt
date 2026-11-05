@@ -2,6 +2,7 @@ package com.dev.lbsuhack.feature.feed.ui.details
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,8 +26,6 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -43,22 +42,24 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.dev.lbsuhack.core.designsystem.theme.HackMonoTextStyle
 import com.dev.lbsuhack.core.designsystem.theme.hack
 import com.dev.lbsuhack.core.localization.text.asString
 import com.dev.lbsuhack.feature.feed.R
 import com.dev.lbsuhack.feature.feed.domain.FeedEvent
 import com.dev.lbsuhack.feature.feed.presentation.details.FeedDetailsViewModel
 import com.dev.lbsuhack.feature.feed.store.details.FeedDetailsStore
+import com.dev.lbsuhack.feature.feed.ui.feed.CapacityBadge
+import com.dev.lbsuhack.feature.feed.ui.feed.EventDateBadge
 import com.dev.lbsuhack.feature.feed.ui.feed.EventTag
+import com.dev.lbsuhack.feature.feed.ui.feed.SubscribedBadge
+import com.dev.lbsuhack.feature.feed.ui.feed.accent
 import com.dev.lbsuhack.feature.feed.ui.feed.labelRes
 import org.koin.androidx.compose.koinViewModel
 
@@ -76,30 +77,7 @@ fun FeedDetailsScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.background)
-                    .statusBarsPadding()
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.feed_details_back),
-                        tint = MaterialTheme.colorScheme.onBackground,
-                    )
-                }
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = stringResource(R.string.feed_details_title).uppercase(),
-                    style = HackMonoTextStyle,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        },
+        topBar = { DetailsTopBar(onBack = onBack) },
         bottomBar = {
             state.event?.let { event ->
                 SubscribeBar(
@@ -121,24 +99,11 @@ fun FeedDetailsScreen(
                 }
 
                 state.error != null && state.event == null -> {
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text(
-                            text = state.error!!.asString(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        TextButton(
-                            onClick = { viewModel.accept(FeedDetailsStore.Intent.Retry) },
-                        ) {
-                            Text(stringResource(R.string.feed_retry))
-                        }
-                    }
+                    DetailsError(
+                        message = state.error!!.asString(),
+                        onRetry = { viewModel.accept(FeedDetailsStore.Intent.Retry) },
+                        modifier = Modifier.align(Alignment.Center),
+                    )
                 }
 
                 else -> {
@@ -150,92 +115,148 @@ fun FeedDetailsScreen(
 }
 
 @Composable
+private fun DetailsTopBar(onBack: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.feed_details_back),
+                tint = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = stringResource(R.string.feed_details_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+    }
+}
+
+@Composable
+private fun DetailsError(
+    message: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        TextButton(onClick = onRetry) {
+            Text(stringResource(R.string.feed_retry))
+        }
+    }
+}
+
+@Composable
 private fun EventContent(event: FeedEvent) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(width = 60.dp, height = 72.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.medium),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = event.day,
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = event.month.uppercase(),
-                        style = HackMonoTextStyle.copy(fontSize = 10.sp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(event.category.labelRes()).uppercase(),
-                    style = HackMonoTextStyle.copy(fontSize = 10.sp),
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = event.title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-            }
-        }
-
+        EventHero(event = event)
         EventInfoCard(event = event)
 
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
-                text = stringResource(R.string.feed_details_about).uppercase(),
-                style = HackMonoTextStyle.copy(fontSize = 10.sp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = stringResource(R.string.feed_details_about),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
                 text = event.description,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
         if (event.tags.isNotEmpty()) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 event.tags.forEach { tag -> EventTag(text = tag) }
             }
         }
 
         ParticipantsCard(event = event)
+        Spacer(modifier = Modifier.height(4.dp))
+    }
+}
+
+@Composable
+private fun EventHero(event: FeedEvent) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                EventDateBadge(event = event)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = stringResource(event.category.labelRes()),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = event.category.accent().accent,
+                    )
+                    if (event.isSubscribed) {
+                        SubscribedBadge()
+                    }
+                }
+            }
+            Text(
+                text = event.title,
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = event.summary,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
 @Composable
 private fun EventInfoCard(event: FeedEvent) {
-    Card(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             InfoRow(
                 icon = Icons.Outlined.Schedule,
@@ -268,7 +289,7 @@ private fun InfoRow(
     ) {
         Box(
             modifier = Modifier
-                .size(36.dp)
+                .size(40.dp)
                 .background(
                     MaterialTheme.colorScheme.primaryContainer,
                     MaterialTheme.shapes.small,
@@ -278,20 +299,22 @@ private fun InfoRow(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(19.dp),
                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -300,20 +323,23 @@ private fun InfoRow(
 @Composable
 private fun ParticipantsCard(event: FeedEvent) {
     val isFull = event.participants >= event.capacity
+    val progress = if (event.capacity > 0) {
+        (event.participants.toFloat() / event.capacity).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
 
-    Card(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -322,30 +348,38 @@ private fun ParticipantsCard(event: FeedEvent) {
             ) {
                 Text(
                     text = stringResource(R.string.feed_details_participants),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onBackground,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = "${event.participants} / ${event.capacity}",
-                    style = HackMonoTextStyle,
-                    color = if (isFull) MaterialTheme.hack.danger else MaterialTheme.hack.success,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (isFull) {
+                        MaterialTheme.hack.danger
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
                 )
             }
             LinearProgressIndicator(
-                progress = {
-                    if (event.capacity > 0) {
-                        event.participants.toFloat() / event.capacity.toFloat()
-                    } else {
-                        0f
-                    }
-                },
+                progress = { progress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp),
                 strokeCap = StrokeCap.Round,
-                color = if (isFull) MaterialTheme.hack.danger else MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                color = if (isFull) {
+                    MaterialTheme.hack.danger
+                } else {
+                    event.category.accent().accent
+                },
+                trackColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                CapacityBadge(event = event)
+            }
         }
     }
 }
@@ -356,33 +390,22 @@ private fun SubscribeBar(
     isSubscribing: Boolean,
     onToggle: () -> Unit,
 ) {
-    Surface(color = MaterialTheme.colorScheme.background) {
+    val isFull = event.participants >= event.capacity && !event.isSubscribed
+    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column(modifier = Modifier.fillMaxWidth().navigationBarsPadding()) {
-            HorizontalDivider(color = MaterialTheme.hack.gridLine)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Button(
                 onClick = onToggle,
-                enabled = !isSubscribing,
+                enabled = !isSubscribing && !isFull,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 12.dp)
-                    .height(52.dp)
-                    .then(
-                        if (!event.isSubscribed) {
-                            Modifier.shadow(
-                                elevation = 16.dp,
-                                shape = MaterialTheme.shapes.small,
-                                ambientColor = MaterialTheme.hack.glow,
-                                spotColor = MaterialTheme.hack.glow,
-                            )
-                        } else {
-                            Modifier
-                        },
-                    ),
-                shape = MaterialTheme.shapes.small,
+                    .padding(horizontal = 20.dp, vertical = 14.dp)
+                    .height(54.dp),
+                shape = MaterialTheme.shapes.medium,
                 colors = if (event.isSubscribed) {
                     ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        containerColor = MaterialTheme.hack.successContainer,
+                        contentColor = MaterialTheme.hack.success,
                     )
                 } else {
                     ButtonDefaults.buttonColors()
@@ -395,7 +418,10 @@ private fun SubscribeBar(
                         color = LocalContentColor.current,
                     )
                     Spacer(modifier = Modifier.width(10.dp))
-                    Text(text = stringResource(R.string.feed_details_subscribing))
+                    Text(
+                        text = stringResource(R.string.feed_details_subscribing),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
                 } else if (event.isSubscribed) {
                     Icon(
                         imageVector = Icons.Default.Check,
@@ -405,11 +431,17 @@ private fun SubscribeBar(
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = stringResource(R.string.feed_details_subscribed),
+                        style = MaterialTheme.typography.titleSmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 } else {
-                    Text(text = stringResource(R.string.feed_details_subscribe))
+                    Text(
+                        text = stringResource(
+                            if (isFull) R.string.feed_no_seats else R.string.feed_details_subscribe,
+                        ),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
                 }
             }
         }

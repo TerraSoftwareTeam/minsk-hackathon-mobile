@@ -13,13 +13,14 @@
     <string name="feed_filter_lecture">Лекции</string>
 
     <string name="feed_card_subscribed">Записан</string>
+    <string name="feed_open_event">Подробнее</string>
     <string name="feed_no_seats">Мест нет</string>
 
     <plurals name="feed_seats_available">
-        <item quantity="one">%d место</item>
-        <item quantity="few">%d места</item>
-        <item quantity="many">%d мест</item>
-        <item quantity="other">%d места</item>
+        <item quantity="one">Осталось %d место</item>
+        <item quantity="few">Осталось %d места</item>
+        <item quantity="many">Осталось %d мест</item>
+        <item quantity="other">Осталось %d места</item>
     </plurals>
 
     <string name="feed_error_title">Не удалось загрузить ленту</string>

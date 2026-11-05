@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="requests_title">Заявки</string>
+    <string name="requests_title_teacher">Заявки на публикацию</string>
+    <string name="requests_title_admin">Согласование мероприятий</string>
+    <string name="requests_back">Назад</string>
+    <string name="requests_subtitle_teacher">Заявки от учеников вашего класса</string>
+    <string name="requests_subtitle_admin">Выезды и мероприятия, которым нужно согласование школы</string>
+
+    <string name="requests_tab_pending">На проверке (%1$d)</string>
+    <string name="requests_tab_processed">Обработанные</string>
+    <string name="requests_tab_all">Все</string>
+
+    <string name="requests_status_pending_teacher">Ожидает учителя</string>
+    <string name="requests_status_pending_admin">Ожидает администрацию</string>
+    <string name="requests_status_approved">Одобрено</string>
+    <string name="requests_status_declined">Отклонено</string>
+
+    <string name="requests_kind_publication">ПУБЛИКАЦИЯ</string>
+    <string name="requests_kind_visit">МЕРОПРИЯТИЕ</string>
+    <string name="requests_author_format">Автор: %1$s · %2$s</string>
+    <string name="requests_date_format">Желаемая дата: %1$s</string>
+    <string name="requests_location_format">Желаемое место: %1$s</string>
+    <string name="requests_confirmed_date_format">Подтверждённая дата: %1$s</string>
+    <string name="requests_confirmed_location_format">Подтверждённое место: %1$s</string>
+    <string name="requests_participants_title">Участники (%1$d)</string>
+    <string name="requests_decline_reason_format">Причина: %1$s</string>
+
+    <string name="requests_action_approve">Одобрить</string>
+    <string name="requests_action_decline">Отклонить</string>
+    <string name="requests_action_cancel">Отмена</string>
+
+    <string name="requests_dialog_approve_title">Подтвердить одобрение?</string>
+    <string name="requests_dialog_approve_teacher_text">Заявка будет одобрена и сможет попасть в ленту мероприятий.</string>
+    <string name="requests_dialog_approve_visit_text">Подтвердите дату и место проведения мероприятия.</string>
+    <string name="requests_dialog_decline_title">Отклонить заявку?</string>
+    <string name="requests_dialog_decline_text">Укажите причину, чтобы автор понял решение.</string>
+    <string name="requests_dialog_decline_reason_label">Причина (необязательно)</string>
+    <string name="requests_dialog_decline_reason_hint">Например: мероприятию нужно сопровождение взрослых</string>
+    <string name="requests_confirm_date_label">Подтверждённая дата</string>
+    <string name="requests_confirm_location_label">Подтверждённое место</string>
+
+    <string name="requests_empty_title">Здесь пока нет заявок</string>
+    <string name="requests_empty_pending_teacher">Новые заявки на публикацию от ваших учеников появятся здесь.</string>
+    <string name="requests_empty_pending_admin">Новые заявки на мероприятия и выезды появятся здесь.</string>
+    <string name="requests_empty_processed">Обработанные вами заявки появятся здесь.</string>
+    <string name="requests_empty_all">В этой очереди пока нет заявок.</string>
+
+    <string name="requests_access_denied_title">Нет доступа</string>
+    <string name="requests_access_denied_desc">Раздел доступен классным руководителям и администрации школы.</string>
+
+    <string name="requests_error_details_required">Заполните подтверждённые дату и место</string>
+    <string name="requests_error_action_failed">Не удалось обновить заявку. Попробуйте ещё раз</string>
+    <string name="requests_success_approved">Заявка одобрена</string>
+    <string name="requests_success_declined">Заявка отклонена</string>
+</resources>

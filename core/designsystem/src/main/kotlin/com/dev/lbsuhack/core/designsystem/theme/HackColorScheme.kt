@@ -6,42 +6,53 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 
 @Immutable
+data class HackAccent(
+    val accent: Color,
+    val container: Color,
+)
+
+@Immutable
 data class HackExtras(
     val glow: Color,
     val danger: Color,
     val success: Color,
+    val successContainer: Color,
     val gridLine: Color,
+    val violet: HackAccent,
+    val amber: HackAccent,
+    val green: HackAccent,
+    val pink: HackAccent,
 )
 
 val DarkHackColorScheme = darkColorScheme(
-    primary = Color(0xFF1D74F5),
+    primary = Color(0xFF4C8DFF),
     onPrimary = Color(0xFFFFFFFF),
     primaryContainer = Color(0xFF193259),
     onPrimaryContainer = Color(0xFFDCE8FF),
-    secondary = Color(0xFF3882F6),
-    onSecondary = Color(0xFFFFFFFF),
+    secondary = Color(0xFF7AA7FF),
+    onSecondary = Color(0xFF0B1D3B),
     secondaryContainer = Color(0xFF22242C),
     onSecondaryContainer = Color(0xFFD8E4FF),
-    tertiary = Color(0xFFFF9F1C),
-    onTertiary = Color(0xFFFFFFFF),
-    tertiaryContainer = Color(0xFF3D2700),
-    onTertiaryContainer = Color(0xFFFFDFA8),
-    background = Color(0xFF16171B),
-    onBackground = Color(0xFFFFFFFF),
-    surface = Color(0xFF202126),
-    onSurface = Color(0xFFFFFFFF),
-    surfaceVariant = Color(0xFF27282F),
-    onSurfaceVariant = Color(0xFF8E9099),
-    surfaceTint = Color(0xFF1D74F5),
-    surfaceBright = Color(0xFF2C2D35),
-    surfaceDim = Color(0xFF16171B),
-    surfaceContainerLowest = Color(0xFF101114),
-    surfaceContainerLow = Color(0xFF1B1C21),
-    surfaceContainer = Color(0xFF202126),
-    surfaceContainerHigh = Color(0xFF27282F),
-    surfaceContainerHighest = Color(0xFF30313A),
-    outline = Color(0xFF383A44),
-    outlineVariant = Color(0xFF282932),
+    tertiary = Color(0xFFFFC466),
+    onTertiary = Color(0xFF2D1B00),
+    tertiaryContainer = Color(0xFF3A2A0F),
+    onTertiaryContainer = Color(0xFFFFE4B0),
+    background = Color(0xFF0F1115),
+    onBackground = Color(0xFFF5F7FC),
+    surface = Color(0xFF171920),
+    onSurface = Color(0xFFF5F7FC),
+    surfaceVariant = Color(0xFF272A34),
+    onSurfaceVariant = Color(0xFFA3A9B8),
+    surfaceTint = Color(0xFF4C8DFF),
+    surfaceBright = Color(0xFF30343F),
+    surfaceDim = Color(0xFF0F1115),
+    surfaceContainerLowest = Color(0xFF0B0D11),
+    surfaceContainerLow = Color(0xFF191B22),
+    surfaceContainer = Color(0xFF1F2129),
+    surfaceContainerHigh = Color(0xFF272A34),
+    surfaceContainerHighest = Color(0xFF30343F),
+    outline = Color(0xFF414653),
+    outlineVariant = Color(0xFF2A2D38),
     error = Color(0xFFFF4757),
     onError = Color(0xFFFFFFFF),
     errorContainer = Color(0xFF3E151B),
@@ -86,15 +97,49 @@ val LightHackColorScheme = lightColorScheme(
 )
 
 val DarkHackExtras = HackExtras(
-    glow = Color(0x331D74F5),
-    danger = Color(0xFFFF4757),
-    success = Color(0xFF22C55E),
-    gridLine = Color(0xFF26272F),
+    glow = Color(0x334C8DFF),
+    danger = Color(0xFFFF5C6C),
+    success = Color(0xFF34D399),
+    successContainer = Color(0xFF12362A),
+    gridLine = Color(0xFF24262F),
+    violet = HackAccent(
+        accent = Color(0xFFC4B5FD),
+        container = Color(0xFF31264A),
+    ),
+    amber = HackAccent(
+        accent = Color(0xFFFFC466),
+        container = Color(0xFF3A2A0F),
+    ),
+    green = HackAccent(
+        accent = Color(0xFF4ADE80),
+        container = Color(0xFF143524),
+    ),
+    pink = HackAccent(
+        accent = Color(0xFFF9A8D4),
+        container = Color(0xFF3D2033),
+    ),
 )
 
 val LightHackExtras = HackExtras(
     glow = Color(0x1F2E5BFF),
     danger = Color(0xFFD62A45),
     success = Color(0xFF0F8A5F),
+    successContainer = Color(0xFFDDF6E9),
     gridLine = Color(0xFFDCE3F0),
+    violet = HackAccent(
+        accent = Color(0xFF6D28D9),
+        container = Color(0xFFEDE9FE),
+    ),
+    amber = HackAccent(
+        accent = Color(0xFF9A4E00),
+        container = Color(0xFFFFF0D6),
+    ),
+    green = HackAccent(
+        accent = Color(0xFF16794C),
+        container = Color(0xFFDCFCE7),
+    ),
+    pink = HackAccent(
+        accent = Color(0xFFA21C60),
+        container = Color(0xFFFCE7F3),
+    ),
 )

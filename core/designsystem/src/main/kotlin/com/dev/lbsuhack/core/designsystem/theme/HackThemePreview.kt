@@ -102,7 +102,7 @@ private fun DesignSystemShowcase(subtitle: String) {
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Text(
-                text = "Rounded 10–20 dp · no dynamic color · system bars synced",
+                text = "Rounded 8–28 dp · no dynamic color · system bars synced",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

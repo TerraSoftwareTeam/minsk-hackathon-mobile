@@ -14,6 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.FactCheck
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Settings
@@ -39,6 +40,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.feature.profile.R
 import com.dev.lbsuhack.feature.profile.presentation.profile.ProfileViewModel
 import com.dev.lbsuhack.feature.profile.store.profile.ProfileStore
@@ -49,6 +51,7 @@ import org.koin.androidx.compose.koinViewModel
 fun ProfileScreen(
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenRequests: (UserRole) -> Unit,
     viewModel: ProfileViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -97,6 +100,49 @@ fun ProfileScreen(
                 email = state.email.ifEmpty { "nikita@schools.by" },
                 pupilClass = state.pupilClass.ifEmpty { "10-А класс" },
             )
+
+            if (state.canReviewRequests) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.profile_requests),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        OutlinedButton(
+                            onClick = { onOpenRequests(UserRole.TEACHER) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp),
+                            shape = MaterialTheme.shapes.medium,
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.FactCheck,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.size(8.dp))
+                            Text(stringResource(R.string.profile_requests_teacher))
+                        }
+
+                        OutlinedButton(
+                            onClick = { onOpenRequests(UserRole.ORGANIZATOR) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp),
+                            shape = MaterialTheme.shapes.medium,
+                        ) {
+                            Text(stringResource(R.string.profile_requests_admin))
+                        }
+                    }
+                }
+            }
 
             Card(
                 modifier = Modifier.fillMaxWidth(),

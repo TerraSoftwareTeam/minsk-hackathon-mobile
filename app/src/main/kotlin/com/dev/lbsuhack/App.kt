@@ -12,6 +12,7 @@ import com.dev.lbsuhack.feature.auth.di.authModule
 import com.dev.lbsuhack.feature.events.di.eventsModule
 import com.dev.lbsuhack.feature.feed.di.feedModule
 import com.dev.lbsuhack.feature.profile.di.profileModule
+import com.dev.lbsuhack.feature.requests.di.requestsModule
 import com.dev.lbsuhack.layers.di.layersModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
@@ -40,6 +41,7 @@ class App : Application() {
                 eventsModule,
                 feedModule,
                 profileModule,
+                requestsModule,
             )
         }
     }

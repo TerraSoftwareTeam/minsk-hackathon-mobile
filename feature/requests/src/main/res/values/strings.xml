@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="requests_title">Requests</string>
+    <string name="requests_title_teacher">Publication requests</string>
+    <string name="requests_title_admin">Event approval</string>
+    <string name="requests_back">Back</string>
+    <string name="requests_subtitle_teacher">Requests from pupils of your class</string>
+    <string name="requests_subtitle_admin">Visits and events that need school approval</string>
+
+    <string name="requests_tab_pending">To review (%1$d)</string>
+    <string name="requests_tab_processed">Processed</string>
+    <string name="requests_tab_all">All</string>
+
+    <string name="requests_status_pending_teacher">Awaiting teacher</string>
+    <string name="requests_status_pending_admin">Awaiting administration</string>
+    <string name="requests_status_approved">Approved</string>
+    <string name="requests_status_declined">Declined</string>
+
+    <string name="requests_kind_publication">PUBLICATION</string>
+    <string name="requests_kind_visit">EVENT</string>
+    <string name="requests_author_format">Author: %1$s · %2$s</string>
+    <string name="requests_date_format">Requested date: %1$s</string>
+    <string name="requests_location_format">Requested place: %1$s</string>
+    <string name="requests_confirmed_date_format">Confirmed date: %1$s</string>
+    <string name="requests_confirmed_location_format">Confirmed place: %1$s</string>
+    <string name="requests_participants_title">Participants (%1$d)</string>
+    <string name="requests_decline_reason_format">Reason: %1$s</string>
+
+    <string name="requests_action_approve">Approve</string>
+    <string name="requests_action_decline">Decline</string>
+    <string name="requests_action_cancel">Cancel</string>
+
+    <string name="requests_dialog_approve_title">Confirm approval?</string>
+    <string name="requests_dialog_approve_teacher_text">The request will be approved and can be published in the feed.</string>
+    <string name="requests_dialog_approve_visit_text">Confirm the date and place of the event.</string>
+    <string name="requests_dialog_decline_title">Decline the request?</string>
+    <string name="requests_dialog_decline_text">Add a reason so the author understands the decision.</string>
+    <string name="requests_dialog_decline_reason_label">Reason (optional)</string>
+    <string name="requests_dialog_decline_reason_hint">For example: the event needs adult supervision</string>
+    <string name="requests_confirm_date_label">Confirmed date</string>
+    <string name="requests_confirm_location_label">Confirmed place</string>
+
+    <string name="requests_empty_title">No requests here yet</string>
+    <string name="requests_empty_pending_teacher">New publication requests from your pupils will appear here.</string>
+    <string name="requests_empty_pending_admin">New event and visit requests will appear here.</string>
+    <string name="requests_empty_processed">Requests you have already reviewed will appear here.</string>
+    <string name="requests_empty_all">There are no requests for this queue yet.</string>
+
+    <string name="requests_access_denied_title">No access</string>
+    <string name="requests_access_denied_desc">This section is available to class teachers and school administration.</string>
+
+    <string name="requests_error_details_required">Fill in the confirmed date and place</string>
+    <string name="requests_error_action_failed">Could not update the request. Try again</string>
+    <string name="requests_success_approved">Request approved</string>
+    <string name="requests_success_declined">Request declined</string>
+</resources>

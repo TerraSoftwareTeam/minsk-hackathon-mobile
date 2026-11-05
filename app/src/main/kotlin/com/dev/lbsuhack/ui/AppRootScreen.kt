@@ -24,6 +24,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
+import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.RestoreSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionState
@@ -40,6 +41,7 @@ import com.dev.lbsuhack.feature.activities.navigation.ActivitiesRoute
 import com.dev.lbsuhack.feature.auth.navigation.AuthLoginRoute
 import com.dev.lbsuhack.feature.feed.navigation.FeedRoute
 import com.dev.lbsuhack.feature.profile.navigation.ProfileRoute
+import com.dev.lbsuhack.feature.requests.navigation.RequestsRoute
 import com.dev.lbsuhack.navigation.AppNavigator
 import org.koin.compose.getKoin
 import org.koin.compose.koinInject
@@ -92,6 +94,10 @@ fun AppRootScreen(
                         object : AppNavigation {
                             override fun openProfile() {
                                 navigator.navigate(ProfileRoute)
+                            }
+
+                            override fun openRequests(role: UserRole) {
+                                navigator.navigate(RequestsRoute(role))
                             }
                         }
                     },
@@ -166,6 +172,7 @@ private fun AppNavHost(
 
 private object EmptyAppNavigation : AppNavigation {
     override fun openProfile() = Unit
+    override fun openRequests(role: UserRole) = Unit
 }
 
 private const val AUTH_HOST_KEY = "auth-host"

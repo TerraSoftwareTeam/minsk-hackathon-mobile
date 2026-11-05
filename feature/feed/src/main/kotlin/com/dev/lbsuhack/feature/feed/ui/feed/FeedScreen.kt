@@ -1,6 +1,8 @@
 package com.dev.lbsuhack.feature.feed.ui.feed
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,20 +16,25 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -35,13 +42,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.dev.lbsuhack.core.designsystem.theme.HackMonoTextStyle
+import com.dev.lbsuhack.core.designsystem.theme.HackAccent
 import com.dev.lbsuhack.core.designsystem.theme.hack
 import com.dev.lbsuhack.core.localization.text.asString
 import com.dev.lbsuhack.feature.feed.R
@@ -98,30 +107,11 @@ fun FeedScreen(
                     )
                 }
 
-                state.visibleEvents.isEmpty() -> {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        if (state.subscribedEvents.isNotEmpty()) {
-                            MyEventsSection(
-                                events = state.subscribedEvents,
-                                onOpenDetails = { eventId ->
-                                    viewModel.accept(FeedStore.Intent.ClickEvent(eventId))
-                                },
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                        }
-                        Box(
-                            modifier = Modifier.weight(1f),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            FeedEmpty(isFiltered = state.events.isNotEmpty())
-                        }
-                    }
-                }
-
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(top = 6.dp, bottom = 24.dp),
+                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         if (state.subscribedEvents.isNotEmpty()) {
                             item(key = "my_events") {
@@ -131,29 +121,27 @@ fun FeedScreen(
                                         viewModel.accept(FeedStore.Intent.ClickEvent(eventId))
                                     },
                                 )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(horizontal = 20.dp),
-                                    thickness = 1.dp,
-                                    color = MaterialTheme.hack.gridLine,
-                                )
                             }
                         }
-                        itemsIndexed(
-                            state.visibleEvents,
-                            key = { _, event -> event.id },
-                        ) { index, event ->
-                            EventListItem(
-                                event = event,
-                                onClick = {
-                                    viewModel.accept(FeedStore.Intent.ClickEvent(event.id))
-                                },
-                            )
-                            if (index < state.visibleEvents.lastIndex) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(horizontal = 20.dp),
-                                    thickness = 1.dp,
-                                    color = MaterialTheme.hack.gridLine,
+
+                        if (state.visibleEvents.isEmpty()) {
+                            item(key = "empty_feed") {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(320.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    FeedEmpty(isFiltered = state.events.isNotEmpty())
+                                }
+                            }
+                        } else {
+                            items(state.visibleEvents, key = FeedEvent::id) { event ->
+                                EventCard(
+                                    event = event,
+                                    onClick = {
+                                        viewModel.accept(FeedStore.Intent.ClickEvent(event.id))
+                                    },
                                 )
                             }
                         }
@@ -175,7 +163,7 @@ private fun FeedTopBar(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
-            .padding(top = 12.dp, bottom = 10.dp),
+            .padding(top = 20.dp, bottom = 16.dp),
     ) {
         Row(
             modifier = Modifier
@@ -185,43 +173,50 @@ private fun FeedTopBar(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(R.string.feed_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
                     text = stringResource(R.string.feed_subtitle),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.feed_title),
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
             }
+            Spacer(modifier = Modifier.width(16.dp))
             ProfileAvatar(onOpenProfile = onOpenProfile)
         }
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
         FeedFilters(
             selectedCategory = selectedCategory,
             onSelectCategory = onSelectCategory,
-            modifier = Modifier.padding(horizontal = 20.dp),
         )
-        Spacer(modifier = Modifier.height(14.dp))
-        HorizontalDivider(color = MaterialTheme.hack.gridLine)
     }
 }
 
 @Composable
 private fun ProfileAvatar(onOpenProfile: () -> Unit) {
+    val openProfileLabel = stringResource(R.string.feed_open_profile)
     Box(
         modifier = Modifier
-            .size(40.dp)
-            .background(MaterialTheme.colorScheme.primary, CircleShape)
-            .clickable(onClick = onOpenProfile),
+            .size(48.dp)
+            .background(MaterialTheme.colorScheme.primaryContainer, CircleShape)
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.28f),
+                shape = CircleShape,
+            )
+            .clickable(
+                onClickLabel = openProfileLabel,
+                onClick = onOpenProfile,
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = CurrentUserInitials,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onPrimary,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
         )
     }
 }
@@ -230,10 +225,10 @@ private fun ProfileAvatar(onOpenProfile: () -> Unit) {
 private fun FeedFilters(
     selectedCategory: EventCategory?,
     onSelectCategory: (EventCategory?) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     LazyRow(
-        modifier = modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {
@@ -263,9 +258,9 @@ private fun FeedFilterChip(
         selected = selected,
         onClick = onClick,
         label = { Text(text = text, style = MaterialTheme.typography.labelLarge) },
-        shape = MaterialTheme.shapes.small,
+        shape = CircleShape,
         colors = FilterChipDefaults.filterChipColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
             labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
             selectedContainerColor = MaterialTheme.colorScheme.primary,
             selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
@@ -281,22 +276,30 @@ internal fun EventCategory.labelRes(): Int = when (this) {
 }
 
 @Composable
+internal fun EventCategory.accent(): HackAccent {
+    val extras = MaterialTheme.hack
+    return when (this) {
+        EventCategory.HACKATHON -> extras.violet
+        EventCategory.MEETUP -> extras.amber
+        EventCategory.WORKSHOP -> extras.green
+        EventCategory.LECTURE -> extras.pink
+    }
+}
+
+@Composable
 private fun MyEventsSection(
     events: List<FeedEvent>,
     onOpenDetails: (String) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = stringResource(R.string.feed_my_events),
-            style = HackMonoTextStyle.copy(fontSize = 11.sp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 20.dp),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
         )
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         LazyRow(
-            contentPadding = PaddingValues(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(events, key = FeedEvent::id) { event ->
                 MyEventCard(
@@ -313,115 +316,286 @@ private fun MyEventCard(
     event: FeedEvent,
     onClick: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .size(width = 232.dp, height = 116.dp)
-            .background(MaterialTheme.colorScheme.surfaceContainerLow, MaterialTheme.shapes.large)
-            .clickable(onClick = onClick)
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+    val categoryAccent = event.category.accent()
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.width(264.dp),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                modifier = Modifier.size(14.dp),
-                tint = MaterialTheme.hack.success,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "${event.day} ${event.month}",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = categoryAccent.accent,
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                SubscribedBadge()
+            }
+            Text(
+                text = event.title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = stringResource(R.string.feed_card_subscribed),
-                style = HackMonoTextStyle.copy(fontSize = 11.sp),
-                color = MaterialTheme.hack.success,
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Text(
-                text = "${event.day} ${event.month}",
-                style = HackMonoTextStyle.copy(fontSize = 11.sp),
+                text = "${event.time} · ${event.place}",
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
-        Text(
-            text = event.title,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Text(
-            text = event.time,
-            style = HackMonoTextStyle.copy(fontSize = 12.sp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
 @Composable
-private fun EventListItem(
+private fun EventCard(
     event: FeedEvent,
     onClick: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
+    val categoryAccent = event.category.accent()
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
-        Text(
-            text = "${event.day} ${event.month}",
-            style = HackMonoTextStyle,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = event.title,
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "${event.time} · ${event.place}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = event.summary,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        EventStatus(event = event)
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                EventDateBadge(event = event)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(event.category.labelRes()),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = categoryAccent.accent,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = event.title,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+
+            Text(
+                text = event.summary,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                EventMetaRow(
+                    icon = { Icon(Icons.Outlined.Schedule, contentDescription = null) },
+                    text = event.time,
+                )
+                EventMetaRow(
+                    icon = { Icon(Icons.Outlined.LocationOn, contentDescription = null) },
+                    text = event.place,
+                )
+            }
+
+            ParticipantsProgress(event = event)
+
+            Button(
+                onClick = onClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = MaterialTheme.shapes.medium,
+            ) {
+                Text(
+                    text = stringResource(R.string.feed_open_event),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun EventStatus(event: FeedEvent) {
-    val seatsLeft = event.capacity - event.participants
-
-    if (seatsLeft <= 0) {
+private fun EventMetaRow(
+    icon: @Composable () -> Unit,
+    text: String,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(modifier = Modifier.size(16.dp), contentAlignment = Alignment.Center) {
+            icon()
+        }
         Text(
-            text = stringResource(R.string.feed_no_seats),
-            style = HackMonoTextStyle.copy(fontSize = 12.sp),
-            color = MaterialTheme.hack.danger,
-        )
-    } else {
-        Text(
-            text = pluralStringResource(
-                R.plurals.feed_seats_available,
-                seatsLeft,
-                seatsLeft,
-            ),
-            style = HackMonoTextStyle.copy(fontSize = 12.sp),
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
+    }
+}
+
+@Composable
+internal fun EventDateBadge(
+    event: FeedEvent,
+    modifier: Modifier = Modifier,
+) {
+    val categoryAccent = event.category.accent()
+    Surface(
+        modifier = modifier.size(width = 60.dp, height = 68.dp),
+        shape = MaterialTheme.shapes.medium,
+        color = categoryAccent.container,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = event.day,
+                style = MaterialTheme.typography.titleLarge,
+                color = categoryAccent.accent,
+            )
+            Text(
+                text = event.month.uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = categoryAccent.accent,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ParticipantsProgress(event: FeedEvent) {
+    val progress = if (event.capacity > 0) {
+        (event.participants.toFloat() / event.capacity).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.feed_details_participants),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "${event.participants} / ${event.capacity}",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            CapacityBadge(event = event)
+        }
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp),
+            color = event.category.accent().accent,
+            trackColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            strokeCap = StrokeCap.Round,
+        )
+    }
+}
+
+@Composable
+internal fun CapacityBadge(event: FeedEvent) {
+    val seatsLeft = (event.capacity - event.participants).coerceAtLeast(0)
+    val isFull = seatsLeft == 0
+    val background = if (isFull) {
+        MaterialTheme.colorScheme.errorContainer
+    } else {
+        MaterialTheme.colorScheme.primaryContainer
+    }
+    val foreground = if (isFull) {
+        MaterialTheme.hack.danger
+    } else {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    }
+    val label = if (isFull) {
+        stringResource(R.string.feed_no_seats)
+    } else {
+        pluralStringResource(R.plurals.feed_seats_available, seatsLeft, seatsLeft)
+    }
+    StatusBadge(
+        text = label,
+        background = background,
+        foreground = foreground,
+    )
+}
+
+@Composable
+internal fun SubscribedBadge() {
+    StatusBadge(
+        text = stringResource(R.string.feed_card_subscribed),
+        background = MaterialTheme.hack.successContainer,
+        foreground = MaterialTheme.hack.success,
+        leadingIcon = true,
+    )
+}
+
+@Composable
+private fun StatusBadge(
+    text: String,
+    background: Color,
+    foreground: Color,
+    leadingIcon: Boolean = false,
+) {
+    Surface(
+        shape = CircleShape,
+        color = background,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            if (leadingIcon) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(12.dp),
+                    tint = foreground,
+                )
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelSmall,
+                color = foreground,
+                maxLines = 1,
+            )
+        }
     }
 }
 
@@ -429,11 +603,11 @@ private fun EventStatus(event: FeedEvent) {
 internal fun EventTag(text: String) {
     Text(
         text = "#$text",
-        style = HackMonoTextStyle.copy(fontSize = 10.sp),
-        color = MaterialTheme.colorScheme.secondary,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
-            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.extraSmall)
-            .padding(horizontal = 6.dp, vertical = 3.dp),
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.shapes.small)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
     )
 }
 
@@ -450,13 +624,15 @@ private fun FeedError(
     ) {
         Text(
             text = stringResource(R.string.feed_error_title),
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
         )
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
         )
         TextButton(onClick = onRetry) {
             Text(stringResource(R.string.feed_retry))
@@ -476,8 +652,9 @@ private fun FeedEmpty(
     ) {
         Text(
             text = stringResource(R.string.feed_empty_title),
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
         )
         Text(
             text = if (isFiltered) {
@@ -487,6 +664,7 @@ private fun FeedEmpty(
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
         )
     }
 }

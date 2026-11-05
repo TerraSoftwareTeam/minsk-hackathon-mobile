@@ -1,6 +1,7 @@
 package com.dev.lbsuhack.feature.profile.store
 
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
+import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.domain.session.ClearSessionUseCase
 import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionState
@@ -57,6 +58,28 @@ class ProfileStoreTest {
             assertEquals("School #1", store.state.email)
             assertEquals(0, store.state.savedCount)
             assertTrue(store.state.notificationsEnabled)
+            assertFalse(store.state.canReviewRequests)
+        }
+
+    @Test
+    fun `teacher can open the requests section`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val teacherRepository = FakeSessionRepository(
+                initialState = SessionState.Authenticated(
+                    sessionUser.copy(role = UserRole.TEACHER),
+                ),
+            )
+            val store = ProfileStoreFactory(
+                storeFactory = DefaultStoreFactory(),
+                profileRepository = profileRepository,
+                observeSession = ObserveSessionUseCase(teacherRepository),
+                clearSession = ClearSessionUseCase(teacherRepository),
+            ).create()
+
+            store.accept(ProfileStore.Intent.Load)
+            runCurrent()
+
+            assertTrue(store.state.canReviewRequests)
         }
 
     @Test

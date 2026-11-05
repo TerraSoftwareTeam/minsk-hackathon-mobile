@@ -173,7 +173,7 @@ class DefaultUserRepository(
             surname = surname,
             fathersName = fathersName,
             schoolsById = schoolsById,
-            schoolName = schoolName,
+            schoolName = null,
             pupilClass = propertyClass.orEmpty(),
         )
         UserResponseDto.Role.TEACHER -> User.Teacher(
@@ -182,9 +182,9 @@ class DefaultUserRepository(
             surname = surname,
             fathersName = fathersName,
             schoolsById = schoolsById,
-            schoolName = schoolName,
+            schoolName = null,
         )
-        UserResponseDto.Role.ORGANIZATOR -> User.Organizator(
+        UserResponseDto.Role.ADMIN -> User.Organizator(
             id = id,
             name = name,
             surname = surname,

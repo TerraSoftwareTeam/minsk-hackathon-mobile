@@ -122,6 +122,7 @@ dependencies {
     implementation(project(":feature:events"))
     implementation(project(":feature:feed"))
     implementation(project(":feature:profile"))
+    implementation(project(":feature:requests"))
 
     // MVIKotlin
     implementation(libs.bundles.mvikotlin)

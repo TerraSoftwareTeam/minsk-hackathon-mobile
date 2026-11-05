@@ -79,7 +79,7 @@ class AuthRepositoryImpl(
             val response: HttpResponse = httpClient.post("api/v1/auth/login") {
                 setBody(
                     LoginDto(
-                        role = LoginDto.Role.ORGANIZATOR,
+                        role = LoginDto.Role.ADMIN,
                         id = organizerId,
                     )
                 )
@@ -163,7 +163,7 @@ class AuthRepositoryImpl(
                         fathersName = fathersName,
                         role = registerRole,
                         propertyClass = pupilClass,
-                        schoolName = schoolName,
+                        
                     )
                 )
             }
@@ -209,7 +209,7 @@ class AuthRepositoryImpl(
         surname = surname,
         fathersName = fathersName,
         schoolsById = schoolsById,
-        schoolName = schoolName,
+        schoolName = null,
         role = role.toDomainRole(),
         pupilClass = propertyClass,
     )
@@ -221,7 +221,7 @@ class AuthRepositoryImpl(
             surname = surname,
             fathersName = fathersName,
             schoolsById = schoolsById,
-            schoolName = schoolName,
+            schoolName = null,
             pupilClass = propertyClass.orEmpty(),
         )
         UserRole.TEACHER -> User.Teacher(
@@ -230,7 +230,7 @@ class AuthRepositoryImpl(
             surname = surname,
             fathersName = fathersName,
             schoolsById = schoolsById,
-            schoolName = schoolName,
+            schoolName = null,
         )
         UserRole.ORGANIZATOR -> User.Organizator(
             id = id,
@@ -243,7 +243,7 @@ class AuthRepositoryImpl(
     private fun UserResponseDto.Role.toDomainRole(): UserRole = when (this) {
         UserResponseDto.Role.PUPIL -> UserRole.PUPIL
         UserResponseDto.Role.TEACHER -> UserRole.TEACHER
-        UserResponseDto.Role.ORGANIZATOR -> UserRole.ORGANIZATOR
+        UserResponseDto.Role.ADMIN -> UserRole.ORGANIZATOR
     }
 
     private companion object {

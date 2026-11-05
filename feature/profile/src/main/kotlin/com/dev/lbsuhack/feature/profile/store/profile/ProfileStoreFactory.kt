@@ -4,6 +4,7 @@ import com.arkivanov.mvikotlin.core.store.Reducer
 import com.arkivanov.mvikotlin.core.store.Store
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
+import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.domain.session.ClearSessionUseCase
 import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionState
@@ -31,6 +32,7 @@ class ProfileStoreFactory(
             val name: String,
             val email: String,
             val pupilClass: String,
+            val role: UserRole,
             val notificationsEnabled: Boolean,
             val savedCount: Int,
         ) : Message
@@ -60,6 +62,7 @@ class ProfileStoreFactory(
                         name = user?.name.orEmpty(),
                         email = user?.schoolName ?: user?.schoolsById.orEmpty(),
                         pupilClass = user?.pupilClass.orEmpty(),
+                        role = user?.role ?: UserRole.PUPIL,
                         notificationsEnabled = profileRepository.isNotificationsEnabled(),
                         savedCount = profileRepository.savedCount(),
                     ),
@@ -94,6 +97,7 @@ class ProfileStoreFactory(
                 name = msg.name,
                 email = msg.email,
                 pupilClass = msg.pupilClass,
+                role = msg.role,
                 notificationsEnabled = msg.notificationsEnabled,
                 savedCount = msg.savedCount,
                 isLoading = false,

@@ -27,6 +27,7 @@ dependencies {
     kover(project(":feature:events"))
     kover(project(":feature:feed"))
     kover(project(":feature:profile"))
+    kover(project(":feature:requests"))
     kover(project(":layers"))
 }
 

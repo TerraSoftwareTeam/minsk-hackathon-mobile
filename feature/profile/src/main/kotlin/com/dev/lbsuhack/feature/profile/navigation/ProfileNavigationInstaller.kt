@@ -2,6 +2,7 @@ package com.dev.lbsuhack.feature.profile.navigation
 
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import com.dev.lbsuhack.core.navigation.api.LocalAppNavigation
 import com.dev.lbsuhack.core.navigation.api.LocalNavigator
 import com.dev.lbsuhack.core.navigation.api.NavigationInstaller
 import com.dev.lbsuhack.core.navigation.layer.GlobalLayerMeta
@@ -14,10 +15,12 @@ class ProfileNavigationInstaller : NavigationInstaller {
         with(scope) {
             entry<ProfileRoute>(metadata = GlobalLayerMeta.entry()) {
                 val navigator = LocalNavigator.current
+                val appNavigation = LocalAppNavigation.current
 
                 ProfileScreen(
                     onBack = navigator::back,
                     onOpenSettings = { navigator.navigate(ProfileSettingsRoute) },
+                    onOpenRequests = { role -> appNavigation.openRequests(role) },
                 )
             }
 

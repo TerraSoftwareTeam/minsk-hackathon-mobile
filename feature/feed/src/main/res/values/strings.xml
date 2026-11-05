@@ -13,6 +13,7 @@
     <string name="feed_filter_lecture">Lectures</string>
 
     <string name="feed_card_subscribed">Going</string>
+    <string name="feed_open_event">View details</string>
     <string name="feed_no_seats">No spots left</string>
 
     <plurals name="feed_seats_available">

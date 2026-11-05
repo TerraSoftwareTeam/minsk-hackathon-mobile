@@ -2,6 +2,7 @@ package com.dev.lbsuhack.core.navigation.api
 
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.navigation3.runtime.NavKey
+import com.dev.lbsuhack.core.domain.model.UserRole
 
 interface Navigator {
     fun navigate(route: NavKey)
@@ -15,6 +16,7 @@ val LocalNavigator = staticCompositionLocalOf<Navigator> {
 
 interface AppNavigation {
     fun openProfile()
+    fun openRequests(role: UserRole)
 }
 
 val LocalAppNavigation = staticCompositionLocalOf<AppNavigation> {
