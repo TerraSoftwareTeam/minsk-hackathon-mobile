@@ -49,7 +49,8 @@ git worktree per parallel agent.
   `DefaultSessionRepository` and `dataModule`.
 - `feature:<name>` — vertical feature slice. Owns domain, data, presentation,
   UI, navigation, DI, resources, and tests for that feature. Current features:
-  `feature:auth`, `feature:feed`, `feature:profile`.
+  `feature:auth`, `feature:events`, `feature:feed`, `feature:profile`,
+  `feature:tournaments`.
 - `core:<infra>` — technical infrastructure without business knowledge:
   navigation engine, network engine, localization, testing utilities.
 - `core:<capability>` — shared business capability used by two or more

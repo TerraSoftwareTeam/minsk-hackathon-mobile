@@ -8,8 +8,10 @@ import com.dev.lbsuhack.core.designsystem.di.designSystemModule
 import com.dev.lbsuhack.core.localization.di.localizationModule
 import com.dev.lbsuhack.core.network.di.networkModule
 import com.dev.lbsuhack.feature.auth.di.authModule
+import com.dev.lbsuhack.feature.events.di.eventsModule
 import com.dev.lbsuhack.feature.feed.di.feedModule
 import com.dev.lbsuhack.feature.profile.di.profileModule
+import com.dev.lbsuhack.feature.tournaments.di.tournamentsModule
 import com.dev.lbsuhack.layers.di.layersModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
@@ -34,8 +36,10 @@ class App : Application() {
                 layersModule,
                 networkModule,
                 authModule,
+                eventsModule,
                 feedModule,
                 profileModule,
+                tournamentsModule,
             )
         }
     }

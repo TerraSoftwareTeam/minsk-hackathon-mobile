@@ -32,5 +32,7 @@ include(":core:network")
 include(":layers")
 
 include(":feature:auth")
+include(":feature:events")
 include(":feature:feed")
 include(":feature:profile")
+include(":feature:tournaments")

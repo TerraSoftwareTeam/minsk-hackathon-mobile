@@ -23,8 +23,10 @@ dependencies {
     kover(project(":core:navigation"))
     kover(project(":core:network"))
     kover(project(":feature:auth"))
+    kover(project(":feature:events"))
     kover(project(":feature:feed"))
     kover(project(":feature:profile"))
+    kover(project(":feature:tournaments"))
     kover(project(":layers"))
 }
 

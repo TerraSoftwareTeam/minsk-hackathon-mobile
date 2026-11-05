@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="events_title">Events</string>
+    <string name="events_retry">Try again</string>
+    <string name="events_card_meta">%1$s · %2$s</string>
+
+    <string name="events_error_title">Could not load events</string>
+    <string name="events_empty_title">No events yet</string>
+    <string name="events_empty_description">One-time events will appear here.</string>
+
+    <string name="events_error_network">Check your connection and try again.</string>
+    <string name="events_error_not_found">This event could not be found.</string>
+    <string name="events_error_unauthorized">Please sign in again.</string>
+    <string name="events_error_forbidden">You do not have access to this event.</string>
+    <string name="events_error_unknown">Something went wrong. Please try again.</string>
+
+    <string name="events_details_title">Event</string>
+    <string name="events_details_back">Back</string>
+    <string name="events_details_date">Date</string>
+    <string name="events_details_place">Place</string>
+</resources>

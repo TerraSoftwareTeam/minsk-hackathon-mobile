@@ -118,8 +118,10 @@ dependencies {
     implementation(project(":core:network"))
     implementation(project(":layers"))
     implementation(project(":feature:auth"))
+    implementation(project(":feature:events"))
     implementation(project(":feature:feed"))
     implementation(project(":feature:profile"))
+    implementation(project(":feature:tournaments"))
 
     // MVIKotlin
     implementation(libs.bundles.mvikotlin)
