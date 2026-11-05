@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="feed_title">Feed</string>
+    <string name="feed_title">Events</string>
+    <string name="feed_subtitle">Minsk · upcoming events</string>
+    <string name="feed_my_events">My events</string>
     <string name="feed_open_profile">Open profile</string>
     <string name="feed_retry">Try again</string>
 
@@ -10,7 +12,13 @@
     <string name="feed_filter_workshop">Workshops</string>
     <string name="feed_filter_lecture">Lectures</string>
 
-    <string name="feed_card_more">Details</string>
+    <string name="feed_card_subscribed">Going</string>
+    <string name="feed_no_seats">No spots left</string>
+
+    <plurals name="feed_seats_available">
+        <item quantity="one">%d spot left</item>
+        <item quantity="other">%d spots left</item>
+    </plurals>
 
     <string name="feed_error_title">Could not load the feed</string>
     <string name="feed_empty_title">Nothing here yet</string>

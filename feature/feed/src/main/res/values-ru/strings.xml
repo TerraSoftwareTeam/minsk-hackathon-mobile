@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="feed_title">Лента</string>
+    <string name="feed_title">Мероприятия</string>
+    <string name="feed_subtitle">Минск · ближайшие события</string>
+    <string name="feed_my_events">Мои мероприятия</string>
     <string name="feed_open_profile">Открыть профиль</string>
     <string name="feed_retry">Повторить</string>
 
@@ -10,7 +12,15 @@
     <string name="feed_filter_workshop">Мастер-классы</string>
     <string name="feed_filter_lecture">Лекции</string>
 
-    <string name="feed_card_more">Подробнее</string>
+    <string name="feed_card_subscribed">Записан</string>
+    <string name="feed_no_seats">Мест нет</string>
+
+    <plurals name="feed_seats_available">
+        <item quantity="one">%d место</item>
+        <item quantity="few">%d места</item>
+        <item quantity="many">%d мест</item>
+        <item quantity="other">%d места</item>
+    </plurals>
 
     <string name="feed_error_title">Не удалось загрузить ленту</string>
     <string name="feed_empty_title">Пока пусто</string>

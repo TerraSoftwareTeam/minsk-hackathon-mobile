@@ -8,7 +8,7 @@ import com.dev.lbsuhack.feature.feed.domain.FeedRepository
 
 class FeedRepositoryImpl : FeedRepository {
 
-    private val subscribedIds = mutableSetOf<String>()
+    private val subscribedIds = mutableSetOf("2", "6")
 
     override suspend fun getEvents(): DomainResult<List<FeedEvent>> =
         DomainResult.Success(events.map(::withSubscription))

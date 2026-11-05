@@ -1,9 +1,5 @@
 package com.dev.lbsuhack.feature.feed.ui.feed
 
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,23 +8,19 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.rounded.ExpandMore
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -43,11 +35,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -65,10 +52,6 @@ import com.dev.lbsuhack.feature.feed.store.feed.FeedStore
 import org.koin.androidx.compose.koinViewModel
 
 private const val CurrentUserInitials = "Н"
-
-private val EventCardHeight = 176.dp
-private val EventBadgeWidth = 56.dp
-private val EventBadgeHeight = 76.dp
 
 @Composable
 fun FeedScreen(
@@ -91,7 +74,6 @@ fun FeedScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             FeedTopBar(
-                eventCount = state.visibleEvents.size,
                 selectedCategory = state.selectedCategory,
                 onSelectCategory = { viewModel.accept(FeedStore.Intent.SelectCategory(it)) },
                 onOpenProfile = onOpenProfile,
@@ -117,34 +99,63 @@ fun FeedScreen(
                 }
 
                 state.visibleEvents.isEmpty() -> {
-                    FeedEmpty(
-                        isFiltered = state.events.isNotEmpty(),
-                        modifier = Modifier.align(Alignment.Center),
-                    )
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        if (state.subscribedEvents.isNotEmpty()) {
+                            MyEventsSection(
+                                events = state.subscribedEvents,
+                                onOpenDetails = { eventId ->
+                                    viewModel.accept(FeedStore.Intent.ClickEvent(eventId))
+                                },
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+                        Box(
+                            modifier = Modifier.weight(1f),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            FeedEmpty(isFiltered = state.events.isNotEmpty())
+                        }
+                    }
                 }
 
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            start = 16.dp,
-                            end = 16.dp,
-                            top = 16.dp,
-                            bottom = 24.dp,
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(top = 6.dp, bottom = 24.dp),
                     ) {
-                        items(state.visibleEvents, key = FeedEvent::id) { event ->
-                            FeedEventCard(
+                        if (state.subscribedEvents.isNotEmpty()) {
+                            item(key = "my_events") {
+                                MyEventsSection(
+                                    events = state.subscribedEvents,
+                                    onOpenDetails = { eventId ->
+                                        viewModel.accept(FeedStore.Intent.ClickEvent(eventId))
+                                    },
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = 20.dp),
+                                    thickness = 1.dp,
+                                    color = MaterialTheme.hack.gridLine,
+                                )
+                            }
+                        }
+                        itemsIndexed(
+                            state.visibleEvents,
+                            key = { _, event -> event.id },
+                        ) { index, event ->
+                            EventListItem(
                                 event = event,
-                                expanded = event.id in state.expandedEventIds,
-                                onToggleExpanded = {
-                                    viewModel.accept(FeedStore.Intent.ToggleExpanded(event.id))
-                                },
-                                onOpenDetails = {
+                                onClick = {
                                     viewModel.accept(FeedStore.Intent.ClickEvent(event.id))
                                 },
                             )
+                            if (index < state.visibleEvents.lastIndex) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = 20.dp),
+                                    thickness = 1.dp,
+                                    color = MaterialTheme.hack.gridLine,
+                                )
+                            }
                         }
                     }
                 }
@@ -155,7 +166,6 @@ fun FeedScreen(
 
 @Composable
 private fun FeedTopBar(
-    eventCount: Int,
     selectedCategory: EventCategory?,
     onSelectCategory: (EventCategory?) -> Unit,
     onOpenProfile: () -> Unit,
@@ -165,7 +175,7 @@ private fun FeedTopBar(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
-            .padding(top = 12.dp),
+            .padding(top = 12.dp, bottom = 10.dp),
     ) {
         Row(
             modifier = Modifier
@@ -181,8 +191,8 @@ private fun FeedTopBar(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = pluralStringResource(R.plurals.feed_events_count, eventCount, eventCount),
-                    style = HackMonoTextStyle,
+                    text = stringResource(R.string.feed_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -194,7 +204,7 @@ private fun FeedTopBar(
             onSelectCategory = onSelectCategory,
             modifier = Modifier.padding(horizontal = 20.dp),
         )
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(14.dp))
         HorizontalDivider(color = MaterialTheme.hack.gridLine)
     }
 }
@@ -203,28 +213,14 @@ private fun FeedTopBar(
 private fun ProfileAvatar(onOpenProfile: () -> Unit) {
     Box(
         modifier = Modifier
-            .size(44.dp)
-            .shadow(
-                elevation = 12.dp,
-                shape = CircleShape,
-                ambientColor = MaterialTheme.hack.glow,
-                spotColor = MaterialTheme.hack.glow,
-            )
-            .background(
-                brush = Brush.linearGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.secondary,
-                    ),
-                ),
-                shape = CircleShape,
-            )
+            .size(40.dp)
+            .background(MaterialTheme.colorScheme.primary, CircleShape)
             .clickable(onClick = onOpenProfile),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = CurrentUserInitials,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onPrimary,
         )
     }
@@ -268,16 +264,8 @@ private fun FeedFilterChip(
         onClick = onClick,
         label = { Text(text = text, style = MaterialTheme.typography.labelLarge) },
         shape = MaterialTheme.shapes.small,
-        border = BorderStroke(
-            width = 1.dp,
-            color = if (selected) {
-                Color.Transparent
-            } else {
-                MaterialTheme.colorScheme.outline
-            },
-        ),
         colors = FilterChipDefaults.filterChipColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
             selectedContainerColor = MaterialTheme.colorScheme.primary,
             selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
@@ -293,132 +281,147 @@ internal fun EventCategory.labelRes(): Int = when (this) {
 }
 
 @Composable
-private fun FeedEventCard(
-    event: FeedEvent,
-    expanded: Boolean,
-    onToggleExpanded: () -> Unit,
-    onOpenDetails: () -> Unit,
+private fun MyEventsSection(
+    events: List<FeedEvent>,
+    onOpenDetails: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val chevronRotation by animateFloatAsState(
-        targetValue = if (expanded) 180f else 0f,
-        animationSpec = tween(durationMillis = 200),
-        label = "eventCardChevron",
-    )
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(EventCardHeight)
-            .clip(MaterialTheme.shapes.large)
-            .clickable(onClick = onToggleExpanded),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
-        border = BorderStroke(
-            width = 1.dp,
-            color = if (expanded) {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
-            } else {
-                MaterialTheme.colorScheme.outlineVariant
-            },
-        ),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(14.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(R.string.feed_my_events),
+            style = HackMonoTextStyle.copy(fontSize = 11.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 20.dp),
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            EventDateBadge(day = event.day, month = event.month)
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = stringResource(event.category.labelRes()).uppercase(),
-                        style = HackMonoTextStyle.copy(fontSize = 10.sp),
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    Icon(
-                        imageVector = Icons.Rounded.ExpandMore,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(20.dp)
-                            .rotate(chevronRotation),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = event.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+            items(events, key = FeedEvent::id) { event ->
+                MyEventCard(
+                    event = event,
+                    onClick = { onOpenDetails(event.id) },
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                Box(modifier = Modifier.weight(1f)) {
-                    Crossfade(
-                        targetState = expanded,
-                        animationSpec = tween(durationMillis = 200),
-                        label = "eventCardContent",
-                    ) { isExpanded ->
-                        if (isExpanded) {
-                            Column {
-                                Text(
-                                    text = event.description,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 3,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    event.tags.take(3).forEach { tag -> EventTag(text = tag) }
-                                }
-                            }
-                        } else {
-                            Text(
-                                text = event.summary,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                EventCardFooter(event = event, onOpenDetails = onOpenDetails)
             }
         }
     }
 }
 
 @Composable
-private fun EventDateBadge(day: String, month: String) {
-    Box(
+private fun MyEventCard(
+    event: FeedEvent,
+    onClick: () -> Unit,
+) {
+    Column(
         modifier = Modifier
-            .size(width = EventBadgeWidth, height = EventBadgeHeight)
-            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.small),
-        contentAlignment = Alignment.Center,
+            .size(width = 232.dp, height = 116.dp)
+            .background(MaterialTheme.colorScheme.surfaceContainerLow, MaterialTheme.shapes.large)
+            .clickable(onClick = onClick)
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = day,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.primary,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = MaterialTheme.hack.success,
             )
             Text(
-                text = month.uppercase(),
-                style = HackMonoTextStyle.copy(fontSize = 10.sp),
+                text = stringResource(R.string.feed_card_subscribed),
+                style = HackMonoTextStyle.copy(fontSize = 11.sp),
+                color = MaterialTheme.hack.success,
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = "${event.day} ${event.month}",
+                style = HackMonoTextStyle.copy(fontSize = 11.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        Text(
+            text = event.title,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        Text(
+            text = event.time,
+            style = HackMonoTextStyle.copy(fontSize = 12.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun EventListItem(
+    event: FeedEvent,
+    onClick: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+    ) {
+        Text(
+            text = "${event.day} ${event.month}",
+            style = HackMonoTextStyle,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = event.title,
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "${event.time} · ${event.place}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = event.summary,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        EventStatus(event = event)
+    }
+}
+
+@Composable
+private fun EventStatus(event: FeedEvent) {
+    val seatsLeft = event.capacity - event.participants
+
+    if (seatsLeft <= 0) {
+        Text(
+            text = stringResource(R.string.feed_no_seats),
+            style = HackMonoTextStyle.copy(fontSize = 12.sp),
+            color = MaterialTheme.hack.danger,
+        )
+    } else {
+        Text(
+            text = pluralStringResource(
+                R.plurals.feed_seats_available,
+                seatsLeft,
+                seatsLeft,
+            ),
+            style = HackMonoTextStyle.copy(fontSize = 12.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -432,56 +435,6 @@ internal fun EventTag(text: String) {
             .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.extraSmall)
             .padding(horizontal = 6.dp, vertical = 3.dp),
     )
-}
-
-@Composable
-private fun EventCardFooter(
-    event: FeedEvent,
-    onOpenDetails: () -> Unit,
-) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = event.time,
-            style = HackMonoTextStyle,
-            color = MaterialTheme.colorScheme.tertiary,
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = event.place,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
-        Spacer(modifier = Modifier.width(10.dp))
-        Text(
-            text = "${event.participants}/${event.capacity}",
-            style = HackMonoTextStyle,
-            color = if (event.participants >= event.capacity) {
-                MaterialTheme.hack.danger
-            } else {
-                MaterialTheme.hack.success
-            },
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.clickable(onClick = onOpenDetails),
-        ) {
-            Text(
-                text = stringResource(R.string.feed_card_more),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        }
-    }
 }
 
 @Composable

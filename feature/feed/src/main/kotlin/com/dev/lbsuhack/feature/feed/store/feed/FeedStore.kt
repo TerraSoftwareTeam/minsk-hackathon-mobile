@@ -11,22 +11,21 @@ interface FeedStore : Store<FeedStore.Intent, FeedStore.State, FeedStore.Label> 
         data object Load : Intent
         data object Refresh : Intent
         data class SelectCategory(val category: EventCategory?) : Intent
-        data class ToggleExpanded(val eventId: String) : Intent
         data class ClickEvent(val eventId: String) : Intent
     }
 
     data class State(
         val events: List<FeedEvent> = emptyList(),
         val selectedCategory: EventCategory? = null,
-        val expandedEventIds: Set<String> = emptySet(),
         val isLoading: Boolean = false,
         val error: UiText? = null,
     ) {
+        val subscribedEvents: List<FeedEvent>
+            get() = events.filter { it.isSubscribed }
+
         val visibleEvents: List<FeedEvent>
-            get() = if (selectedCategory == null) {
-                events
-            } else {
-                events.filter { it.category == selectedCategory }
+            get() = events.filter { event ->
+                !event.isSubscribed && (selectedCategory == null || event.category == selectedCategory)
             }
     }
 

@@ -41,6 +41,18 @@ class FeedStoreTest {
             assertNull(store.state.error)
             assertEquals(7, store.state.events.size)
             assertEquals("Хакатон «Цифровой прорыв»", store.state.events.first().title)
+            assertEquals(setOf("2", "6"), store.state.subscribedEvents.map { it.id }.toSet())
+        }
+
+    @Test
+    fun `visible events exclude subscribed ones`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val store = createStore()
+            store.accept(FeedStore.Intent.Load)
+            runCurrent()
+
+            assertEquals(5, store.state.visibleEvents.size)
+            assertTrue(store.state.visibleEvents.none { it.isSubscribed })
         }
 
     @Test
@@ -60,23 +72,7 @@ class FeedStoreTest {
             store.accept(FeedStore.Intent.SelectCategory(null))
             runCurrent()
 
-            assertEquals(store.state.events, store.state.visibleEvents)
-        }
-
-    @Test
-    fun `toggle expanded adds and removes event id`() =
-        runTest(mainDispatcherRule.testDispatcher) {
-            val store = createStore()
-
-            store.accept(FeedStore.Intent.ToggleExpanded("3"))
-            runCurrent()
-
-            assertEquals(setOf("3"), store.state.expandedEventIds)
-
-            store.accept(FeedStore.Intent.ToggleExpanded("3"))
-            runCurrent()
-
-            assertTrue(store.state.expandedEventIds.isEmpty())
+            assertEquals(store.state.events.filterNot { it.isSubscribed }, store.state.visibleEvents)
         }
 
     @Test

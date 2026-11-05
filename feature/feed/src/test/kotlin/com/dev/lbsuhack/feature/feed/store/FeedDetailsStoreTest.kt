@@ -32,11 +32,11 @@ class FeedDetailsStoreTest {
         runTest(mainDispatcherRule.testDispatcher) {
             val store = createStore()
 
-            store.accept(FeedDetailsStore.Intent.Load("2"))
+            store.accept(FeedDetailsStore.Intent.Load("4"))
             runCurrent()
 
             assertFalse(store.state.isLoading)
-            assertEquals("2", store.state.event?.id)
+            assertEquals("4", store.state.event?.id)
             assertFalse(store.state.isSubscribed)
         }
 

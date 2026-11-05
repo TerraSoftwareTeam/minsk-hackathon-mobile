@@ -31,7 +31,6 @@ class FeedStoreFactory(
         data class Loaded(val events: List<FeedEvent>) : Message
         data class Failed(val error: UiText) : Message
         data class CategorySelected(val category: EventCategory?) : Message
-        data class ExpansionToggled(val eventId: String) : Message
     }
 
     private inner class ExecutorImpl :
@@ -41,7 +40,6 @@ class FeedStoreFactory(
             when (intent) {
                 FeedStore.Intent.Load, FeedStore.Intent.Refresh -> load()
                 is FeedStore.Intent.SelectCategory -> dispatch(Message.CategorySelected(intent.category))
-                is FeedStore.Intent.ToggleExpanded -> dispatch(Message.ExpansionToggled(intent.eventId))
                 is FeedStore.Intent.ClickEvent -> publish(FeedStore.Label.OpenDetails(intent.eventId))
             }
         }
@@ -66,13 +64,6 @@ class FeedStoreFactory(
             is Message.Loaded -> copy(events = msg.events, isLoading = false, error = null)
             is Message.Failed -> copy(isLoading = false, error = msg.error)
             is Message.CategorySelected -> copy(selectedCategory = msg.category)
-            is Message.ExpansionToggled -> copy(
-                expandedEventIds = if (msg.eventId in expandedEventIds) {
-                    expandedEventIds - msg.eventId
-                } else {
-                    expandedEventIds + msg.eventId
-                },
-            )
         }
     }
 }
