@@ -42,9 +42,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -55,7 +59,6 @@ import com.dev.lbsuhack.feature.auth.store.login.LoginStore
 import com.dev.lbsuhack.feature.auth.ui.AuthError
 import com.dev.lbsuhack.feature.auth.ui.AuthPasswordField
 import com.dev.lbsuhack.feature.auth.ui.AuthPrimaryButton
-import com.dev.lbsuhack.feature.auth.ui.AuthSwitchPrompt
 import com.dev.lbsuhack.feature.auth.ui.AuthTextField
 import org.koin.androidx.compose.koinViewModel
 
@@ -116,7 +119,6 @@ fun LoginScreen(
                             viewModel.accept(LoginStore.Intent.RoleChanged(UserRole.TEACHER))
                             step = LoginStep.CREDENTIALS
                         },
-                        onOpenRegister = { viewModel.accept(LoginStore.Intent.OpenRegister) },
                     )
                 }
                 LoginStep.CREDENTIALS -> {
@@ -126,7 +128,6 @@ fun LoginScreen(
                         onUsernameChange = { viewModel.accept(LoginStore.Intent.UsernameChanged(it)) },
                         onPasswordChange = { viewModel.accept(LoginStore.Intent.PasswordChanged(it)) },
                         onSubmit = { viewModel.accept(LoginStore.Intent.Submit) },
-                        onOpenRegister = { viewModel.accept(LoginStore.Intent.OpenRegister) },
                     )
                 }
             }
@@ -138,48 +139,64 @@ fun LoginScreen(
 private fun LoginWelcomeContent(
     onSelectPupil: () -> Unit,
     onSelectTeacher: () -> Unit,
-    onOpenRegister: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val brandText = buildAnnotatedString {
+        withStyle(SpanStyle(color = MaterialTheme.colorScheme.onBackground)) {
+            append("ko")
+        }
+        withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+            append("la")
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp, vertical = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Text(
-            text = stringResource(R.string.auth_brand),
-            style = MaterialTheme.typography.displayMedium.copy(
-                fontSize = 44.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = (-1.5).sp,
-            ),
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text(
-            text = stringResource(R.string.auth_welcome_subtitle),
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontSize = 17.sp,
-                lineHeight = 24.sp,
-            ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
         Spacer(modifier = Modifier.weight(1f))
 
         Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = brandText,
+                style = MaterialTheme.typography.displayLarge.copy(
+                    fontSize = 58.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = (-2.5).sp,
+                ),
+                textAlign = TextAlign.Center,
+            )
+
+            Text(
+                text = stringResource(R.string.auth_welcome_subtitle),
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontSize = 17.sp,
+                    lineHeight = 25.sp,
+                    letterSpacing = (-0.2).sp,
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 20.dp),
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1.2f))
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Button(
                 onClick = onSelectPupil,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(54.dp),
+                    .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -197,11 +214,11 @@ private fun LoginWelcomeContent(
                 onClick = onSelectTeacher,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(54.dp),
+                    .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 contentColor = MaterialTheme.colorScheme.onSurface,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -214,14 +231,6 @@ private fun LoginWelcomeContent(
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            AuthSwitchPrompt(
-                promptText = stringResource(R.string.auth_no_account_prompt),
-                actionText = stringResource(R.string.auth_open_register),
-                onActionClick = onOpenRegister,
-            )
         }
     }
 }
@@ -233,7 +242,6 @@ private fun LoginCredentialsContent(
     onUsernameChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onSubmit: () -> Unit,
-    onOpenRegister: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -300,13 +308,6 @@ private fun LoginCredentialsContent(
             text = stringResource(R.string.auth_login_action),
             isLoading = state.isLoading,
             onClick = onSubmit,
-        )
-
-        AuthSwitchPrompt(
-            promptText = stringResource(R.string.auth_no_account_prompt),
-            actionText = stringResource(R.string.auth_open_register),
-            onActionClick = onOpenRegister,
-            enabled = !state.isLoading,
         )
     }
 }
