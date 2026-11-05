@@ -6,6 +6,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import com.dev.lbsuhack.core.designsystem.theme.hack
 
@@ -15,18 +16,21 @@ internal fun BoardGridBackground(
     panOffset: Offset,
     modifier: Modifier = Modifier,
     dotColor: Color = MaterialTheme.hack.gridLine,
+    backgroundColor: Color = MaterialTheme.colorScheme.background,
 ) {
     Canvas(modifier = modifier.fillMaxSize()) {
-        val baseStepPx = 32f
+        drawRect(color = backgroundColor)
+
+        val baseStepPx = 36f
         var stepPx = baseStepPx * scale
-        while (stepPx < 16f) {
+        while (stepPx < 18f) {
             stepPx *= 2f
         }
-        while (stepPx > 64f) {
+        while (stepPx > 72f) {
             stepPx /= 2f
         }
 
-        val dotRadiusPx = (1.5f * scale).coerceIn(1f, 3f)
+        val dotRadiusPx = (1.5f * scale).coerceIn(1f, 2.5f)
 
         val offsetX = panOffset.x.positiveMod(stepPx)
         val offsetY = panOffset.y.positiveMod(stepPx)
@@ -36,7 +40,7 @@ internal fun BoardGridBackground(
             var y = offsetY
             while (y < size.height) {
                 drawCircle(
-                    color = dotColor,
+                    color = dotColor.copy(alpha = 0.65f),
                     radius = dotRadiusPx,
                     center = Offset(x, y),
                 )
@@ -44,6 +48,14 @@ internal fun BoardGridBackground(
             }
             x += stepPx
         }
+
+        drawRect(
+            brush = Brush.radialGradient(
+                colors = listOf(Color.Transparent, backgroundColor.copy(alpha = 0.5f)),
+                center = Offset(size.width / 2f, size.height / 2f),
+                radius = maxOf(size.width, size.height) * 0.75f,
+            ),
+        )
     }
 }
 
