@@ -27,12 +27,15 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -67,6 +70,7 @@ private enum class LoginStep {
     CREDENTIALS,
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     onOpenRegister: () -> Unit,
@@ -91,6 +95,37 @@ fun LoginScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            if (step == LoginStep.CREDENTIALS) {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = if (state.role == UserRole.TEACHER) {
+                                stringResource(R.string.auth_login_teacher_title)
+                            } else {
+                                stringResource(R.string.auth_login_pupil_title)
+                            },
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { step = LoginStep.WELCOME }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                                contentDescription = stringResource(R.string.auth_back),
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    ),
+                )
+            }
+        },
     ) { padding ->
         AnimatedContent(
             targetState = step,
@@ -124,7 +159,6 @@ fun LoginScreen(
                 LoginStep.CREDENTIALS -> {
                     LoginCredentialsContent(
                         state = state,
-                        onBackClick = { step = LoginStep.WELCOME },
                         onUsernameChange = { viewModel.accept(LoginStore.Intent.UsernameChanged(it)) },
                         onPasswordChange = { viewModel.accept(LoginStore.Intent.PasswordChanged(it)) },
                         onSubmit = { viewModel.accept(LoginStore.Intent.Submit) },
@@ -238,7 +272,6 @@ private fun LoginWelcomeContent(
 @Composable
 private fun LoginCredentialsContent(
     state: LoginStore.State,
-    onBackClick: () -> Unit,
     onUsernameChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onSubmit: () -> Unit,
@@ -249,40 +282,9 @@ private fun LoginCredentialsContent(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .imePadding()
-            .padding(horizontal = 24.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            .padding(horizontal = 24.dp, vertical = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(
-                onClick = onBackClick,
-                modifier = Modifier.size(44.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = stringResource(R.string.auth_back),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-        }
-
-        Text(
-            text = if (state.role == UserRole.TEACHER) {
-                stringResource(R.string.auth_login_teacher_title)
-            } else {
-                stringResource(R.string.auth_login_pupil_title)
-            },
-            style = MaterialTheme.typography.headlineMedium.copy(
-                fontWeight = FontWeight.Bold,
-                letterSpacing = (-0.5).sp,
-            ),
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
         AuthTextField(
             value = state.username,
             onValueChange = onUsernameChange,
@@ -302,7 +304,7 @@ private fun LoginCredentialsContent(
 
         AuthError(error = state.error)
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         AuthPrimaryButton(
             text = stringResource(R.string.auth_login_action),
