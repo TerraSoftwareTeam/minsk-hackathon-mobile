@@ -2,6 +2,7 @@ package com.dev.lbsuhack.feature.auth.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -59,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dev.lbsuhack.core.designsystem.theme.HackMonoTextStyle
 import com.dev.lbsuhack.core.designsystem.theme.hack
+import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.localization.text.UiText
 import com.dev.lbsuhack.core.localization.text.asString
 import com.dev.lbsuhack.feature.auth.R
@@ -417,3 +420,79 @@ internal fun AuthSwitchPrompt(
         }
     }
 }
+
+@Composable
+internal fun AuthRoleSelector(
+    selectedRole: UserRole,
+    onRoleSelected: (UserRole) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.auth_role_label),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    shape = MaterialTheme.shapes.medium,
+                )
+                .border(
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    shape = MaterialTheme.shapes.medium,
+                )
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            RoleOption(
+                label = stringResource(R.string.auth_role_pupil),
+                isSelected = selectedRole == UserRole.PUPIL,
+                onClick = { onRoleSelected(UserRole.PUPIL) },
+                modifier = Modifier.weight(1f),
+            )
+            RoleOption(
+                label = stringResource(R.string.auth_role_teacher),
+                isSelected = selectedRole == UserRole.TEACHER,
+                onClick = { onRoleSelected(UserRole.TEACHER) },
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun RoleOption(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier,
+        shape = MaterialTheme.shapes.small,
+        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+        contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 10.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            )
+        }
+    }
+}
+

@@ -39,10 +39,11 @@ import com.dev.lbsuhack.feature.auth.ui.AuthDemoBanner
 import com.dev.lbsuhack.feature.auth.ui.AuthError
 import com.dev.lbsuhack.feature.auth.ui.AuthPasswordField
 import com.dev.lbsuhack.feature.auth.ui.AuthPrimaryButton
+import com.dev.lbsuhack.feature.auth.ui.AuthRoleSelector
 import com.dev.lbsuhack.feature.auth.ui.AuthSwitchPrompt
 import com.dev.lbsuhack.feature.auth.ui.AuthTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AlternateEmail
+import androidx.compose.material.icons.rounded.Person
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -118,13 +119,18 @@ fun LoginScreen(
                             color = MaterialTheme.colorScheme.onSurface,
                         )
 
+                        AuthRoleSelector(
+                            selectedRole = state.role,
+                            onRoleSelected = { viewModel.accept(LoginStore.Intent.RoleChanged(it)) },
+                        )
+
                         AuthTextField(
-                            value = state.email,
-                            onValueChange = { viewModel.accept(LoginStore.Intent.EmailChanged(it)) },
-                            label = stringResource(R.string.auth_email),
-                            placeholder = stringResource(R.string.auth_email_placeholder),
-                            leadingIcon = Icons.Rounded.AlternateEmail,
-                            keyboardType = KeyboardType.Email,
+                            value = state.username,
+                            onValueChange = { viewModel.accept(LoginStore.Intent.UsernameChanged(it)) },
+                            label = stringResource(R.string.auth_username),
+                            placeholder = stringResource(R.string.auth_username_placeholder),
+                            leadingIcon = Icons.Rounded.Person,
+                            keyboardType = KeyboardType.Text,
                             imeAction = ImeAction.Next,
                         )
 

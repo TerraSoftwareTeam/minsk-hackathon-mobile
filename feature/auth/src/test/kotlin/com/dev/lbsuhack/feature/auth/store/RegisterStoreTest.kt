@@ -26,9 +26,22 @@ class RegisterStoreTest {
 
     private val sessionRepository = FakeSessionRepository()
 
+    private val dummySchoolsByRepo = object : com.dev.lbsuhack.feature.auth.domain.repository.SchoolsByAuthRepository {
+        override suspend fun loginAndGetUser(
+            username: String,
+            password: String,
+            role: com.dev.lbsuhack.core.domain.model.UserRole,
+        ) = throw UnsupportedOperationException()
+
+        override suspend fun loginAndGetPupil(
+            username: String,
+            password: String,
+        ) = throw UnsupportedOperationException()
+    }
+
     private fun createStore(): RegisterStore = RegisterStoreFactory(
         storeFactory = DefaultStoreFactory(),
-        authRepository = AuthRepositoryImpl(),
+        authRepository = AuthRepositoryImpl(dummySchoolsByRepo),
         saveSession = SaveSessionUseCase(sessionRepository),
     ).create()
 

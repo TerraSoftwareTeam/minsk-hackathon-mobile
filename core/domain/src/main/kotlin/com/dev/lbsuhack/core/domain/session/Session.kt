@@ -1,5 +1,6 @@
 package com.dev.lbsuhack.core.domain.session
 
+import com.dev.lbsuhack.core.domain.model.UserRole
 import kotlinx.coroutines.flow.StateFlow
 
 interface SessionRepository {
@@ -26,4 +27,6 @@ data class SessionUser(
     val id: Long,
     val name: String,
     val email: String,
+    val role: UserRole = UserRole.PUPIL,
+    val pupilClass: String? = null,
 )

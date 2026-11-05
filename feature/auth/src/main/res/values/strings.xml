@@ -3,8 +3,8 @@
     <string name="auth_brand">kola</string>
     <string name="auth_brand_tagline">Cleanups &amp; Eco Community</string>
     <string name="auth_brand_badge">Urban Eco Movement</string>
-    <string name="auth_login_title">Welcome back</string>
-    <string name="auth_login_subtitle">Join cleanups, team up with neighbors, and make your city cleaner.</string>
+    <string name="auth_login_title">Sign in</string>
+    <string name="auth_login_subtitle">Sign in with your Schools.by account to sync your profile and access events.</string>
     <string name="auth_register_top_title">Registration</string>
     <string name="auth_register_title">Join kola</string>
     <string name="auth_register_subtitle">Create your eco-volunteer account and start organizing or joining local cleanups.</string>
@@ -13,14 +13,19 @@
     <string name="auth_feature_teams">Eco teams</string>
     <string name="auth_feature_points">Green impact</string>
 
+    <string name="auth_role_label">I am a</string>
+    <string name="auth_role_pupil">Pupil</string>
+    <string name="auth_role_teacher">Teacher</string>
+    <string name="auth_username">Schools.by Login</string>
+    <string name="auth_username_placeholder">e.g. 002</string>
     <string name="auth_name">Name</string>
     <string name="auth_name_placeholder">Your name</string>
     <string name="auth_email">Email</string>
     <string name="auth_email_placeholder">name@example.com</string>
-    <string name="auth_password">Password</string>
-    <string name="auth_password_placeholder">At least 6 characters</string>
+    <string name="auth_password">Schools.by Password</string>
+    <string name="auth_password_placeholder">Enter password</string>
 
-    <string name="auth_login_action">Sign in to kola</string>
+    <string name="auth_login_action">Sign in via Schools.by</string>
     <string name="auth_register_action">Create account</string>
     <string name="auth_no_account_prompt">Don\'t have an account?</string>
     <string name="auth_open_register">Register</string>
@@ -28,11 +33,11 @@
     <string name="auth_open_login">Sign in</string>
     <string name="auth_back">Back</string>
 
-    <string name="auth_demo_hint">Demo mode: enter any valid email and 6+ character password to enter.</string>
+    <string name="auth_demo_hint">Use your credentials from schools.by (e.g. login: 002).</string>
 
-    <string name="auth_error_validation">Please check your input: valid email and at least 6 password characters required.</string>
+    <string name="auth_error_validation">Please enter your Schools.by login and password.</string>
     <string name="auth_error_network">Network is unavailable. Please try again.</string>
-    <string name="auth_error_credentials">Email or password is incorrect.</string>
+    <string name="auth_error_credentials">Incorrect Schools.by login or password.</string>
     <string name="auth_error_forbidden">Access is denied.</string>
     <string name="auth_error_unknown">Something went wrong. Please try again.</string>
 

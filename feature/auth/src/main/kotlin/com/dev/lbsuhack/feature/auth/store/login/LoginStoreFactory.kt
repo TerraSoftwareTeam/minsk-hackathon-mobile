@@ -6,6 +6,7 @@ import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
 import com.dev.lbsuhack.core.domain.DomainError
 import com.dev.lbsuhack.core.domain.DomainResult
+import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.domain.session.SaveSessionUseCase
 import com.dev.lbsuhack.core.localization.text.UiText
 import com.dev.lbsuhack.feature.auth.domain.AuthRepository
@@ -28,8 +29,9 @@ class LoginStoreFactory(
             ) {}
 
     private sealed interface Message {
-        data class EmailChanged(val email: String) : Message
+        data class UsernameChanged(val username: String) : Message
         data class PasswordChanged(val password: String) : Message
+        data class RoleChanged(val role: UserRole) : Message
         data object Loading : Message
         data object Loaded : Message
         data class Failed(val error: UiText) : Message
@@ -40,8 +42,9 @@ class LoginStoreFactory(
 
         override fun executeIntent(intent: LoginStore.Intent) {
             when (intent) {
-                is LoginStore.Intent.EmailChanged -> dispatch(Message.EmailChanged(intent.email))
+                is LoginStore.Intent.UsernameChanged -> dispatch(Message.UsernameChanged(intent.username))
                 is LoginStore.Intent.PasswordChanged -> dispatch(Message.PasswordChanged(intent.password))
+                is LoginStore.Intent.RoleChanged -> dispatch(Message.RoleChanged(intent.role))
                 LoginStore.Intent.OpenRegister -> publish(LoginStore.Label.OpenRegister)
                 LoginStore.Intent.Submit -> submit()
             }
@@ -50,10 +53,11 @@ class LoginStoreFactory(
         private fun submit() {
             if (state().isLoading) return
 
-            val email = state().email.trim()
+            val username = state().username.trim()
             val password = state().password
+            val role = state().role
 
-            if (!email.contains("@") || password.length < MIN_PASSWORD_LENGTH) {
+            if (username.isBlank() || password.isBlank()) {
                 dispatch(Message.Failed(DomainError.Validation.toUiText()))
                 return
             }
@@ -61,7 +65,7 @@ class LoginStoreFactory(
             scope.launch {
                 dispatch(Message.Loading)
 
-                when (val result = authRepository.login(email, password)) {
+                when (val result = authRepository.login(username, password, role)) {
                     is DomainResult.Success -> {
                         saveSession(result.value)
                         dispatch(Message.Loaded)
@@ -75,15 +79,12 @@ class LoginStoreFactory(
 
     private object ReducerImpl : Reducer<LoginStore.State, Message> {
         override fun LoginStore.State.reduce(msg: Message): LoginStore.State = when (msg) {
-            is Message.EmailChanged -> copy(email = msg.email, error = null)
+            is Message.UsernameChanged -> copy(username = msg.username, error = null)
             is Message.PasswordChanged -> copy(password = msg.password, error = null)
+            is Message.RoleChanged -> copy(role = msg.role, error = null)
             Message.Loading -> copy(isLoading = true, error = null)
             Message.Loaded -> copy(isLoading = false)
             is Message.Failed -> copy(isLoading = false, error = msg.error)
         }
-    }
-
-    private companion object {
-        const val MIN_PASSWORD_LENGTH = 6
     }
 }

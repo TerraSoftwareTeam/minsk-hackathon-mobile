@@ -2,7 +2,12 @@ package com.dev.lbsuhack.feature.auth.di
 
 import com.dev.lbsuhack.core.navigation.api.NavigationInstaller
 import com.dev.lbsuhack.feature.auth.data.AuthRepositoryImpl
+import com.dev.lbsuhack.feature.auth.data.parser.SchoolsByProfileParser
+import com.dev.lbsuhack.feature.auth.data.remote.SchoolsByRemoteDataSource
+import com.dev.lbsuhack.feature.auth.data.remote.SchoolsByRemoteDataSourceImpl
+import com.dev.lbsuhack.feature.auth.data.repository.SchoolsByAuthRepositoryImpl
 import com.dev.lbsuhack.feature.auth.domain.AuthRepository
+import com.dev.lbsuhack.feature.auth.domain.repository.SchoolsByAuthRepository
 import com.dev.lbsuhack.feature.auth.navigation.AuthNavigationInstaller
 import com.dev.lbsuhack.feature.auth.presentation.login.LoginViewModel
 import com.dev.lbsuhack.feature.auth.presentation.register.RegisterViewModel
@@ -13,7 +18,19 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 
 val authModule = module {
-    single<AuthRepository> { AuthRepositoryImpl() }
+    single<SchoolsByProfileParser> { SchoolsByProfileParser() }
+    single<SchoolsByRemoteDataSource> { SchoolsByRemoteDataSourceImpl() }
+    single<SchoolsByAuthRepository> {
+        SchoolsByAuthRepositoryImpl(
+            remoteDataSource = get(),
+            parser = get(),
+        )
+    }
+    single<AuthRepository> {
+        AuthRepositoryImpl(
+            schoolsByRepository = get(),
+        )
+    }
 
     single {
         LoginStoreFactory(
@@ -35,3 +52,4 @@ val authModule = module {
 
     single { AuthNavigationInstaller() } bind NavigationInstaller::class
 }
+

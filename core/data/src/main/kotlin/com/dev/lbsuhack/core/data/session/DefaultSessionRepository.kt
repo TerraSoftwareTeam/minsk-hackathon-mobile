@@ -37,10 +37,20 @@ class DefaultSessionRepository(
                 val id = preferences.getLong(KEY_ID, NO_ID)
                 val name = preferences.getString(KEY_NAME, null)
                 val email = preferences.getString(KEY_EMAIL, null)
+                val roleStr = preferences.getString(KEY_ROLE, null)
+                val role = roleStr?.let { runCatching { com.dev.lbsuhack.core.domain.model.UserRole.valueOf(it) }.getOrNull() }
+                    ?: com.dev.lbsuhack.core.domain.model.UserRole.PUPIL
+                val pupilClass = preferences.getString(KEY_CLASS, null)
 
                 _state.value = if (id != NO_ID && !name.isNullOrBlank() && !email.isNullOrBlank()) {
                     SessionState.Authenticated(
-                        SessionUser(id = id, name = name, email = email),
+                        SessionUser(
+                            id = id,
+                            name = name,
+                            email = email,
+                            role = role,
+                            pupilClass = pupilClass,
+                        ),
                     )
                 } else {
                     SessionState.Unauthenticated
@@ -57,6 +67,8 @@ class DefaultSessionRepository(
                     .putLong(KEY_ID, user.id)
                     .putString(KEY_NAME, user.name)
                     .putString(KEY_EMAIL, user.email)
+                    .putString(KEY_ROLE, user.role.name)
+                    .putString(KEY_CLASS, user.pupilClass)
                     .apply()
 
                 _state.value = SessionState.Authenticated(user)
@@ -80,6 +92,9 @@ class DefaultSessionRepository(
         const val KEY_ID = "id"
         const val KEY_NAME = "name"
         const val KEY_EMAIL = "email"
+        const val KEY_ROLE = "role"
+        const val KEY_CLASS = "pupil_class"
         const val NO_ID = -1L
     }
 }
+

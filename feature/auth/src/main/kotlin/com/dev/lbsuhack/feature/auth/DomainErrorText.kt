@@ -10,6 +10,6 @@ internal fun DomainError.toUiText(): UiText = when (this) {
     DomainError.Forbidden -> UiText.Resource(R.string.auth_error_forbidden)
     DomainError.NotFound -> UiText.Resource(R.string.auth_error_unknown)
     DomainError.Unknown -> UiText.Resource(R.string.auth_error_unknown)
-    is DomainError.BusinessRule -> UiText.Resource(R.string.auth_error_unknown)
-    is DomainError.Exception -> UiText.Resource(R.string.auth_error_unknown)
+    is DomainError.BusinessRule -> message?.let { UiText.Raw(it) } ?: UiText.Resource(R.string.auth_error_unknown)
+    is DomainError.Exception -> throwable.message?.let { UiText.Raw(it) } ?: UiText.Resource(R.string.auth_error_unknown)
 }

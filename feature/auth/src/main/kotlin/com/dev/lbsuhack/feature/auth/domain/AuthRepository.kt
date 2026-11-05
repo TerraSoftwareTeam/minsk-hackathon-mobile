@@ -1,13 +1,15 @@
 package com.dev.lbsuhack.feature.auth.domain
 
 import com.dev.lbsuhack.core.domain.DomainResult
+import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.domain.session.SessionUser
 
 interface AuthRepository {
 
     suspend fun login(
-        email: String,
+        username: String,
         password: String,
+        role: UserRole = UserRole.PUPIL,
     ): DomainResult<SessionUser>
 
     suspend fun register(
