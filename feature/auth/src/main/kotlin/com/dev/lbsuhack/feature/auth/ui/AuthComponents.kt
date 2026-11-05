@@ -222,7 +222,7 @@ internal fun AuthTextField(
                 Icon(
                     imageVector = leadingIcon,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = MaterialTheme.colorScheme.onSurface,
                 )
             },
             singleLine = true,
@@ -287,7 +287,7 @@ internal fun AuthPasswordField(
                 Icon(
                     imageVector = Icons.Rounded.Lock,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = MaterialTheme.colorScheme.onSurface,
                 )
             },
             trailingIcon = {
@@ -297,7 +297,7 @@ internal fun AuthPasswordField(
                         contentDescription = stringResource(
                             if (visible) R.string.auth_password_hide else R.string.auth_password_show,
                         ),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             },
