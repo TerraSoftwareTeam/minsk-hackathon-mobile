@@ -1,46 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="auth_brand">kola</string>
-    <string name="auth_brand_tagline">Cleanups &amp; Eco Community</string>
-    <string name="auth_brand_badge">Urban Eco Movement</string>
-    <string name="auth_login_title">Sign in</string>
-    <string name="auth_login_subtitle">Sign in with your Schools.by account to sync your profile and access events.</string>
-    <string name="auth_register_top_title">Registration</string>
-    <string name="auth_register_title">Join kola</string>
-    <string name="auth_register_subtitle">Create your eco-volunteer account and start organizing or joining local cleanups.</string>
+    <string name="auth_brand_tagline">Приложение для субботников</string>
+    <string name="auth_brand_badge">Городское эко-движение</string>
+    <string name="auth_login_title">Вход</string>
+    <string name="auth_login_subtitle">Войдите через Schools.by, чтобы синхронизировать данные профиля и участвовать в событиях.</string>
+    <string name="auth_register_top_title">Регистрация</string>
+    <string name="auth_register_title">Присоединяйтесь к kola</string>
+    <string name="auth_register_subtitle">Создайте профиль эковолонтёра, организуйте уборки и меняйте город к лучшему.</string>
 
-    <string name="auth_feature_cleanup">City cleanups</string>
-    <string name="auth_feature_teams">Eco teams</string>
-    <string name="auth_feature_points">Green impact</string>
+    <string name="auth_feature_cleanup">Субботники</string>
+    <string name="auth_feature_teams">Эко-команды</string>
+    <string name="auth_feature_points">Вклад в природу</string>
 
-    <string name="auth_role_label">I am a</string>
-    <string name="auth_role_pupil">Pupil</string>
-    <string name="auth_role_teacher">Teacher</string>
-    <string name="auth_username">Schools.by Login</string>
-    <string name="auth_username_placeholder">e.g. 002</string>
-    <string name="auth_name">Name</string>
-    <string name="auth_name_placeholder">Your name</string>
-    <string name="auth_email">Email</string>
+    <string name="auth_role_label">Роль</string>
+    <string name="auth_role_pupil">Ученик</string>
+    <string name="auth_role_teacher">Учитель</string>
+    <string name="auth_username">Логин</string>
+    <string name="auth_username_placeholder">Логин Schools.by</string>
+    <string name="auth_name">Имя</string>
+    <string name="auth_name_placeholder">Как к вам обращаться?</string>
+    <string name="auth_email">Почта</string>
     <string name="auth_email_placeholder">name@example.com</string>
-    <string name="auth_password">Schools.by Password</string>
-    <string name="auth_password_placeholder">Enter password</string>
+    <string name="auth_password">Пароль</string>
+    <string name="auth_password_placeholder">Пароль Schools.by</string>
 
-    <string name="auth_login_action">Sign in via Schools.by</string>
-    <string name="auth_register_action">Create account</string>
-    <string name="auth_no_account_prompt">Don\'t have an account?</string>
-    <string name="auth_open_register">Register</string>
-    <string name="auth_has_account_prompt">Already have an account?</string>
-    <string name="auth_open_login">Sign in</string>
-    <string name="auth_back">Back</string>
+    <string name="auth_login_action">Войти</string>
+    <string name="auth_register_action">Создать аккаунт</string>
+    <string name="auth_no_account_prompt">Нет аккаунта?</string>
+    <string name="auth_open_register">Регистрация</string>
+    <string name="auth_has_account_prompt">Уже есть аккаунт?</string>
+    <string name="auth_open_login">Войти</string>
+    <string name="auth_back">Назад</string>
 
-    <string name="auth_demo_hint">Use your credentials from schools.by (e.g. login: 002).</string>
+    <string name="auth_demo_hint">Используйте логин и пароль от schools.by (например: логин 002).</string>
 
-    <string name="auth_error_validation">Please enter your Schools.by login and password.</string>
-    <string name="auth_error_network">Network is unavailable. Please try again.</string>
-    <string name="auth_error_credentials">Incorrect Schools.by login or password.</string>
-    <string name="auth_error_forbidden">Access is denied.</string>
-    <string name="auth_error_unknown">Something went wrong. Please try again.</string>
+    <string name="auth_error_validation">Введите логин и пароль Schools.by</string>
+    <string name="auth_error_network">Сеть недоступна. Попробуйте ещё раз.</string>
+    <string name="auth_error_credentials">Неверный логин или пароль Schools.by.</string>
+    <string name="auth_error_forbidden">Доступ запрещён.</string>
+    <string name="auth_error_unknown">Что-то пошло не так. Попробуйте ещё раз.</string>
 
-    <string name="auth_password_show">Show password</string>
-    <string name="auth_password_hide">Hide password</string>
+    <string name="auth_password_show">Показать пароль</string>
+    <string name="auth_password_hide">Скрыть пароль</string>
 </resources>

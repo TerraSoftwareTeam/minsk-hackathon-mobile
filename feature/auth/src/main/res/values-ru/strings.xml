@@ -13,31 +13,31 @@
     <string name="auth_feature_teams">Эко-команды</string>
     <string name="auth_feature_points">Вклад в природу</string>
 
-    <string name="auth_role_label">Кто вы?</string>
+    <string name="auth_role_label">Роль</string>
     <string name="auth_role_pupil">Ученик</string>
     <string name="auth_role_teacher">Учитель</string>
-    <string name="auth_username">Логин Schools.by</string>
-    <string name="auth_username_placeholder">Например: 002</string>
+    <string name="auth_username">Логин</string>
+    <string name="auth_username_placeholder">Логин Schools.by</string>
     <string name="auth_name">Имя</string>
     <string name="auth_name_placeholder">Как к вам обращаться?</string>
     <string name="auth_email">Почта</string>
     <string name="auth_email_placeholder">name@example.com</string>
-    <string name="auth_password">Пароль Schools.by</string>
-    <string name="auth_password_placeholder">Введите пароль</string>
+    <string name="auth_password">Пароль</string>
+    <string name="auth_password_placeholder">Пароль Schools.by</string>
 
-    <string name="auth_login_action">Войти через Schools.by</string>
-    <string name="auth_register_action">Создать профиль</string>
-    <string name="auth_no_account_prompt">Ещё нет аккаунта?</string>
-    <string name="auth_open_register">Зарегистрироваться</string>
+    <string name="auth_login_action">Войти</string>
+    <string name="auth_register_action">Создать аккаунт</string>
+    <string name="auth_no_account_prompt">Нет аккаунта?</string>
+    <string name="auth_open_register">Регистрация</string>
     <string name="auth_has_account_prompt">Уже есть аккаунт?</string>
     <string name="auth_open_login">Войти</string>
     <string name="auth_back">Назад</string>
 
     <string name="auth_demo_hint">Используйте логин и пароль от schools.by (например: логин 002).</string>
 
-    <string name="auth_error_validation">Пожалуйста, укажите логин и пароль от schools.by.</string>
+    <string name="auth_error_validation">Введите логин и пароль Schools.by</string>
     <string name="auth_error_network">Сеть недоступна. Попробуйте ещё раз.</string>
-    <string name="auth_error_credentials">Неверный логин или пароль schools.by.</string>
+    <string name="auth_error_credentials">Неверный логин или пароль Schools.by.</string>
     <string name="auth_error_forbidden">Доступ запрещён.</string>
     <string name="auth_error_unknown">Что-то пошло не так. Попробуйте ещё раз.</string>
 
