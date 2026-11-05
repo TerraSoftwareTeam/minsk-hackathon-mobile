@@ -8,5 +8,5 @@ data object FeedRoute : NavKey
 
 @Serializable
 data class FeedDetailsRoute(
-    val postId: String,
+    val eventId: String,
 ) : NavKey

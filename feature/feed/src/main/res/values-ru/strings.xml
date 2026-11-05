@@ -1,21 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="feed_title">Лента</string>
-    <string name="feed_refresh">Обновить</string>
     <string name="feed_open_profile">Открыть профиль</string>
     <string name="feed_retry">Повторить</string>
 
+    <string name="feed_filter_all">Все</string>
+    <string name="feed_filter_hackathon">Хакатоны</string>
+    <string name="feed_filter_meetup">Митапы</string>
+    <string name="feed_filter_workshop">Мастер-классы</string>
+    <string name="feed_filter_lecture">Лекции</string>
+
+    <string name="feed_card_more">Подробнее</string>
+
     <string name="feed_error_title">Не удалось загрузить ленту</string>
     <string name="feed_empty_title">Пока пусто</string>
-    <string name="feed_empty_description">Новые посты появятся в ленте.</string>
+    <string name="feed_empty_description">Новые мероприятия появятся в ленте.</string>
+    <string name="feed_empty_filter_description">В этой категории пока нет мероприятий.</string>
 
     <string name="feed_error_network">Проверьте соединение и попробуйте ещё раз.</string>
-    <string name="feed_error_not_found">Пост не найден.</string>
+    <string name="feed_error_not_found">Мероприятие не найдено.</string>
     <string name="feed_error_unauthorized">Войдите снова.</string>
-    <string name="feed_error_forbidden">У вас нет доступа к этому посту.</string>
+    <string name="feed_error_forbidden">У вас нет доступа к этому мероприятию.</string>
     <string name="feed_error_unknown">Что-то пошло не так. Попробуйте ещё раз.</string>
 
-    <string name="feed_details_title">Пост</string>
+    <string name="feed_details_title">Мероприятие</string>
     <string name="feed_details_back">Назад</string>
-    <string name="feed_details_meta">%1$s · %2$s</string>
+    <string name="feed_details_about">О мероприятии</string>
+    <string name="feed_details_time">Дата и время</string>
+    <string name="feed_details_place">Место</string>
+    <string name="feed_details_organizer">Организатор</string>
+    <string name="feed_details_participants">Участники</string>
+    <string name="feed_details_subscribe">Записаться</string>
+    <string name="feed_details_subscribing">Записываем…</string>
+    <string name="feed_details_subscribed">Вы записаны</string>
+
+    <plurals name="feed_events_count">
+        <item quantity="one">%d мероприятие</item>
+        <item quantity="few">%d мероприятия</item>
+        <item quantity="many">%d мероприятий</item>
+        <item quantity="other">%d мероприятия</item>
+    </plurals>
 </resources>

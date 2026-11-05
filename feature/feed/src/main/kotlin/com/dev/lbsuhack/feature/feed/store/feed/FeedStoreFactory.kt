@@ -6,7 +6,8 @@ import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
 import com.dev.lbsuhack.core.domain.DomainResult
 import com.dev.lbsuhack.core.localization.text.UiText
-import com.dev.lbsuhack.feature.feed.domain.FeedPost
+import com.dev.lbsuhack.feature.feed.domain.EventCategory
+import com.dev.lbsuhack.feature.feed.domain.FeedEvent
 import com.dev.lbsuhack.feature.feed.domain.FeedRepository
 import com.dev.lbsuhack.feature.feed.toUiText
 import kotlinx.coroutines.launch
@@ -27,8 +28,10 @@ class FeedStoreFactory(
 
     private sealed interface Message {
         data object Loading : Message
-        data class Loaded(val posts: List<FeedPost>) : Message
+        data class Loaded(val events: List<FeedEvent>) : Message
         data class Failed(val error: UiText) : Message
+        data class CategorySelected(val category: EventCategory?) : Message
+        data class ExpansionToggled(val eventId: String) : Message
     }
 
     private inner class ExecutorImpl :
@@ -37,7 +40,9 @@ class FeedStoreFactory(
         override fun executeIntent(intent: FeedStore.Intent) {
             when (intent) {
                 FeedStore.Intent.Load, FeedStore.Intent.Refresh -> load()
-                is FeedStore.Intent.ClickPost -> publish(FeedStore.Label.OpenDetails(intent.postId))
+                is FeedStore.Intent.SelectCategory -> dispatch(Message.CategorySelected(intent.category))
+                is FeedStore.Intent.ToggleExpanded -> dispatch(Message.ExpansionToggled(intent.eventId))
+                is FeedStore.Intent.ClickEvent -> publish(FeedStore.Label.OpenDetails(intent.eventId))
             }
         }
 
@@ -47,7 +52,7 @@ class FeedStoreFactory(
             scope.launch {
                 dispatch(Message.Loading)
 
-                when (val result = feedRepository.getFeed()) {
+                when (val result = feedRepository.getEvents()) {
                     is DomainResult.Success -> dispatch(Message.Loaded(result.value))
                     is DomainResult.Failure -> dispatch(Message.Failed(result.error.toUiText()))
                 }
@@ -58,8 +63,16 @@ class FeedStoreFactory(
     private object ReducerImpl : Reducer<FeedStore.State, Message> {
         override fun FeedStore.State.reduce(msg: Message): FeedStore.State = when (msg) {
             Message.Loading -> copy(isLoading = true, error = null)
-            is Message.Loaded -> copy(posts = msg.posts, isLoading = false, error = null)
+            is Message.Loaded -> copy(events = msg.events, isLoading = false, error = null)
             is Message.Failed -> copy(isLoading = false, error = msg.error)
+            is Message.CategorySelected -> copy(selectedCategory = msg.category)
+            is Message.ExpansionToggled -> copy(
+                expandedEventIds = if (msg.eventId in expandedEventIds) {
+                    expandedEventIds - msg.eventId
+                } else {
+                    expandedEventIds + msg.eventId
+                },
+            )
         }
     }
 }

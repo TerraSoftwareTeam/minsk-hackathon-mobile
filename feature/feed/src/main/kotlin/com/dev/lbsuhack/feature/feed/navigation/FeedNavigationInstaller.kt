@@ -18,8 +18,8 @@ class FeedNavigationInstaller : NavigationInstaller {
                 val appNavigation = LocalAppNavigation.current
 
                 FeedScreen(
-                    onOpenDetails = { postId ->
-                        navigator.navigate(FeedDetailsRoute(postId = postId))
+                    onOpenDetails = { eventId ->
+                        navigator.navigate(FeedDetailsRoute(eventId = eventId))
                     },
                     onOpenProfile = appNavigation::openProfile,
                 )
@@ -29,7 +29,7 @@ class FeedNavigationInstaller : NavigationInstaller {
                 val navigator = LocalNavigator.current
 
                 FeedDetailsScreen(
-                    postId = route.postId,
+                    eventId = route.eventId,
                     onBack = navigator::back,
                 )
             }

@@ -4,7 +4,9 @@ import com.dev.lbsuhack.core.domain.DomainResult
 
 interface FeedRepository {
 
-    suspend fun getFeed(): DomainResult<List<FeedPost>>
+    suspend fun getEvents(): DomainResult<List<FeedEvent>>
 
-    suspend fun getPost(id: String): DomainResult<FeedPost>
+    suspend fun getEvent(id: String): DomainResult<FeedEvent>
+
+    suspend fun setSubscribed(id: String, subscribed: Boolean): DomainResult<FeedEvent>
 }

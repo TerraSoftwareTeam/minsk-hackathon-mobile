@@ -1,21 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="feed_title">Feed</string>
-    <string name="feed_refresh">Refresh</string>
     <string name="feed_open_profile">Open profile</string>
     <string name="feed_retry">Try again</string>
 
+    <string name="feed_filter_all">All</string>
+    <string name="feed_filter_hackathon">Hackathons</string>
+    <string name="feed_filter_meetup">Meetups</string>
+    <string name="feed_filter_workshop">Workshops</string>
+    <string name="feed_filter_lecture">Lectures</string>
+
+    <string name="feed_card_more">Details</string>
+
     <string name="feed_error_title">Could not load the feed</string>
     <string name="feed_empty_title">Nothing here yet</string>
-    <string name="feed_empty_description">New posts will appear in the feed.</string>
+    <string name="feed_empty_description">New events will appear in the feed.</string>
+    <string name="feed_empty_filter_description">No events in this category yet.</string>
 
     <string name="feed_error_network">Check your connection and try again.</string>
-    <string name="feed_error_not_found">This post could not be found.</string>
+    <string name="feed_error_not_found">This event could not be found.</string>
     <string name="feed_error_unauthorized">Please sign in again.</string>
-    <string name="feed_error_forbidden">You do not have access to this post.</string>
+    <string name="feed_error_forbidden">You do not have access to this event.</string>
     <string name="feed_error_unknown">Something went wrong. Please try again.</string>
 
-    <string name="feed_details_title">Post</string>
+    <string name="feed_details_title">Event</string>
     <string name="feed_details_back">Back</string>
-    <string name="feed_details_meta">%1$s · %2$s</string>
+    <string name="feed_details_about">About</string>
+    <string name="feed_details_time">Date and time</string>
+    <string name="feed_details_place">Place</string>
+    <string name="feed_details_organizer">Organizer</string>
+    <string name="feed_details_participants">Participants</string>
+    <string name="feed_details_subscribe">Subscribe</string>
+    <string name="feed_details_subscribing">Subscribing…</string>
+    <string name="feed_details_subscribed">You are subscribed</string>
+
+    <plurals name="feed_events_count">
+        <item quantity="one">%d event</item>
+        <item quantity="other">%d events</item>
+    </plurals>
 </resources>

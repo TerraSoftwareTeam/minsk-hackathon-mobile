@@ -28,7 +28,7 @@ class FeedDetailsStoreTest {
     ).create()
 
     @Test
-    fun `load finds post by id`() =
+    fun `load finds event by id`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val store = createStore()
 
@@ -36,7 +36,8 @@ class FeedDetailsStoreTest {
             runCurrent()
 
             assertFalse(store.state.isLoading)
-            assertEquals("2", store.state.post?.id)
+            assertEquals("2", store.state.event?.id)
+            assertFalse(store.state.isSubscribed)
         }
 
     @Test
@@ -50,5 +51,26 @@ class FeedDetailsStoreTest {
             assertFalse(store.state.isLoading)
             assertNotNull(store.state.error)
             assertTrue(store.state.error is UiText.Resource)
+        }
+
+    @Test
+    fun `toggle subscription subscribes and unsubscribes`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val store = createStore()
+            store.accept(FeedDetailsStore.Intent.Load("4"))
+            runCurrent()
+
+            store.accept(FeedDetailsStore.Intent.ToggleSubscription)
+            runCurrent()
+
+            assertTrue(store.state.isSubscribed)
+            assertFalse(store.state.isSubscribing)
+            assertNotNull(store.state.event)
+
+            store.accept(FeedDetailsStore.Intent.ToggleSubscription)
+            runCurrent()
+
+            assertFalse(store.state.isSubscribed)
+            assertFalse(store.state.isSubscribing)
         }
 }
