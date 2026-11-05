@@ -4,7 +4,10 @@ import com.dev.lbsuhack.core.domain.DomainResult
 
 interface TournamentRepository {
 
+    suspend fun getBracket(stage: TournamentStage): DomainResult<TournamentBracket>
+
     suspend fun getTournaments(): DomainResult<List<Tournament>>
 
     suspend fun getTournament(id: String): DomainResult<Tournament>
 }
+

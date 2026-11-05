@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="tournaments_title">Tournaments</string>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="tournaments_title">Tournament Bracket</string>
     <string name="tournaments_retry">Try again</string>
     <string name="tournaments_card_meta">%1$s · %2$s</string>
-    <string name="tournaments_participants_value">%1$d / %2$d participants</string>
+    <string name="tournaments_participants_value" tools:ignore="PluralsCandidate">%1$d / %2$d participants</string>
 
-    <string name="tournaments_error_title">Could not load tournaments</string>
+    <string name="tournaments_error_title">Could not load bracket</string>
     <string name="tournaments_empty_title">No tournaments yet</string>
     <string name="tournaments_empty_description">Tournaments will appear here.</string>
 
@@ -20,4 +20,8 @@
     <string name="tournaments_details_date">Date</string>
     <string name="tournaments_details_place">Place</string>
     <string name="tournaments_details_participants">Participants</string>
+
+    <string name="tournaments_stage_school">School</string>
+    <string name="tournaments_stage_district">District</string>
+    <string name="tournaments_stage_city">City</string>
 </resources>

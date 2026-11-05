@@ -1,9 +1,8 @@
 package com.dev.lbsuhack.feature.tournaments.store
 
-import app.cash.turbine.test
-import com.arkivanov.mvikotlin.extensions.coroutines.labels
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
 import com.dev.lbsuhack.feature.tournaments.data.TournamentRepositoryImpl
+import com.dev.lbsuhack.feature.tournaments.domain.TournamentStage
 import com.dev.lbsuhack.feature.tournaments.store.tournaments.TournamentsStore
 import com.dev.lbsuhack.feature.tournaments.store.tournaments.TournamentsStoreFactory
 import com.dev.lbsuhack.feature.tournaments.util.MainDispatcherRule
@@ -12,6 +11,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
@@ -28,7 +28,18 @@ class TournamentsStoreTest {
     ).create()
 
     @Test
-    fun `load fills the state with tournaments`() =
+    fun `initial state defaults to school stage and no bracket`() {
+        val store = createStore()
+
+        assertEquals(TournamentStage.SCHOOL, store.state.stage)
+        assertNull(store.state.bracket)
+        assertNull(store.state.selectedMatch)
+        assertFalse(store.state.isLoading)
+        assertNull(store.state.error)
+    }
+
+    @Test
+    fun `load fills the state with school stage bracket`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val store = createStore()
 
@@ -37,20 +48,50 @@ class TournamentsStoreTest {
 
             assertFalse(store.state.isLoading)
             assertNull(store.state.error)
-            assertEquals(3, store.state.tournaments.size)
-            assertEquals("Spring Mobile Cup", store.state.tournaments.first().title)
+            val bracket = store.state.bracket
+            assertNotNull(bracket)
+            assertEquals(TournamentStage.SCHOOL, bracket?.stage)
+            assertEquals(7, bracket?.teamsCount)
+            assertEquals(3, bracket?.rounds?.size)
         }
 
     @Test
-    fun `click tournament publishes open details label`() =
+    fun `select stage switches to district and loads 5 teams bracket`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val store = createStore()
 
-            store.labels.test {
-                store.accept(TournamentsStore.Intent.ClickTournament("2"))
+            store.accept(TournamentsStore.Intent.SelectStage(TournamentStage.DISTRICT))
+            runCurrent()
 
-                assertEquals(TournamentsStore.Label.OpenDetails("2"), awaitItem())
-                cancelAndIgnoreRemainingEvents()
-            }
+            assertEquals(TournamentStage.DISTRICT, store.state.stage)
+            val bracket = store.state.bracket
+            assertNotNull(bracket)
+            assertEquals(TournamentStage.DISTRICT, bracket?.stage)
+            assertEquals(5, bracket?.teamsCount)
         }
+
+    @Test
+    fun `select match finds and sets selected match`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val store = createStore()
+
+            store.accept(TournamentsStore.Intent.Load)
+            runCurrent()
+
+            store.accept(TournamentsStore.Intent.SelectMatch("school-r0-m0"))
+            assertNotNull(store.state.selectedMatch)
+            assertEquals("school-r0-m0", store.state.selectedMatch?.id)
+
+            store.accept(TournamentsStore.Intent.SelectMatch(null))
+            assertNull(store.state.selectedMatch)
+        }
+
+    @Test
+    fun `reset viewport increments trigger`() {
+        val store = createStore()
+
+        val initial = store.state.resetViewportTrigger
+        store.accept(TournamentsStore.Intent.ResetViewport)
+        assertEquals(initial + 1L, store.state.resetViewportTrigger)
+    }
 }

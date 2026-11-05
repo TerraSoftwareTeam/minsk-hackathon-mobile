@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tournaments_title">Турниры</string>
+    <string name="tournaments_title">Турнирная сетка</string>
     <string name="tournaments_retry">Повторить</string>
     <string name="tournaments_card_meta">%1$s · %2$s</string>
     <string name="tournaments_participants_value">%1$d / %2$d участников</string>
 
-    <string name="tournaments_error_title">Не удалось загрузить турниры</string>
+    <string name="tournaments_error_title">Не удалось загрузить турнирную таблицу</string>
     <string name="tournaments_empty_title">Турниров пока нет</string>
     <string name="tournaments_empty_description">Турниры появятся здесь.</string>
 
@@ -20,4 +20,8 @@
     <string name="tournaments_details_date">Дата</string>
     <string name="tournaments_details_place">Место</string>
     <string name="tournaments_details_participants">Участники</string>
+
+    <string name="tournaments_stage_school">Школа</string>
+    <string name="tournaments_stage_district">Район</string>
+    <string name="tournaments_stage_city">Город</string>
 </resources>
