@@ -78,7 +78,7 @@ class CreateActivityStoreFactory(
             scope.launch {
                 dispatch(Message.Submitting)
                 val sessionUser = (observeSessionUseCase.state.value as? SessionState.Authenticated)?.user
-                val authorId = sessionUser?.id ?: 101L
+                val authorId = sessionUser?.id ?: "101"
                 val authorName = sessionUser?.name ?: "Никита Ковалев"
                 val authorClass = sessionUser?.pupilClass ?: "10-А"
 

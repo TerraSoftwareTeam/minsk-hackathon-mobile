@@ -29,7 +29,7 @@ class ActivityRepositoryImplTest {
             minParticipants = 4,
             maxParticipants = 8,
             preferenceNotes = "Нужны доски",
-            authorId = 1L,
+            authorId = "1",
             authorName = "Никита",
             authorClass = "10-А",
         )
@@ -53,19 +53,19 @@ class ActivityRepositoryImplTest {
             minParticipants = 2,
             maxParticipants = 5,
             preferenceNotes = "",
-            authorId = 1L,
+            authorId = "1",
             authorName = "Никита",
             authorClass = "10-А",
         )
 
-        val newParticipant = ActivityParticipant(2L, "Мария", "10-Б")
+        val newParticipant = ActivityParticipant("2", "Мария", "10-Б")
         val joined = repository.joinActivity(proposal.id, newParticipant)
         assertEquals(2, joined.participants.size)
-        assertTrue(joined.isJoined(2L))
+        assertTrue(joined.isJoined("2"))
 
-        val left = repository.leaveActivity(proposal.id, 2L)
+        val left = repository.leaveActivity(proposal.id, "2")
         assertEquals(1, left.participants.size)
-        assertTrue(!left.isJoined(2L))
+        assertTrue(!left.isJoined("2"))
     }
 
     @Test
@@ -78,7 +78,7 @@ class ActivityRepositoryImplTest {
             minParticipants = 2,
             maxParticipants = 6,
             preferenceNotes = "",
-            authorId = 1L,
+            authorId = "1",
             authorName = "Никита",
             authorClass = "10-А",
         )

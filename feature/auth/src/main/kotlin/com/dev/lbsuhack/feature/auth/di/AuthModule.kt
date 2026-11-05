@@ -13,7 +13,9 @@ import com.dev.lbsuhack.feature.auth.presentation.login.LoginViewModel
 import com.dev.lbsuhack.feature.auth.presentation.register.RegisterViewModel
 import com.dev.lbsuhack.feature.auth.store.login.LoginStoreFactory
 import com.dev.lbsuhack.feature.auth.store.register.RegisterStoreFactory
+import io.ktor.client.HttpClient
 import org.koin.core.module.dsl.viewModelOf
+import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
@@ -29,6 +31,9 @@ val authModule = module {
     single<AuthRepository> {
         AuthRepositoryImpl(
             schoolsByRepository = get(),
+            httpClient = get<HttpClient>(named("unauthenticatedHttpClient")),
+            tokenStorage = get(),
+            userRepository = get(),
         )
     }
 
@@ -52,4 +57,3 @@ val authModule = module {
 
     single { AuthNavigationInstaller() } bind NavigationInstaller::class
 }
-

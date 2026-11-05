@@ -58,7 +58,7 @@ class ProfileStoreFactory(
                 dispatch(
                     Message.Loaded(
                         name = user?.name.orEmpty(),
-                        email = user?.email.orEmpty(),
+                        email = user?.schoolName ?: user?.schoolsById.orEmpty(),
                         pupilClass = user?.pupilClass.orEmpty(),
                         notificationsEnabled = profileRepository.isNotificationsEnabled(),
                         savedCount = profileRepository.savedCount(),

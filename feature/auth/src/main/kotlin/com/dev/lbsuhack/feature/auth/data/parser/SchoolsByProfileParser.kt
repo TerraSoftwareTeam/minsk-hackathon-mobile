@@ -11,6 +11,10 @@ class SchoolsByProfileParser {
         pattern = """<h1[^>]*>(.*?)</h1>""",
         options = setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
     )
+    private val schoolRegex = Regex(
+        pattern = """<title[^>]*>(.*?)</title>""",
+        options = setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
+    )
     private val htmlTagRegex = Regex("""<[^>]+>""")
     private val whitespaceRegex = Regex("""\s+""")
     private val idInTextRegex = Regex("""ID\s*(\d+)""", RegexOption.IGNORE_CASE)
@@ -24,19 +28,29 @@ class SchoolsByProfileParser {
         return when (role) {
             UserRole.PUPIL -> parsePupil(html, pageUrl)
             UserRole.TEACHER -> parseTeacher(html, pageUrl)
+            UserRole.ORGANIZATOR -> null
         }
     }
 
     fun parsePupil(html: String, pageUrl: String? = null): Pupil? {
         val unescaped = extractCleanH1(html) ?: return null
 
-        val name = extractName(unescaped)
+        val rawName = extractName(unescaped)
         val id = extractId(unescaped, pageUrl)
         val className = extractClass(unescaped)
+        val schoolName = extractSchoolName(html)
 
-        if (name.isNotEmpty() && !id.isNullOrEmpty() && !className.isNullOrEmpty()) {
+        if (rawName.isNotEmpty() && !id.isNullOrEmpty() && !className.isNullOrEmpty()) {
+            val parts = rawName.split(whitespaceRegex).filter { it.isNotBlank() }
+            val surname = parts.firstOrNull()
+            val fathersName = parts.drop(2).joinToString(" ").ifBlank { null }
+
             return Pupil(
-                name = name,
+                name = rawName,
+                surname = surname,
+                fathersName = fathersName,
+                schoolsById = id,
+                schoolName = schoolName,
                 pupilClass = className,
                 id = id,
             )
@@ -47,13 +61,22 @@ class SchoolsByProfileParser {
     fun parseTeacher(html: String, pageUrl: String? = null): Teacher? {
         val unescaped = extractCleanH1(html) ?: return null
 
-        val name = extractName(unescaped)
+        val rawName = extractName(unescaped)
         val id = extractId(unescaped, pageUrl)
+        val schoolName = extractSchoolName(html)
 
-        if (name.isNotEmpty() && !id.isNullOrEmpty()) {
+        if (rawName.isNotEmpty() && !id.isNullOrEmpty()) {
+            val parts = rawName.split(whitespaceRegex).filter { it.isNotBlank() }
+            val surname = parts.firstOrNull()
+            val fathersName = parts.drop(2).joinToString(" ").ifBlank { null }
+
             return Teacher(
                 id = id,
-                name = name,
+                name = rawName,
+                surname = surname,
+                fathersName = fathersName,
+                schoolsById = id,
+                schoolName = schoolName,
             )
         }
         return null
@@ -70,6 +93,15 @@ class SchoolsByProfileParser {
 
     private fun extractClass(unescaped: String): String? {
         return classInTextRegex.find(unescaped)?.groupValues?.get(1)?.trim()
+    }
+
+    private fun extractSchoolName(html: String): String? {
+        val titleMatch = schoolRegex.find(html) ?: return null
+        val rawTitle = titleMatch.groupValues[1]
+        val textOnly = htmlTagRegex.replace(rawTitle, " ")
+        val normalized = whitespaceRegex.replace(textOnly, " ").trim()
+        val unescaped = unescapeHtml(normalized)
+        return unescaped.substringAfter("—").substringAfter("-").trim().ifBlank { null }
     }
 
     private fun extractCleanH1(html: String): String? {

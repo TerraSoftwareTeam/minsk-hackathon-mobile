@@ -5,13 +5,11 @@ import com.arkivanov.mvikotlin.extensions.coroutines.labels
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
 import com.dev.lbsuhack.core.domain.DomainError
 import com.dev.lbsuhack.core.domain.DomainResult
-import com.dev.lbsuhack.core.domain.model.Pupil
-import com.dev.lbsuhack.core.domain.model.User
 import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.domain.session.SaveSessionUseCase
+import com.dev.lbsuhack.core.domain.session.SessionUser
 import com.dev.lbsuhack.core.localization.text.UiText
-import com.dev.lbsuhack.feature.auth.data.AuthRepositoryImpl
-import com.dev.lbsuhack.feature.auth.domain.repository.SchoolsByAuthRepository
+import com.dev.lbsuhack.feature.auth.domain.AuthRepository
 import com.dev.lbsuhack.feature.auth.store.login.LoginStore
 import com.dev.lbsuhack.feature.auth.store.login.LoginStoreFactory
 import com.dev.lbsuhack.feature.auth.util.FakeSessionRepository
@@ -34,38 +32,40 @@ class LoginStoreTest {
 
     private val sessionRepository = FakeSessionRepository()
 
-    private val fakeSchoolsByRepo = object : SchoolsByAuthRepository {
-        override suspend fun loginAndGetUser(
+    private val fakeAuthRepository = object : AuthRepository {
+        var failure: DomainError? = null
+
+        override suspend fun login(
             username: String,
             password: String,
             role: UserRole,
-        ): DomainResult<User> {
+        ): DomainResult<SessionUser> {
+            failure?.let { return DomainResult.Failure(it) }
             return if (username == "002" && password == "secret") {
                 DomainResult.Success(
-                    if (role == UserRole.PUPIL) {
-                        User.Pupil(id = "3575208", name = "Владислав Смирнов", pupilClass = "11 \"М\"")
-                    } else {
-                        User.Teacher(id = "3575208", name = "Владислав Смирнов")
-                    }
+                    SessionUser(
+                        id = "3575208",
+                        name = "Владислав Смирнов",
+                        schoolsById = "3575208",
+                        role = role,
+                        pupilClass = if (role == UserRole.PUPIL) "11 \"М\"" else null,
+                    )
                 )
             } else {
                 DomainResult.Failure(DomainError.Unauthorized)
             }
         }
 
-        override suspend fun loginAndGetPupil(
-            username: String,
+        override suspend fun register(
+            name: String,
+            email: String,
             password: String,
-        ): DomainResult<Pupil> {
-            return DomainResult.Success(
-                User.Pupil(id = "3575208", name = "Владислав Смирнов", pupilClass = "11 \"М\"")
-            )
-        }
+        ): DomainResult<SessionUser> = DomainResult.Failure(DomainError.Unknown)
     }
 
     private fun createStore(): LoginStore = LoginStoreFactory(
         storeFactory = DefaultStoreFactory(),
-        authRepository = AuthRepositoryImpl(fakeSchoolsByRepo),
+        authRepository = fakeAuthRepository,
         saveSession = SaveSessionUseCase(sessionRepository),
     ).create()
 
@@ -116,7 +116,7 @@ class LoginStoreTest {
 
             assertFalse(store.state.isLoading)
             assertNull(store.state.error)
-            assertEquals("002@schools.by", sessionRepository.savedUser?.email)
+            assertEquals("3575208", sessionRepository.savedUser?.schoolsById)
             assertEquals(UserRole.PUPIL, sessionRepository.savedUser?.role)
             assertEquals("11 \"М\"", sessionRepository.savedUser?.pupilClass)
         }
@@ -151,4 +151,3 @@ class LoginStoreTest {
             }
         }
 }
-

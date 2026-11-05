@@ -57,7 +57,8 @@ class LoginStoreFactory(
             val password = state().password
             val role = state().role
 
-            if (username.isBlank() || password.isBlank()) {
+            val isPasswordRequired = role != UserRole.ORGANIZATOR
+            if (username.isBlank() || (isPasswordRequired && password.isBlank())) {
                 dispatch(Message.Failed(DomainError.Validation.toUiText()))
                 return
             }

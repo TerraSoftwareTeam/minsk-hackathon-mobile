@@ -24,9 +24,12 @@ sealed interface SessionState {
 }
 
 data class SessionUser(
-    val id: Long,
+    val id: String,
     val name: String,
-    val email: String,
+    val surname: String? = null,
+    val fathersName: String? = null,
+    val schoolsById: String? = null,
+    val schoolName: String? = null,
     val role: UserRole = UserRole.PUPIL,
     val pupilClass: String? = null,
 )

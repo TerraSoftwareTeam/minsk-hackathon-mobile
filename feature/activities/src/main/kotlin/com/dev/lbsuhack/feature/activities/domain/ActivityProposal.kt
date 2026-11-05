@@ -8,7 +8,7 @@ data class ActivityProposal(
     val targetClass: String,
     val minParticipants: Int,
     val maxParticipants: Int,
-    val authorId: Long,
+    val authorId: String,
     val authorName: String,
     val authorClass: String,
     val status: ActivityStatus,
@@ -21,5 +21,5 @@ data class ActivityProposal(
     val isFull: Boolean get() = currentParticipantsCount >= maxParticipants
     val hasQuorum: Boolean get() = currentParticipantsCount >= minParticipants
 
-    fun isJoined(pupilId: Long): Boolean = participants.any { it.pupilId == pupilId }
+    fun isJoined(pupilId: String): Boolean = participants.any { it.pupilId == pupilId }
 }

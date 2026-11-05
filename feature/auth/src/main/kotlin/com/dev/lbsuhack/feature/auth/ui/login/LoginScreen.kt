@@ -11,14 +11,12 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -100,10 +98,10 @@ fun LoginScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = if (state.role == UserRole.TEACHER) {
-                                stringResource(R.string.auth_login_teacher_title)
-                            } else {
-                                stringResource(R.string.auth_login_pupil_title)
+                            text = when (state.role) {
+                                UserRole.TEACHER -> stringResource(R.string.auth_login_teacher_title)
+                                UserRole.ORGANIZATOR -> stringResource(R.string.auth_login_organizer_title)
+                                else -> stringResource(R.string.auth_login_pupil_title)
                             },
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
@@ -154,6 +152,10 @@ fun LoginScreen(
                             viewModel.accept(LoginStore.Intent.RoleChanged(UserRole.TEACHER))
                             step = LoginStep.CREDENTIALS
                         },
+                        onSelectOrganizer = {
+                            viewModel.accept(LoginStore.Intent.RoleChanged(UserRole.ORGANIZATOR))
+                            step = LoginStep.CREDENTIALS
+                        },
                     )
                 }
                 LoginStep.CREDENTIALS -> {
@@ -173,6 +175,7 @@ fun LoginScreen(
 private fun LoginWelcomeContent(
     onSelectPupil: () -> Unit,
     onSelectTeacher: () -> Unit,
+    onSelectOrganizer: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val brandText = buildAnnotatedString {
@@ -265,6 +268,28 @@ private fun LoginWelcomeContent(
                     )
                 }
             }
+
+            Surface(
+                onClick = onSelectOrganizer,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(R.string.auth_role_organizator_action),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
         }
     }
 }
@@ -277,6 +302,8 @@ private fun LoginCredentialsContent(
     onSubmit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isOrganizer = state.role == UserRole.ORGANIZATOR
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -288,29 +315,31 @@ private fun LoginCredentialsContent(
         AuthTextField(
             value = state.username,
             onValueChange = onUsernameChange,
-            label = stringResource(R.string.auth_username),
-            placeholder = stringResource(R.string.auth_username_placeholder),
+            label = if (isOrganizer) stringResource(R.string.auth_username_organizer) else stringResource(R.string.auth_username),
+            placeholder = if (isOrganizer) stringResource(R.string.auth_username_organizer_placeholder) else stringResource(R.string.auth_username_placeholder),
             leadingIcon = Icons.Rounded.Person,
             keyboardType = KeyboardType.Text,
-            imeAction = ImeAction.Next,
+            imeAction = if (isOrganizer) ImeAction.Done else ImeAction.Next,
+            onImeAction = { if (isOrganizer) onSubmit() },
         )
 
-        AuthPasswordField(
-            value = state.password,
-            onValueChange = onPasswordChange,
-            imeAction = ImeAction.Done,
-            onImeAction = onSubmit,
-        )
+        if (!isOrganizer) {
+            AuthPasswordField(
+                value = state.password,
+                onValueChange = onPasswordChange,
+                imeAction = ImeAction.Done,
+                onImeAction = onSubmit,
+            )
+        }
 
         AuthError(error = state.error)
 
         Spacer(modifier = Modifier.height(4.dp))
 
         AuthPrimaryButton(
-            text = stringResource(R.string.auth_login_action),
+            text = if (isOrganizer) stringResource(R.string.auth_login_action_organizer) else stringResource(R.string.auth_login_action),
             isLoading = state.isLoading,
             onClick = onSubmit,
         )
     }
 }
-

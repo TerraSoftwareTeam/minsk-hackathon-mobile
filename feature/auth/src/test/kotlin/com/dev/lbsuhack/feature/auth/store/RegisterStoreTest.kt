@@ -3,8 +3,12 @@ package com.dev.lbsuhack.feature.auth.store
 import app.cash.turbine.test
 import com.arkivanov.mvikotlin.extensions.coroutines.labels
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
+import com.dev.lbsuhack.core.domain.DomainError
+import com.dev.lbsuhack.core.domain.DomainResult
+import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.domain.session.SaveSessionUseCase
-import com.dev.lbsuhack.feature.auth.data.AuthRepositoryImpl
+import com.dev.lbsuhack.core.domain.session.SessionUser
+import com.dev.lbsuhack.feature.auth.domain.AuthRepository
 import com.dev.lbsuhack.feature.auth.store.register.RegisterStore
 import com.dev.lbsuhack.feature.auth.store.register.RegisterStoreFactory
 import com.dev.lbsuhack.feature.auth.util.FakeSessionRepository
@@ -26,22 +30,29 @@ class RegisterStoreTest {
 
     private val sessionRepository = FakeSessionRepository()
 
-    private val dummySchoolsByRepo = object : com.dev.lbsuhack.feature.auth.domain.repository.SchoolsByAuthRepository {
-        override suspend fun loginAndGetUser(
+    private val fakeAuthRepository = object : AuthRepository {
+        override suspend fun login(
             username: String,
             password: String,
-            role: com.dev.lbsuhack.core.domain.model.UserRole,
-        ) = throw UnsupportedOperationException()
+            role: UserRole,
+        ): DomainResult<SessionUser> = DomainResult.Failure(DomainError.Unknown)
 
-        override suspend fun loginAndGetPupil(
-            username: String,
+        override suspend fun register(
+            name: String,
+            email: String,
             password: String,
-        ) = throw UnsupportedOperationException()
+        ): DomainResult<SessionUser> = DomainResult.Success(
+            SessionUser(
+                id = "2",
+                name = name,
+                role = UserRole.PUPIL,
+            )
+        )
     }
 
     private fun createStore(): RegisterStore = RegisterStoreFactory(
         storeFactory = DefaultStoreFactory(),
-        authRepository = AuthRepositoryImpl(dummySchoolsByRepo),
+        authRepository = fakeAuthRepository,
         saveSession = SaveSessionUseCase(sessionRepository),
     ).create()
 

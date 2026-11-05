@@ -7,6 +7,7 @@
     <string name="auth_login_title">Вход</string>
     <string name="auth_login_pupil_title">Вход ученика</string>
     <string name="auth_login_teacher_title">Вход учителя</string>
+    <string name="auth_login_organizer_title">Вход организатора</string>
     <string name="auth_login_subtitle">Войдите через Schools.by, чтобы синхронизировать данные профиля и участвовать в событиях.</string>
     <string name="auth_register_top_title">Регистрация</string>
     <string name="auth_register_title">Присоединяйтесь к kola</string>
@@ -19,10 +20,14 @@
     <string name="auth_role_label">Роль</string>
     <string name="auth_role_pupil">Ученик</string>
     <string name="auth_role_teacher">Учитель</string>
+    <string name="auth_role_organizator">Организатор</string>
     <string name="auth_role_pupil_action">Я ученик</string>
     <string name="auth_role_teacher_action">Я учитель</string>
+    <string name="auth_role_organizator_action">Я организатор</string>
     <string name="auth_username">Логин</string>
     <string name="auth_username_placeholder">kolia</string>
+    <string name="auth_username_organizer">ID Организатора</string>
+    <string name="auth_username_organizer_placeholder">UUID (например: 3f2c9a4e-...)</string>
     <string name="auth_name">Имя</string>
     <string name="auth_name_placeholder">Как к вам обращаться?</string>
     <string name="auth_email">Почта</string>
@@ -31,6 +36,7 @@
     <string name="auth_password_placeholder">••••••••</string>
 
     <string name="auth_login_action">Вход по schools.by</string>
+    <string name="auth_login_action_organizer">Войти как организатор</string>
     <string name="auth_register_action">Создать аккаунт</string>
     <string name="auth_no_account_prompt">Нет аккаунта?</string>
     <string name="auth_open_register">Регистрация</string>

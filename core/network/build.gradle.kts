@@ -41,7 +41,7 @@ val configuredBaseUrl: String? = providers.gradleProperty("BASE_URL").orNull
     ?: dotEnvValues["BASE_URL"]
     ?: localProperties.getProperty("BASE_URL")
 
-val baseUrl = configuredBaseUrl?.takeIf { it.isNotBlank() } ?: "http://10.0.2.2:8080/"
+val baseUrl = configuredBaseUrl?.takeIf { it.isNotBlank() } ?: "https://3.148.251.46/"
 
 if (configuredBaseUrl.isNullOrBlank()) {
     logger.warn("BASE_URL is not configured. Falling back to $baseUrl")

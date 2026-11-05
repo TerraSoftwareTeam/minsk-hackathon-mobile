@@ -29,9 +29,9 @@ class CreateActivityStoreTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val sessionUser = SessionUser(
-        id = 101L,
+        id = "101",
         name = "Никита Ковалев",
-        email = "nikita@schools.by",
+        schoolName = "School #1",
         pupilClass = "10-А",
     )
 

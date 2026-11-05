@@ -310,7 +310,7 @@ private fun ActivitiesTabRow(
 @Composable
 private fun ActivityCard(
     proposal: ActivityProposal,
-    currentUserId: Long?,
+    currentUserId: String?,
     onClick: () -> Unit,
     onToggleJoin: () -> Unit,
 ) {

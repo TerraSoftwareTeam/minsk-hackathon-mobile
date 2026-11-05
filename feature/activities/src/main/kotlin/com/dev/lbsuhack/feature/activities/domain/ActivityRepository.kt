@@ -14,12 +14,12 @@ interface ActivityRepository {
         minParticipants: Int,
         maxParticipants: Int,
         preferenceNotes: String,
-        authorId: Long,
+        authorId: String,
         authorName: String,
         authorClass: String,
     ): ActivityProposal
     suspend fun joinActivity(activityId: String, participant: ActivityParticipant): ActivityProposal
-    suspend fun leaveActivity(activityId: String, pupilId: Long): ActivityProposal
+    suspend fun leaveActivity(activityId: String, pupilId: String): ActivityProposal
     suspend fun transitionToAdmin(activityId: String): ActivityProposal
     suspend fun approveActivity(
         activityId: String,
