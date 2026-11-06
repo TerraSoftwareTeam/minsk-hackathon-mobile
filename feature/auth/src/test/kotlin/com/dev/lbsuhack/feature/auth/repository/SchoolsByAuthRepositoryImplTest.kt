@@ -8,7 +8,6 @@ import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.feature.auth.data.model.RemoteProfileResult
 import com.dev.lbsuhack.feature.auth.data.parser.SchoolsByProfileParser
 import com.dev.lbsuhack.feature.auth.data.remote.SchoolsByRemoteDataSource
-import com.dev.lbsuhack.feature.auth.data.remote.SchoolsByRemoteDataSourceImpl
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -113,20 +112,5 @@ class SchoolsByAuthRepositoryImplTest {
         val result = repository.loginAndGetUser("002", "1234554321", role = UserRole.PUPIL)
 
         assertEquals(DomainResult.Failure(DomainError.Network), result)
-    }
-
-    @Test
-    fun live_login_with_provided_credentials() = runTest {
-        val dataSource = SchoolsByRemoteDataSourceImpl()
-        val repository = SchoolsByAuthRepositoryImpl(dataSource, parser)
-
-        val result = repository.loginAndGetUser("002", "1234554321", role = UserRole.PUPIL)
-        assertTrue(result is DomainResult.Success)
-        val user = (result as DomainResult.Success).value
-        assertTrue(user is Pupil)
-        val pupil = user as Pupil
-        assertEquals("Смирнов Владислав", pupil.name)
-        assertEquals("11 \"М\"", pupil.pupilClass)
-        assertEquals("3575208", pupil.id)
     }
 }

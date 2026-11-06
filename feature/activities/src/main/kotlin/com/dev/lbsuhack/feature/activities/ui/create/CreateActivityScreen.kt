@@ -59,7 +59,6 @@ import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
 import com.dev.lbsuhack.feature.activities.presentation.create.CreateActivityViewModel
 import com.dev.lbsuhack.feature.activities.store.create.CreateActivityStore
-import com.dev.lbsuhack.feature.activities.ui.activities.accent
 import com.dev.lbsuhack.feature.activities.ui.activities.icon
 import com.dev.lbsuhack.feature.activities.ui.activities.labelRes
 import org.koin.androidx.compose.koinViewModel
@@ -313,18 +312,17 @@ private fun CategorySelector(
             ) {
                 rowCategories.forEach { category ->
                     val isSelected = selected == category
-                    val accent = category.accent()
                     Row(
                         modifier = Modifier
                             .weight(1f)
                             .clip(MaterialTheme.shapes.large)
                             .background(
-                                if (isSelected) accent.container
+                                if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
                                 else MaterialTheme.colorScheme.surfaceContainerLow,
                             )
                             .border(
                                 width = if (isSelected) 1.5.dp else 1.dp,
-                                color = if (isSelected) accent.accent
+                                color = if (isSelected) MaterialTheme.colorScheme.primary
                                 else MaterialTheme.colorScheme.outlineVariant,
                                 shape = MaterialTheme.shapes.large,
                             )
@@ -336,7 +334,7 @@ private fun CategorySelector(
                             imageVector = category.icon(),
                             contentDescription = null,
                             modifier = Modifier.size(22.dp),
-                            tint = if (isSelected) accent.accent
+                            tint = if (isSelected) MaterialTheme.colorScheme.primary
                             else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Spacer(modifier = Modifier.width(9.dp))
@@ -345,7 +343,7 @@ private fun CategorySelector(
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             ),
-                            color = if (isSelected) accent.accent
+                            color = if (isSelected) MaterialTheme.colorScheme.primary
                             else MaterialTheme.colorScheme.onSurface,
                         )
                     }

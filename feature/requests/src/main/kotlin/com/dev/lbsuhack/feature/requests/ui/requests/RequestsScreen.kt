@@ -74,7 +74,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.dev.lbsuhack.core.designsystem.theme.HackAccent
 import com.dev.lbsuhack.core.designsystem.theme.hack
 import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.localization.text.resolve
@@ -599,7 +598,6 @@ private fun RequestKindBadge(
     audience: RequestAudience,
     modifier: Modifier = Modifier,
 ) {
-    val accent = audience.accent()
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -607,7 +605,10 @@ private fun RequestKindBadge(
         Box(
             modifier = Modifier
                 .size(34.dp)
-                .background(accent.container, MaterialTheme.shapes.medium),
+                .background(
+                    MaterialTheme.colorScheme.surfaceContainerHigh,
+                    MaterialTheme.shapes.medium,
+                ),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
@@ -617,7 +618,7 @@ private fun RequestKindBadge(
                 },
                 contentDescription = null,
                 modifier = Modifier.size(19.dp),
-                tint = accent.accent,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Spacer(modifier = Modifier.width(9.dp))
@@ -628,18 +629,12 @@ private fun RequestKindBadge(
                     RequestAudience.ADMIN -> R.string.requests_kind_visit
                 },
             ),
-            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-            color = accent.accent,
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
     }
-}
-
-@Composable
-private fun RequestAudience.accent(): HackAccent = when (this) {
-    RequestAudience.TEACHER -> MaterialTheme.hack.violet
-    RequestAudience.ADMIN -> MaterialTheme.hack.pink
 }
 
 @Composable
@@ -666,35 +661,35 @@ private fun RequestInfoRow(
 
 @Composable
 private fun RequestStatusBadge(status: ReviewStatus) {
-    val containerColor = when (status) {
-        ReviewStatus.PENDING_TEACHER -> MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-        ReviewStatus.PENDING_ADMIN -> MaterialTheme.hack.amber.container
-        ReviewStatus.APPROVED -> MaterialTheme.hack.successContainer
-        ReviewStatus.DECLINED -> MaterialTheme.hack.danger.copy(alpha = 0.14f)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(7.dp)
+                .background(statusColor(status), CircleShape),
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = stringResource(
+                when (status) {
+                    ReviewStatus.PENDING_TEACHER -> R.string.requests_status_pending_teacher
+                    ReviewStatus.PENDING_ADMIN -> R.string.requests_status_pending_admin
+                    ReviewStatus.APPROVED -> R.string.requests_status_approved
+                    ReviewStatus.DECLINED -> R.string.requests_status_declined
+                },
+            ),
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
     }
-    val contentColor = when (status) {
-        ReviewStatus.PENDING_TEACHER -> MaterialTheme.colorScheme.primary
-        ReviewStatus.PENDING_ADMIN -> MaterialTheme.hack.amber.accent
-        ReviewStatus.APPROVED -> MaterialTheme.hack.success
-        ReviewStatus.DECLINED -> MaterialTheme.hack.danger
-    }
+}
 
-    Text(
-        text = stringResource(
-            when (status) {
-                ReviewStatus.PENDING_TEACHER -> R.string.requests_status_pending_teacher
-                ReviewStatus.PENDING_ADMIN -> R.string.requests_status_pending_admin
-                ReviewStatus.APPROVED -> R.string.requests_status_approved
-                ReviewStatus.DECLINED -> R.string.requests_status_declined
-            },
-        ),
-        modifier = Modifier
-            .background(containerColor, CircleShape)
-            .padding(horizontal = 11.dp, vertical = 7.dp),
-        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-        color = contentColor,
-        maxLines = 1,
-    )
+@Composable
+private fun statusColor(status: ReviewStatus): Color = when (status) {
+    ReviewStatus.PENDING_TEACHER -> MaterialTheme.colorScheme.primary
+    ReviewStatus.PENDING_ADMIN -> MaterialTheme.hack.amber.accent
+    ReviewStatus.APPROVED -> MaterialTheme.hack.success
+    ReviewStatus.DECLINED -> MaterialTheme.hack.danger
 }
 
 @Composable

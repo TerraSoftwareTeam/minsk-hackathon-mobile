@@ -21,7 +21,6 @@ class ProfileNavigationInstaller : NavigationInstaller {
                     onBack = navigator::back,
                     onOpenSettings = { navigator.navigate(ProfileSettingsRoute) },
                     onOpenRequests = { role -> appNavigation.openRequests(role) },
-                    onOpenCreateVote = appNavigation::openCreateVote,
                 )
             }
 

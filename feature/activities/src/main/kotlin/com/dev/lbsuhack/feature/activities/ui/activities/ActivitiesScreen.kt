@@ -53,13 +53,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.dev.lbsuhack.core.designsystem.theme.HackAccent
 import com.dev.lbsuhack.core.designsystem.theme.hack
 import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
@@ -598,7 +598,6 @@ internal fun CategoryBadge(
     category: ActivityCategory,
     modifier: Modifier = Modifier,
 ) {
-    val accent = category.accent()
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -606,21 +605,24 @@ internal fun CategoryBadge(
         Box(
             modifier = Modifier
                 .size(34.dp)
-                .background(accent.container, MaterialTheme.shapes.medium),
+                .background(
+                    MaterialTheme.colorScheme.surfaceContainerHigh,
+                    MaterialTheme.shapes.medium,
+                ),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = category.icon(),
                 contentDescription = null,
                 modifier = Modifier.size(19.dp),
-                tint = accent.accent,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Spacer(modifier = Modifier.width(9.dp))
         Text(
             text = stringResource(category.labelRes()),
-            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-            color = accent.accent,
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -629,48 +631,37 @@ internal fun CategoryBadge(
 
 @Composable
 internal fun StatusBadge(status: ActivityStatus) {
-    val containerColor: androidx.compose.ui.graphics.Color
-    val contentColor: androidx.compose.ui.graphics.Color
-    when (status) {
-        ActivityStatus.MODERATING -> {
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-        }
-        ActivityStatus.RECRUITING -> {
-            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-            contentColor = MaterialTheme.colorScheme.primary
-        }
-        ActivityStatus.PENDING_ADMIN -> {
-            containerColor = MaterialTheme.hack.amber.container
-            contentColor = MaterialTheme.hack.amber.accent
-        }
-        ActivityStatus.APPROVED -> {
-            containerColor = MaterialTheme.hack.successContainer
-            contentColor = MaterialTheme.hack.success
-        }
-        ActivityStatus.REJECTED -> {
-            containerColor = MaterialTheme.hack.danger.copy(alpha = 0.14f)
-            contentColor = MaterialTheme.hack.danger
-        }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(7.dp)
+                .background(statusColor(status), CircleShape),
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = stringResource(
+                when (status) {
+                    ActivityStatus.MODERATING -> R.string.activities_status_moderating
+                    ActivityStatus.RECRUITING -> R.string.activities_status_recruiting
+                    ActivityStatus.PENDING_ADMIN -> R.string.activities_status_pending_admin
+                    ActivityStatus.APPROVED -> R.string.activities_status_approved
+                    ActivityStatus.REJECTED -> R.string.activities_status_rejected
+                },
+            ),
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
     }
+}
 
-    Text(
-        text = stringResource(
-            when (status) {
-                ActivityStatus.MODERATING -> R.string.activities_status_moderating
-                ActivityStatus.RECRUITING -> R.string.activities_status_recruiting
-                ActivityStatus.PENDING_ADMIN -> R.string.activities_status_pending_admin
-                ActivityStatus.APPROVED -> R.string.activities_status_approved
-                ActivityStatus.REJECTED -> R.string.activities_status_rejected
-            },
-        ),
-        modifier = Modifier
-            .background(containerColor, CircleShape)
-            .padding(horizontal = 11.dp, vertical = 7.dp),
-        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-        color = contentColor,
-        maxLines = 1,
-    )
+@Composable
+private fun statusColor(status: ActivityStatus): Color = when (status) {
+    ActivityStatus.MODERATING -> MaterialTheme.colorScheme.onSurfaceVariant
+    ActivityStatus.RECRUITING -> MaterialTheme.colorScheme.primary
+    ActivityStatus.PENDING_ADMIN -> MaterialTheme.hack.amber.accent
+    ActivityStatus.APPROVED -> MaterialTheme.hack.success
+    ActivityStatus.REJECTED -> MaterialTheme.hack.danger
 }
 
 @Composable
@@ -705,20 +696,6 @@ private fun ActivitiesEmpty(modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-    }
-}
-
-@Composable
-internal fun ActivityCategory.accent(): HackAccent {
-    val extras = MaterialTheme.hack
-    return when (this) {
-        ActivityCategory.CINEMA -> extras.pink
-        ActivityCategory.BOARD_GAMES -> extras.violet
-        ActivityCategory.SPORTS -> extras.green
-        ActivityCategory.CREATIVITY -> extras.amber
-        ActivityCategory.EXCURSION -> extras.pink
-        ActivityCategory.SCIENCE -> extras.violet
-        ActivityCategory.OTHER -> extras.green
     }
 }
 

@@ -1,4 +1,4 @@
-﻿openapi: 3.0.0
+openapi: 3.0.0
 paths:
   /api/v1:
     get:
@@ -430,6 +430,40 @@ paths:
       summary: Decline an event
       tags:
         - Events
+  /api/v1/events/{id}/vote:
+    post:
+      description: >-
+        Pupil only. The event must be ON_VOTE. One vote per pupil per event.
+        Audience by scope, relative to the initiator's class: CLASS - same
+        class, GRADE - same grade (first number of the class name), SCHOOL - any
+        pupil.
+      operationId: EventsController_vote
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventVoteResponseDto'
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: Caller is not a pupil, or is outside the event's scope
+        '404':
+          description: Event not found
+        '409':
+          description: Event is not on vote, or the pupil has already voted
+      security:
+        - bearer: []
+      summary: Vote for an event
+      tags:
+        - Events
 info:
   title: Minsk Hackathon Backend
   description: Backend documentation
@@ -647,8 +681,15 @@ components:
             - SCHOOL
           default: CLASS
           description: Who the event is for
+        voteThreshold:
+          type: number
+          example: 15
+          minimum: 1
+          maximum: 10000
+          description: Votes needed during ON_VOTE to send the event to admin moderation
       required:
         - name
+        - voteThreshold
     EventResponseDto:
       type: object
       properties:
@@ -685,6 +726,10 @@ components:
           example: null
           nullable: true
           description: Set when declined with a reason
+        voteThreshold:
+          type: number
+          example: 15
+          description: Votes needed to move from ON_VOTE to ON_ADMIN_MODERATION
         initiator:
           description: Pupil who created the event
           allOf:
@@ -706,6 +751,7 @@ components:
         - scope
         - status
         - declineReason
+        - voteThreshold
         - initiator
         - teacher
         - createdAt
@@ -717,4 +763,35 @@ components:
           type: string
           example: Please pick another date
           description: Optional reason shown to the pupil
-
+    EventVoteResponseDto:
+      type: object
+      properties:
+        eventId:
+          type: string
+          example: 3f2c9a4e-1b7d-4e8a-9c0f-2a6b5d7e8f90
+        votesCount:
+          type: number
+          example: 12
+          description: Total number of votes for the event after this vote
+        voteThreshold:
+          type: number
+          example: 15
+        status:
+          type: string
+          enum:
+            - ON_MODERATION
+            - DECLINED
+            - ON_VOTE
+            - EXPIRED
+            - ON_ADMIN_MODERATION
+            - FINALIZED
+            - DECLINED_BY_ADMIN
+          example: ON_VOTE
+          description: >-
+            Status after this vote: ON_ADMIN_MODERATION once the threshold is
+            reached
+      required:
+        - eventId
+        - votesCount
+        - voteThreshold
+        - status

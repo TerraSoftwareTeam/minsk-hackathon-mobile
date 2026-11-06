@@ -4,14 +4,16 @@
     <string name="profile_back">Back</string>
     <string name="profile_notifications">Notifications</string>
     <string name="profile_notifications_description">Push notifications from services</string>
-    <string name="profile_add_saved">Add to saved (+1)</string>
+    <string name="profile_saved_title">Saved</string>
+    <string name="profile_saved_empty">Nothing here yet. Save activities from the feed.</string>
     <string name="profile_open_settings">Settings</string>
     <string name="profile_requests">Requests</string>
     <string name="profile_requests_teacher">Publications</string>
     <string name="profile_requests_admin">Events</string>
-    <string name="profile_voting">Voting</string>
-    <string name="profile_create_vote">Create vote</string>
     <string name="profile_logout">Sign out</string>
+    <string name="profile_logout_confirm_title">Sign out?</string>
+    <string name="profile_logout_confirm_desc">You will need to sign in again to return.</string>
+    <string name="profile_cancel">Cancel</string>
 
     <string name="profile_settings_title">Settings</string>
     <string name="profile_language">Language</string>

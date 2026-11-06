@@ -10,9 +10,7 @@ import com.dev.lbsuhack.core.network.di.networkModule
 import com.dev.lbsuhack.feature.activities.di.activitiesModule
 import com.dev.lbsuhack.feature.activevote.di.activeVoteModule
 import com.dev.lbsuhack.feature.auth.di.authModule
-import com.dev.lbsuhack.feature.createvote.di.createVoteModule
 import com.dev.lbsuhack.feature.events.di.eventsModule
-import com.dev.lbsuhack.feature.feed.di.feedModule
 import com.dev.lbsuhack.feature.profile.di.profileModule
 import com.dev.lbsuhack.feature.requests.di.requestsModule
 import com.dev.lbsuhack.layers.di.layersModule
@@ -41,9 +39,7 @@ class App : Application() {
                 activitiesModule,
                 activeVoteModule,
                 authModule,
-                createVoteModule,
                 eventsModule,
-                feedModule,
                 profileModule,
                 requestsModule,
             )

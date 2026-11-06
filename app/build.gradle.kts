@@ -121,9 +121,7 @@ dependencies {
     implementation(project(":feature:activities"))
     implementation(project(":feature:activevote"))
     implementation(project(":feature:auth"))
-    implementation(project(":feature:createvote"))
     implementation(project(":feature:events"))
-    implementation(project(":feature:feed"))
     implementation(project(":feature:profile"))
     implementation(project(":feature:requests"))
 

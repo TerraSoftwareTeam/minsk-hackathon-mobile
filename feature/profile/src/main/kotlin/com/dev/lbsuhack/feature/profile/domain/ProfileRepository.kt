@@ -7,6 +7,4 @@ interface ProfileRepository {
     suspend fun setNotificationsEnabled(enabled: Boolean)
 
     suspend fun savedCount(): Int
-
-    suspend fun incrementSaved(): Int
 }

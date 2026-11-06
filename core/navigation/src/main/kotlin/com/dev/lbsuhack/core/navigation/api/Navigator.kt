@@ -17,7 +17,6 @@ val LocalNavigator = staticCompositionLocalOf<Navigator> {
 interface AppNavigation {
     fun openProfile()
     fun openRequests(role: UserRole)
-    fun openCreateVote()
 }
 
 val LocalAppNavigation = staticCompositionLocalOf<AppNavigation> {

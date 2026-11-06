@@ -8,13 +8,12 @@ interface ProfileStore : Store<ProfileStore.Intent, ProfileStore.State, Nothing>
     sealed interface Intent {
         data object Load : Intent
         data object ToggleNotifications : Intent
-        data object IncrementSaved : Intent
         data object Logout : Intent
     }
 
     data class State(
         val name: String = "",
-        val email: String = "",
+        val schoolName: String = "",
         val pupilClass: String = "",
         val role: UserRole = UserRole.PUPIL,
         val notificationsEnabled: Boolean = true,

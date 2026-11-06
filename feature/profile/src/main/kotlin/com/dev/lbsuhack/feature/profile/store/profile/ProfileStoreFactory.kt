@@ -30,7 +30,7 @@ class ProfileStoreFactory(
     private sealed interface Message {
         data class Loaded(
             val name: String,
-            val email: String,
+            val schoolName: String,
             val pupilClass: String,
             val role: UserRole,
             val notificationsEnabled: Boolean,
@@ -38,7 +38,6 @@ class ProfileStoreFactory(
         ) : Message
 
         data class NotificationsChanged(val enabled: Boolean) : Message
-        data class SavedCountChanged(val count: Int) : Message
     }
 
     private inner class ExecutorImpl :
@@ -48,7 +47,6 @@ class ProfileStoreFactory(
             when (intent) {
                 ProfileStore.Intent.Load -> load()
                 ProfileStore.Intent.ToggleNotifications -> toggleNotifications()
-                ProfileStore.Intent.IncrementSaved -> incrementSaved()
                 ProfileStore.Intent.Logout -> logout()
             }
         }
@@ -60,7 +58,7 @@ class ProfileStoreFactory(
                 dispatch(
                     Message.Loaded(
                         name = user?.name.orEmpty(),
-                        email = user?.schoolName ?: user?.schoolsById.orEmpty(),
+                        schoolName = user?.schoolName ?: user?.schoolsById.orEmpty(),
                         pupilClass = user?.pupilClass.orEmpty(),
                         role = user?.role ?: UserRole.PUPIL,
                         notificationsEnabled = profileRepository.isNotificationsEnabled(),
@@ -78,12 +76,6 @@ class ProfileStoreFactory(
             }
         }
 
-        private fun incrementSaved() {
-            scope.launch {
-                dispatch(Message.SavedCountChanged(profileRepository.incrementSaved()))
-            }
-        }
-
         private fun logout() {
             scope.launch {
                 clearSession()
@@ -95,7 +87,7 @@ class ProfileStoreFactory(
         override fun ProfileStore.State.reduce(msg: Message): ProfileStore.State = when (msg) {
             is Message.Loaded -> copy(
                 name = msg.name,
-                email = msg.email,
+                schoolName = msg.schoolName,
                 pupilClass = msg.pupilClass,
                 role = msg.role,
                 notificationsEnabled = msg.notificationsEnabled,
@@ -104,7 +96,6 @@ class ProfileStoreFactory(
             )
 
             is Message.NotificationsChanged -> copy(notificationsEnabled = msg.enabled)
-            is Message.SavedCountChanged -> copy(savedCount = msg.count)
         }
     }
 }

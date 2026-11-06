@@ -55,7 +55,7 @@ class ProfileStoreTest {
 
             assertFalse(store.state.isLoading)
             assertEquals("Nikita", store.state.name)
-            assertEquals("School #1", store.state.email)
+            assertEquals("School #1", store.state.schoolName)
             assertEquals(0, store.state.savedCount)
             assertTrue(store.state.notificationsEnabled)
             assertFalse(store.state.canReviewRequests)
@@ -91,17 +91,6 @@ class ProfileStoreTest {
             runCurrent()
 
             assertFalse(store.state.notificationsEnabled)
-        }
-
-    @Test
-    fun `increment saved updates the counter`() =
-        runTest(mainDispatcherRule.testDispatcher) {
-            val store = createStore()
-
-            store.accept(ProfileStore.Intent.IncrementSaved)
-            runCurrent()
-
-            assertEquals(1, store.state.savedCount)
         }
 
     @Test
