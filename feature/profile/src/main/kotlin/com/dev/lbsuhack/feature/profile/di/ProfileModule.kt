@@ -9,6 +9,7 @@ import com.dev.lbsuhack.feature.profile.presentation.profile.ProfileViewModel
 import com.dev.lbsuhack.feature.profile.presentation.settings.SettingsViewModel
 import com.dev.lbsuhack.feature.profile.store.profile.ProfileStoreFactory
 import com.dev.lbsuhack.feature.profile.store.settings.SettingsStoreFactory
+import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
@@ -16,7 +17,12 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 
 val profileModule = module {
-    singleOf(::UserProfileApi)
+    single {
+        UserProfileApi(
+            httpClient = get(),
+            ioDispatcher = Dispatchers.IO,
+        )
+    }
 
     single<ProfileRepository> {
         ProfileRepositoryImpl(
