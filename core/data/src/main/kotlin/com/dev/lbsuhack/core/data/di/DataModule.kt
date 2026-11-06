@@ -1,6 +1,7 @@
 package com.dev.lbsuhack.core.data.di
 
 import com.dev.lbsuhack.core.data.push.DefaultPushTokenRepository
+import com.dev.lbsuhack.core.data.push.DeviceIdProvider
 import com.dev.lbsuhack.core.data.session.DefaultSessionRepository
 import com.dev.lbsuhack.core.domain.push.PushTokenRepository
 import com.dev.lbsuhack.core.domain.push.RegisterPushTokenUseCase
@@ -35,9 +36,9 @@ val dataModule = module {
 
     single {
         DefaultPushTokenRepository(
-            context = androidContext(),
             httpClient = get(named("unauthenticatedHttpClient")),
             tokenStorage = get(),
+            deviceId = DeviceIdProvider(androidContext()),
             ioDispatcher = Dispatchers.IO,
         )
     } bind PushTokenRepository::class

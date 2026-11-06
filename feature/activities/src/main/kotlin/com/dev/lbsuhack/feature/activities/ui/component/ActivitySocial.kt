@@ -254,13 +254,6 @@ internal fun ActivityVoteButton(
                     text = stringResource(R.string.activities_leave_action),
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                 )
-                if (canCancel) {
-                    Text(
-                        text = " · " + stringResource(R.string.activities_unvote_action),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
             }
         }
 

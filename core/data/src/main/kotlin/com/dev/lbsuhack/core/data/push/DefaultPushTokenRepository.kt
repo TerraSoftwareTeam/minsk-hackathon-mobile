@@ -22,13 +22,11 @@ import kotlinx.coroutines.withContext
 import java.util.UUID
 
 class DefaultPushTokenRepository(
-    context: Context,
     private val httpClient: HttpClient,
     private val tokenStorage: TokenStorage,
+    private val deviceId: () -> String,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : PushTokenRepository {
-
-    private val preferences = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     override suspend fun register(token: String): Boolean = send("register") { accessToken ->
         httpClient.post(PATH) {
@@ -69,14 +67,23 @@ class DefaultPushTokenRepository(
         contentType(ContentType.Application.Json)
     }
 
-    private fun deviceId(): String =
+    private companion object {
+        const val TAG = "PushTokenRepository"
+        const val PATH = "api/v1/device-token"
+    }
+}
+
+class DeviceIdProvider(context: Context) : () -> String {
+
+    private val preferences = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    @Synchronized
+    override fun invoke(): String =
         preferences.getString(KEY_DEVICE_ID, null) ?: UUID.randomUUID().toString().also {
             preferences.edit().putString(KEY_DEVICE_ID, it).apply()
         }
 
     private companion object {
-        const val TAG = "PushTokenRepository"
-        const val PATH = "api/v1/device-token"
         const val PREFS_NAME = "push_device"
         const val KEY_DEVICE_ID = "device_id"
     }
