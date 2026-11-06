@@ -22,7 +22,7 @@ data class ReviewRequest(
     val id: String,
     val title: String,
     val description: String,
-    val proposedDate: String,
+    val proposedDate: String?,
     val author: RequestAuthor,
     val status: ReviewStatus,
     val audience: RequestAudience,

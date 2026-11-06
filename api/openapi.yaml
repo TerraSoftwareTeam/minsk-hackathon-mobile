@@ -1,6 +1,6 @@
 openapi: 3.0.0
 paths:
-  /api/v1:
+  "/api/v1":
     get:
       description: Plain-text greeting; use GET /health to check the service.
       operationId: AppController_getHello
@@ -16,7 +16,7 @@ paths:
       summary: Greeting
       tags:
       - App
-  /api/v1/health:
+  "/api/v1/health":
     get:
       operationId: HealthController_healthcheck
       parameters: []
@@ -26,13 +26,18 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthResponseDto'
+                "$ref": "#/components/schemas/HealthResponseDto"
       summary: Health check
       tags:
       - Health
-  /api/v1/auth/register:
+  "/api/v1/auth/register":
     post:
-      description: Creates a user and returns a JWT access token. Public endpoint, no auth required.
+      description: >-
+        If a user with this schoolsById exists, logs them in and ignores the other fields. Otherwise creates
+        a new user from name, surname, role and class (all required then). A pupil may register into a
+        class that has no teacher yet; their events wait without a teacher, and a new teacher of the class
+        takes all of them for moderation. Returns a JWT access token either way. Public endpoint, no auth
+        required.
       operationId: AuthController_register
       parameters: []
       requestBody:
@@ -40,10 +45,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterDto'
+              "$ref": "#/components/schemas/RegisterDto"
             examples:
+              existing:
+                summary: Existing user (log in)
+                value:
+                  schoolsById: school-user-123
               pupil:
-                summary: Pupil
+                summary: New pupil
                 value:
                   schoolsById: school-user-123
                   name: Ivan
@@ -51,7 +60,7 @@ paths:
                   role: PUPIL
                   class: 10A
               teacher:
-                summary: Teacher
+                summary: New teacher
                 value:
                   schoolsById: school-user-456
                   name: Maria
@@ -60,23 +69,25 @@ paths:
                   class: 10A
       responses:
         '201':
-          description: User created; JWT and user returned
+          description: User logged in or created; JWT and user returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponseDto'
+                "$ref": "#/components/schemas/AuthResponseDto"
         '400':
-          description: Validation failed (missing/invalid fields, blank class, unknown fields), or a PUPIL
-            registers into a class that has no teacher
-        '409':
-          description: User with this schoolsById already exists
-      summary: Register a new user
+          description: >-
+            Validation failed (invalid fields, blank class, unknown fields), or a new user is missing
+            name/surname/role/class
+        '403':
+          description: Existing PUPIL or TEACHER has no class assigned
+      summary: Register or log in (PUPIL / TEACHER)
       tags:
       - Auth
-  /api/v1/auth/login:
+  "/api/v1/auth/login":
     post:
-      description: PUPIL and TEACHER log in by schoolsById; ADMIN logs in by id. Admins cannot register,
-        only log in. Public endpoint, no auth required.
+      description: >-
+        PUPIL and TEACHER log in by schoolsById; ADMIN logs in by id. Admins cannot register, only log
+        in. Public endpoint, no auth required.
       operationId: AuthController_login
       parameters: []
       requestBody:
@@ -84,7 +95,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginDto'
+              "$ref": "#/components/schemas/LoginDto"
             examples:
               pupil:
                 summary: Pupil or teacher
@@ -102,7 +113,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponseDto'
+                "$ref": "#/components/schemas/AuthResponseDto"
         '400':
           description: Validation failed (missing schoolsById or id for the role)
         '401':
@@ -112,10 +123,11 @@ paths:
       summary: Log in
       tags:
       - Auth
-  /api/v1/users:
+  "/api/v1/users":
     post:
-      description: 'Admin: any role (PUPIL/TEACHER need schoolsById and class; ADMIN must not have them).
-        Teacher: PUPIL only, class is taken from the teacher. Pupil: forbidden.'
+      description: >-
+        Admin: any role (PUPIL/TEACHER need schoolsById and class; ADMIN must not have them). Teacher:
+        PUPIL only, class is taken from the teacher. Pupil: forbidden.
       operationId: UsersController_create
       parameters: []
       requestBody:
@@ -123,7 +135,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateUserDto'
+              "$ref": "#/components/schemas/CreateUserDto"
             examples:
               teacherCreatesPupil:
                 summary: Teacher creates a pupil of own class
@@ -144,7 +156,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserResponseDto'
+                "$ref": "#/components/schemas/UserResponseDto"
         '400':
           description: Validation failed or school fields do not match the role
         '401':
@@ -170,7 +182,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/UserResponseDto'
+                  "$ref": "#/components/schemas/UserResponseDto"
         '401':
           description: Missing or invalid bearer token
       security:
@@ -178,7 +190,7 @@ paths:
       summary: List users the caller can manage
       tags:
       - Users
-  /api/v1/users/{id}:
+  "/api/v1/users/{id}":
     get:
       description: 'Admin: any user. Teacher: self and pupils of own class (same class). Pupil: self only.'
       operationId: UsersController_findOne
@@ -196,7 +208,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserResponseDto'
+                "$ref": "#/components/schemas/UserResponseDto"
         '400':
           description: 'Invalid id: must be a UUID'
         '401':
@@ -211,8 +223,9 @@ paths:
       tags:
       - Users
     patch:
-      description: 'Admin: any user. Teacher: self and pupils of own class (same class). Pupil: self only.
-        Only an admin can change role, class, schoolsById; others change name, surname.'
+      description: >-
+        Admin: any user. Teacher: self and pupils of own class (same class). Pupil: self only. Only an
+        admin can change role, class, schoolsById; others change name and surname.
       operationId: UsersController_update
       parameters:
       - name: id
@@ -227,14 +240,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateUserDto'
+              "$ref": "#/components/schemas/UpdateUserDto"
       responses:
         '200':
           description: ''
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserResponseDto'
+                "$ref": "#/components/schemas/UserResponseDto"
         '400':
           description: 'Invalid id: must be a UUID, or validation failed, or school fields do not match
             the role'
@@ -280,11 +293,12 @@ paths:
       summary: Delete a user
       tags:
       - Users
-  /api/v1/events:
+  "/api/v1/events":
     post:
-      description: 'Pupil only. The event gets status ON_MODERATION and is sent to the teacher of the
-        pupil''s class. votingClosesAt (startsAt - 2 days) is computed: moderation and voting must finish
-        by then.'
+      description: >-
+        Pupil only. The event gets status ON_MODERATION and is sent to the teacher of the pupil's class.
+        It has no date: an admin sets startsAt on approval. votingClosesAt (createdAt + 1 month) is computed:
+        teacher moderation, voting and the admin decision must finish by then.
       operationId: EventsController_create
       parameters: []
       requestBody:
@@ -292,17 +306,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateEventDto'
+              "$ref": "#/components/schemas/CreateEventDto"
       responses:
         '201':
           description: ''
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventResponseDto'
+                "$ref": "#/components/schemas/EventResponseDto"
         '400':
-          description: Validation failed (incl. startsAt without a timezone), startsAt is not more than
-            2 days ahead, or the pupil's class has no teacher
+          description: Validation failed (incl. an unknown field such as startsAt), or the pupil's class
+            has no teacher
         '401':
           description: Missing or invalid bearer token
         '403':
@@ -314,12 +328,13 @@ paths:
       summary: Create an event request
       tags:
       - Events
-  /api/v1/events/probability:
+  "/api/v1/events/probability":
     get:
-      description: 'Any authenticated user. Computed from events of the same category that are FINALIZED
-        (success) or EXPIRED (failure), even if they have not started yet; declined and pending events
-        are ignored. Only the start time of day (Minsk time) is compared, not the date. At least 5 such
-        events at the same time, all successful: 0.9; no history: 0.5.'
+      description: >-
+        Any authenticated user. Computed from FINALIZED events of the same category (the only ones with
+        a date set by an admin), even if they have not started yet. With startsAt only the start time
+        of day (Minsk time) is compared, not the date; without it every such event counts fully. At least
+        5 such events (at the same time): 0.9; no history: 0.5.
       operationId: EventsController_previewProbability
       parameters:
       - name: category
@@ -341,10 +356,12 @@ paths:
           - ENTERTAINMENT
           - OTHER
       - name: startsAt
-        required: true
+        required: false
         in: query
-        description: 'Planned start: ISO 8601 date-time with a timezone (Z or ±hh:mm). In a URL encode
-          "+" as %2B, e.g. 2026-12-05T12:00:00%2B03:00'
+        description: >-
+          Optional planned start, e.g. the date an admin is about to set: ISO 8601 date-time with a timezone
+          (Z or ±hh:mm). In a URL encode "+" as %2B, e.g. 2026-12-05T12:00:00%2B03:00. Without it the
+          start time is not compared
         schema:
           format: date-time
           example: '2026-12-05T12:00:00+03:00'
@@ -355,9 +372,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProbabilityResponseDto'
+                "$ref": "#/components/schemas/ProbabilityResponseDto"
         '400':
-          description: Invalid category, or startsAt is not a date-time with a timezone
+          description: Invalid category, or startsAt is given but is not a date-time with a timezone
         '401':
           description: Missing or invalid bearer token
       security:
@@ -365,10 +382,11 @@ paths:
       summary: Preview the probability that an event takes place
       tags:
       - Events
-  /api/v1/events/moderation:
+  "/api/v1/events/moderation":
     get:
-      description: Teacher only. Events assigned to the caller with status ON_MODERATION, oldest first.
-        Events past their voting deadline are hidden.
+      description: >-
+        Teacher only. Events assigned to the caller with status ON_MODERATION, oldest first. Events past
+        their deadline (a month after creation) are hidden.
       operationId: EventsController_findForModeration
       parameters: []
       responses:
@@ -379,7 +397,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/EventResponseDto'
+                  "$ref": "#/components/schemas/EventResponseDto"
         '401':
           description: Missing or invalid bearer token
         '403':
@@ -389,7 +407,7 @@ paths:
       summary: Teacher's moderation list
       tags:
       - Events
-  /api/v1/events/my:
+  "/api/v1/events/my":
     get:
       description: Pupil only. All events created by the caller, in any status, newest first, with the
         vote count.
@@ -403,7 +421,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/VotingEventResponseDto'
+                  "$ref": "#/components/schemas/VotingEventResponseDto"
         '401':
           description: Missing or invalid bearer token
         '403':
@@ -413,11 +431,12 @@ paths:
       summary: Author's own events
       tags:
       - Events
-  /api/v1/events/voting:
+  "/api/v1/events/voting":
     get:
-      description: 'Pupil only. ON_VOTE events whose scope includes the caller (relative to the initiator''s
-        class: CLASS - same class, GRADE - same grade, SCHOOL - any pupil) and whose voting is still open,
-        newest first, with the vote count and whether the caller has voted.'
+      description: >-
+        Pupil only. ON_VOTE events whose scope includes the caller (relative to the initiator's class:
+        CLASS - same class, GRADE - same grade, SCHOOL - any pupil) and whose voting is still open, newest
+        first, with the vote count and whether the caller has voted.
       operationId: EventsController_findForVoting
       parameters: []
       responses:
@@ -428,7 +447,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/VotingEventResponseDto'
+                  "$ref": "#/components/schemas/VotingEventResponseDto"
         '401':
           description: Missing or invalid bearer token
         '403':
@@ -438,35 +457,11 @@ paths:
       summary: Pupil's voting list
       tags:
       - Events
-  /api/v1/events/for-rating:
+  "/api/v1/events/admin-moderation":
     get:
-      description: 'Pupil only. Events of any class and scope approved by the teacher: ON_VOTE, ON_ADMIN_MODERATION,
-        FINALIZED, DECLINED_BY_ADMIN. Newest first, with the caller''s own rating (myRating, null if not
-        rated yet).'
-      operationId: EventsController_findForRating
-      parameters: []
-      responses:
-        '200':
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/RatingEventResponseDto'
-        '401':
-          description: Missing or invalid bearer token
-        '403':
-          description: Caller is not a pupil
-      security:
-      - bearer: []
-      summary: Pupil's rating list
-      tags:
-      - Events
-  /api/v1/events/admin-moderation:
-    get:
-      description: Admin only. Events with status ON_ADMIN_MODERATION (passed the vote), oldest first.
-        Events that have already started are hidden.
+      description: >-
+        Admin only. Events with status ON_ADMIN_MODERATION (passed the vote), oldest first. Events past
+        their deadline (a month after creation) are hidden.
       operationId: EventsController_findForAdminModeration
       parameters: []
       responses:
@@ -477,7 +472,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/EventResponseDto'
+                  "$ref": "#/components/schemas/EventResponseDto"
         '401':
           description: Missing or invalid bearer token
         '403':
@@ -487,7 +482,7 @@ paths:
       summary: Admin's moderation list
       tags:
       - Events
-  /api/v1/events/{id}:
+  "/api/v1/events/{id}":
     get:
       description: Initiator, assigned teacher or admin.
       operationId: EventsController_findOne
@@ -505,7 +500,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventResponseDto'
+                "$ref": "#/components/schemas/EventResponseDto"
         '400':
           description: 'Invalid id: must be a UUID'
         '401':
@@ -519,7 +514,7 @@ paths:
       summary: Get an event with all its data
       tags:
       - Events
-  /api/v1/events/{id}/approve:
+  "/api/v1/events/{id}/approve":
     post:
       description: Assigned teacher only. ON_MODERATION -> ON_VOTE.
       operationId: EventsController_approve
@@ -537,7 +532,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventResponseDto'
+                "$ref": "#/components/schemas/EventResponseDto"
         '400':
           description: 'Invalid id: must be a UUID'
         '401':
@@ -547,14 +542,14 @@ paths:
         '404':
           description: Event not found
         '409':
-          description: Event is not on moderation anymore, or voting for it has closed (2 days before
-            the start)
+          description: Event is not on moderation anymore, or its deadline (a month after creation) has
+            passed
       security:
       - bearer: []
       summary: Approve an event
       tags:
       - Events
-  /api/v1/events/{id}/decline:
+  "/api/v1/events/{id}/decline":
     post:
       description: Assigned teacher only. ON_MODERATION -> DECLINED, with an optional reason.
       operationId: EventsController_decline
@@ -571,14 +566,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DeclineEventDto'
+              "$ref": "#/components/schemas/DeclineEventDto"
       responses:
         '200':
           description: ''
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventResponseDto'
+                "$ref": "#/components/schemas/EventResponseDto"
         '400':
           description: 'Invalid id: must be a UUID, or reason is empty or longer than 2000 characters'
         '401':
@@ -588,16 +583,18 @@ paths:
         '404':
           description: Event not found
         '409':
-          description: Event is not on moderation anymore, or voting for it has closed (2 days before
-            the start)
+          description: Event is not on moderation anymore, or its deadline (a month after creation) has
+            passed
       security:
       - bearer: []
       summary: Decline an event
       tags:
       - Events
-  /api/v1/events/{id}/admin/approve:
+  "/api/v1/events/{id}/admin/approve":
     post:
-      description: Admin only. ON_ADMIN_MODERATION -> FINALIZED.
+      description: >-
+        Admin only. ON_ADMIN_MODERATION -> FINALIZED. The admin sets the date (startsAt, in the future);
+        it cannot be changed afterwards.
       operationId: EventsController_adminApprove
       parameters:
       - name: id
@@ -607,15 +604,22 @@ paths:
           format: uuid
           example: 3f2c9a4e-1b7d-4e8a-9c0f-2a6b5d7e8f90
           type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/AdminApproveEventDto"
       responses:
         '200':
           description: ''
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventResponseDto'
+                "$ref": "#/components/schemas/EventResponseDto"
         '400':
-          description: 'Invalid id: must be a UUID'
+          description: 'Invalid id: must be a UUID, or startsAt is missing, has no timezone, or is not
+            in the future'
         '401':
           description: Missing or invalid bearer token
         '403':
@@ -623,13 +627,14 @@ paths:
         '404':
           description: Event not found
         '409':
-          description: Event is not on admin moderation, or has already started
+          description: Event is not on admin moderation, or its deadline (a month after creation) has
+            passed
       security:
       - bearer: []
       summary: Admin approves an event
       tags:
       - Events
-  /api/v1/events/{id}/admin/decline:
+  "/api/v1/events/{id}/admin/decline":
     post:
       description: Admin only. ON_ADMIN_MODERATION -> DECLINED_BY_ADMIN, with an optional reason.
       operationId: EventsController_adminDecline
@@ -646,14 +651,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DeclineEventDto'
+              "$ref": "#/components/schemas/DeclineEventDto"
       responses:
         '200':
           description: ''
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventResponseDto'
+                "$ref": "#/components/schemas/EventResponseDto"
         '400':
           description: 'Invalid id: must be a UUID, or reason is empty or longer than 2000 characters'
         '401':
@@ -663,18 +668,20 @@ paths:
         '404':
           description: Event not found
         '409':
-          description: Event is not on admin moderation, or has already started
+          description: Event is not on admin moderation, or its deadline (a month after creation) has
+            passed
       security:
       - bearer: []
       summary: Admin declines an event
       tags:
       - Events
-  /api/v1/events/{id}/image:
+  "/api/v1/events/{id}/image":
     put:
-      description: 'Author only, while the event is pending (ON_MODERATION, ON_VOTE, ON_ADMIN_MODERATION)
-        and not past its deadline. An event has at most one image: a new upload replaces and deletes the
-        previous one. multipart/form-data, field "file": image/jpeg, image/png, image/webp, image/gif,
-        up to 5 MB; the type is checked by the file content.'
+      description: >-
+        Author only, while the event is pending (ON_MODERATION, ON_VOTE, ON_ADMIN_MODERATION) and not
+        past its deadline. An event has at most one image: a new upload replaces and deletes the previous
+        one. multipart/form-data, field "file": image/jpeg, image/png, image/webp, image/gif, up to 5
+        MB; the type is checked by the file content.
       operationId: EventsController_setImage
       parameters:
       - name: id
@@ -703,7 +710,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventResponseDto'
+                "$ref": "#/components/schemas/EventResponseDto"
         '400':
           description: 'Invalid id: must be a UUID, or the file is missing, or is not a JPEG/PNG/WebP/GIF
             image'
@@ -725,8 +732,9 @@ paths:
       tags:
       - Events
     delete:
-      description: Author while the event is pending and not past its deadline; an admin in any status.
-        Does nothing if the event has no image.
+      description: >-
+        Author while the event is pending and not past its deadline; an admin in any status. Does nothing
+        if the event has no image.
       operationId: EventsController_removeImage
       parameters:
       - name: id
@@ -742,7 +750,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventResponseDto'
+                "$ref": "#/components/schemas/EventResponseDto"
         '400':
           description: 'Invalid id: must be a UUID'
         '401':
@@ -758,12 +766,13 @@ paths:
       summary: Remove the event image
       tags:
       - Events
-  /api/v1/events/{id}/vote:
+  "/api/v1/events/{id}/vote":
     post:
-      description: 'Pupil only. The event must be ON_VOTE and voting must be open (until 2 days before
-        the start). One vote per pupil per event. Audience by scope, relative to the initiator''s class:
+      description: >-
+        Pupil only. The event must be ON_VOTE and voting must be open (until a month after the event was
+        created). One vote per pupil per event. Audience by scope, relative to the initiator's class:
         CLASS - same class, GRADE - same grade (first number of the class name), SCHOOL - any pupil. The
-        vote that reaches voteThreshold moves the event to ON_ADMIN_MODERATION.'
+        vote that reaches voteThreshold moves the event to ON_ADMIN_MODERATION.
       operationId: EventsController_vote
       parameters:
       - name: id
@@ -779,7 +788,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventVoteResponseDto'
+                "$ref": "#/components/schemas/EventVoteResponseDto"
         '400':
           description: 'Invalid id: must be a UUID'
         '401':
@@ -789,19 +798,20 @@ paths:
         '404':
           description: Event not found
         '409':
-          description: Event is not on vote, voting has closed (2 days before the start), or the pupil
+          description: Event is not on vote, voting has closed (a month after creation), or the pupil
             has already voted
       security:
       - bearer: []
       summary: Vote for an event
       tags:
       - Events
-  /api/v1/events/{id}/rating:
+  "/api/v1/events/{id}/like":
     put:
-      description: 'Pupil only, any pupil: the event scope does not limit who rates. The event must be
-        approved by the teacher: ON_VOTE, ON_ADMIN_MODERATION, FINALIZED or DECLINED_BY_ADMIN. One rating
-        per pupil per event: calling again changes it.'
-      operationId: EventsController_rate
+      description: >-
+        Pupil only, any pupil: the event scope does not limit who likes. The event must be approved by
+        the teacher: ON_VOTE, ON_ADMIN_MODERATION, FINALIZED or DECLINED_BY_ADMIN. One like per pupil
+        per event: liking again changes nothing.
+      operationId: EventsController_like
       parameters:
       - name: id
         required: true
@@ -810,21 +820,15 @@ paths:
           format: uuid
           example: 3f2c9a4e-1b7d-4e8a-9c0f-2a6b5d7e8f90
           type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RateEventDto'
       responses:
         '200':
           description: ''
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventRatingResponseDto'
+                "$ref": "#/components/schemas/EventLikeResponseDto"
         '400':
-          description: 'Invalid id: must be a UUID, or stars is not an integer from 1 to 5'
+          description: 'Invalid id: must be a UUID'
         '401':
           description: Missing or invalid bearer token
         '403':
@@ -835,13 +839,45 @@ paths:
           description: Event is ON_MODERATION, DECLINED or EXPIRED
       security:
       - bearer: []
-      summary: Rate an event (1 to 5 stars)
+      summary: Like an event (+1)
       tags:
       - Events
-  /api/v1/device-token:
+    delete:
+      description: Pupil only, in any status of the event. Does nothing if the caller has not liked it.
+      operationId: EventsController_unlike
+      parameters:
+      - name: id
+        required: true
+        in: path
+        schema:
+          format: uuid
+          example: 3f2c9a4e-1b7d-4e8a-9c0f-2a6b5d7e8f90
+          type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/EventLikeResponseDto"
+        '400':
+          description: 'Invalid id: must be a UUID'
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: Caller is not a pupil
+        '404':
+          description: Event not found
+      security:
+      - bearer: []
+      summary: Take the like back (-1)
+      tags:
+      - Events
+  "/api/v1/device-token":
     post:
-      description: Call on login and on every app start. Any role. A token registered by another user
-        moves to the caller. With deviceId, a previous token of the same device is replaced.
+      description: >-
+        Call on login and on every app start. Any role. A token registered by another user moves to the
+        caller. With deviceId, a previous token of the same device is replaced.
       operationId: DeviceTokensController_register
       parameters: []
       requestBody:
@@ -849,7 +885,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterDeviceTokenDto'
+              "$ref": "#/components/schemas/RegisterDeviceTokenDto"
       responses:
         '204':
           description: Saved
@@ -863,8 +899,9 @@ paths:
       tags:
       - Push notifications
     delete:
-      description: Call on logout, before dropping the JWT, so the device stops getting this user's pushes.
-        The token is sent in the JSON body. Idempotent.
+      description: >-
+        Call on logout, before dropping the JWT, so the device stops getting this user's pushes. The token
+        is sent in the JSON body. Idempotent.
       operationId: DeviceTokensController_remove
       parameters: []
       requestBody:
@@ -872,7 +909,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DeleteDeviceTokenDto'
+              "$ref": "#/components/schemas/DeleteDeviceTokenDto"
       responses:
         '204':
           description: Deleted, or there was no such token of the caller
@@ -918,28 +955,25 @@ components:
         name:
           type: string
           example: Ivan
-          description: First name
+          description: First name. Required for a new user
         surname:
           type: string
           example: Ivanov
-          description: Last name
+          description: Last name. Required for a new user
         role:
           type: string
           enum:
           - PUPIL
           - TEACHER
           example: PUPIL
-          description: User role (PUPIL or TEACHER)
+          description: User role (PUPIL or TEACHER). Required for a new user
         class:
           type: string
           example: 10A
-          description: Class name; surrounding spaces are trimmed, must not be blank
+          description: Class name; surrounding spaces are trimmed, must not be blank. Required for a new
+            user
       required:
       - schoolsById
-      - name
-      - surname
-      - role
-      - class
     UserResponseDto:
       type: object
       properties:
@@ -990,7 +1024,7 @@ components:
         user:
           description: The logged-in user
           allOf:
-          - $ref: '#/components/schemas/UserResponseDto'
+          - "$ref": "#/components/schemas/UserResponseDto"
       required:
       - accessToken
       - user
@@ -1042,8 +1076,9 @@ components:
         class:
           type: string
           example: 10A
-          description: Class. Required for PUPIL/TEACHER, forbidden for ADMIN. Defaults to the teacher's
-            class. Surrounding spaces are trimmed, must not be blank
+          description: >-
+            Class. Required for PUPIL/TEACHER, forbidden for ADMIN. Defaults to the teacher's class. Surrounding
+            spaces are trimmed, must not be blank
       required:
       - name
       - surname
@@ -1074,8 +1109,9 @@ components:
         class:
           type: string
           example: 10A
-          description: Class. Required for PUPIL/TEACHER, forbidden for ADMIN. Defaults to the teacher's
-            class. Surrounding spaces are trimmed, must not be blank
+          description: >-
+            Class. Required for PUPIL/TEACHER, forbidden for ADMIN. Defaults to the teacher's class. Surrounding
+            spaces are trimmed, must not be blank
     CreateEventDto:
       type: object
       properties:
@@ -1096,8 +1132,9 @@ components:
           - GRADE
           - SCHOOL
           default: CLASS
-          description: 'Who may vote, relative to the author''s class: CLASS - same class, GRADE - same
-            grade (first number of the class name), SCHOOL - any pupil'
+          description: >-
+            Who may vote, relative to the author's class: CLASS - same class, GRADE - same grade (first
+            number of the class name), SCHOOL - any pupil
         category:
           type: string
           enum:
@@ -1112,29 +1149,22 @@ components:
           - ENTERTAINMENT
           - OTHER
           example: SPORTS
-          description: 'Kind of event: SPORTS - competitions, tournaments; INTELLECTUAL - olympiads, quizzes,
-            debates; CULTURAL - theatre, museum, cinema; CREATIVE - concerts, contests, exhibitions; EDUCATIONAL
+          description: >-
+            Kind of event: SPORTS - competitions, tournaments; INTELLECTUAL - olympiads, quizzes, debates;
+            CULTURAL - theatre, museum, cinema; CREATIVE - concerts, contests, exhibitions; EDUCATIONAL
             - lectures, workshops; VOLUNTEER - charity, social help; ENVIRONMENTAL - clean-ups, tree planting;
             TOURISM - hikes, excursions, trips; ENTERTAINMENT - celebrations, discos, quests; OTHER -
-            anything else'
+            anything else
         voteThreshold:
           type: integer
           example: 15
           minimum: 1
           maximum: 10000
           description: Votes needed during ON_VOTE to send the event to admin moderation
-        startsAt:
-          type: string
-          example: '2026-12-01T10:00:00+03:00'
-          format: date-time
-          description: 'When the event starts: ISO 8601 date-time with a timezone (Z or ±hh:mm), more
-            than 2 days ahead. Voting closes 2 days before it: an event not approved and voted by then
-            becomes EXPIRED. The admin may decide on a voted event until it starts'
       required:
       - name
       - category
       - voteThreshold
-      - startsAt
     EventResponseDto:
       type: object
       properties:
@@ -1185,12 +1215,12 @@ components:
           - FINALIZED
           - DECLINED_BY_ADMIN
           example: ON_MODERATION
-          description: 'ON_MODERATION (teacher) -> ON_VOTE (pupils) -> ON_ADMIN_MODERATION (admin) ->
-            FINALIZED. DECLINED / DECLINED_BY_ADMIN: rejected by the teacher / admin. EXPIRED: not decided
-            before its deadline'
+          description: >-
+            ON_MODERATION (teacher) -> ON_VOTE (pupils) -> ON_ADMIN_MODERATION (admin) -> FINALIZED. DECLINED
+            / DECLINED_BY_ADMIN: rejected by the teacher / admin. EXPIRED: not decided before its deadline
         declineReason:
           type: string
-          example: null
+          example: 
           nullable: true
           description: Set when declined (by the teacher or an admin) with a reason
         voteThreshold:
@@ -1200,49 +1230,49 @@ components:
         startsAt:
           format: date-time
           type: string
-          example: '2026-12-01T07:00:00.000Z'
-          description: When the event starts (UTC)
+          example: 
+          nullable: true
+          description: 'When the event starts (UTC). Set by the admin on approval: null in every status
+            except FINALIZED'
         votingClosesAt:
           format: date-time
           type: string
-          example: '2026-11-29T07:00:00.000Z'
-          description: 'Computed: 2 days before startsAt. Voting and teacher moderation must finish by
-            then, otherwise the event becomes EXPIRED'
+          example: '2026-12-06T10:00:00.000Z'
+          description: >-
+            Computed: createdAt + 1 month (30 days). Teacher moderation, voting and the admin decision
+            must finish by then, otherwise the event becomes EXPIRED
         successProbability:
           type: number
           example: 0.66
           minimum: 0
           maximum: 1
-          description: 'Computed: probability (0..1) that the event takes place, from other events of
-            the same category with a known outcome (also not yet started ones): how close their start
-            time of day (Minsk time) is and whether they were FINALIZED or EXPIRED. Declined and pending
-            events are not counted. 0.9 when at least 5 such events all started at the same time and all
-            took place; 0.5 without history'
+          description: >-
+            Computed: probability (0..1) that the event takes place, from other FINALIZED events of the
+            same category (also not yet started ones), the only ones with a date. For a FINALIZED event,
+            weighted by how close their start time of day (Minsk time) is; before the date is set, the
+            time is not compared. 0.9 with at least 5 such events (at the same time); 0.5 without history
         imageUrl:
           type: string
           example: https://res.cloudinary.com/demo/image/upload/v1/minsk_hackathon_images/3f2c9a4e.jpg
           nullable: true
           description: Event image URL; null when the event has none. At most one image per event
-        ratingAverage:
-          type: number
-          example: 4.33
-          nullable: true
-          minimum: 1
-          maximum: 5
-          description: Average stars (1..5, 2 decimals) of the pupils who rated the event; null until
-            the first rating
-        ratingsCount:
+        likesCount:
           type: integer
-          example: 3
-          description: Number of ratings. Any pupil may rate an event from ON_VOTE on
+          example: 12
+          description: Number of likes. Any pupil may like an event from ON_VOTE on, once, and take the
+            like back
         initiator:
           description: Pupil who created the event
           allOf:
-          - $ref: '#/components/schemas/UserResponseDto'
+          - "$ref": "#/components/schemas/UserResponseDto"
         teacher:
-          description: Teacher who moderates the event
+          nullable: true
+          description: >-
+            Teacher who moderates the event. Null while the author's class has no teacher: the first teacher
+            who registers into the class gets the event
+          type: object
           allOf:
-          - $ref: '#/components/schemas/UserResponseDto'
+          - "$ref": "#/components/schemas/UserResponseDto"
         createdAt:
           format: date-time
           type: string
@@ -1266,8 +1296,7 @@ components:
       - votingClosesAt
       - successProbability
       - imageUrl
-      - ratingAverage
-      - ratingsCount
+      - likesCount
       - initiator
       - teacher
       - createdAt
@@ -1333,12 +1362,12 @@ components:
           - FINALIZED
           - DECLINED_BY_ADMIN
           example: ON_MODERATION
-          description: 'ON_MODERATION (teacher) -> ON_VOTE (pupils) -> ON_ADMIN_MODERATION (admin) ->
-            FINALIZED. DECLINED / DECLINED_BY_ADMIN: rejected by the teacher / admin. EXPIRED: not decided
-            before its deadline'
+          description: >-
+            ON_MODERATION (teacher) -> ON_VOTE (pupils) -> ON_ADMIN_MODERATION (admin) -> FINALIZED. DECLINED
+            / DECLINED_BY_ADMIN: rejected by the teacher / admin. EXPIRED: not decided before its deadline
         declineReason:
           type: string
-          example: null
+          example: 
           nullable: true
           description: Set when declined (by the teacher or an admin) with a reason
         voteThreshold:
@@ -1348,49 +1377,49 @@ components:
         startsAt:
           format: date-time
           type: string
-          example: '2026-12-01T07:00:00.000Z'
-          description: When the event starts (UTC)
+          example: 
+          nullable: true
+          description: 'When the event starts (UTC). Set by the admin on approval: null in every status
+            except FINALIZED'
         votingClosesAt:
           format: date-time
           type: string
-          example: '2026-11-29T07:00:00.000Z'
-          description: 'Computed: 2 days before startsAt. Voting and teacher moderation must finish by
-            then, otherwise the event becomes EXPIRED'
+          example: '2026-12-06T10:00:00.000Z'
+          description: >-
+            Computed: createdAt + 1 month (30 days). Teacher moderation, voting and the admin decision
+            must finish by then, otherwise the event becomes EXPIRED
         successProbability:
           type: number
           example: 0.66
           minimum: 0
           maximum: 1
-          description: 'Computed: probability (0..1) that the event takes place, from other events of
-            the same category with a known outcome (also not yet started ones): how close their start
-            time of day (Minsk time) is and whether they were FINALIZED or EXPIRED. Declined and pending
-            events are not counted. 0.9 when at least 5 such events all started at the same time and all
-            took place; 0.5 without history'
+          description: >-
+            Computed: probability (0..1) that the event takes place, from other FINALIZED events of the
+            same category (also not yet started ones), the only ones with a date. For a FINALIZED event,
+            weighted by how close their start time of day (Minsk time) is; before the date is set, the
+            time is not compared. 0.9 with at least 5 such events (at the same time); 0.5 without history
         imageUrl:
           type: string
           example: https://res.cloudinary.com/demo/image/upload/v1/minsk_hackathon_images/3f2c9a4e.jpg
           nullable: true
           description: Event image URL; null when the event has none. At most one image per event
-        ratingAverage:
-          type: number
-          example: 4.33
-          nullable: true
-          minimum: 1
-          maximum: 5
-          description: Average stars (1..5, 2 decimals) of the pupils who rated the event; null until
-            the first rating
-        ratingsCount:
+        likesCount:
           type: integer
-          example: 3
-          description: Number of ratings. Any pupil may rate an event from ON_VOTE on
+          example: 12
+          description: Number of likes. Any pupil may like an event from ON_VOTE on, once, and take the
+            like back
         initiator:
           description: Pupil who created the event
           allOf:
-          - $ref: '#/components/schemas/UserResponseDto'
+          - "$ref": "#/components/schemas/UserResponseDto"
         teacher:
-          description: Teacher who moderates the event
+          nullable: true
+          description: >-
+            Teacher who moderates the event. Null while the author's class has no teacher: the first teacher
+            who registers into the class gets the event
+          type: object
           allOf:
-          - $ref: '#/components/schemas/UserResponseDto'
+          - "$ref": "#/components/schemas/UserResponseDto"
         createdAt:
           format: date-time
           type: string
@@ -1409,6 +1438,10 @@ components:
           type: boolean
           example: false
           description: Whether the caller has already voted
+        likedByMe:
+          type: boolean
+          example: false
+          description: Whether the caller has liked the event (the count is likesCount)
       required:
       - id
       - name
@@ -1422,159 +1455,14 @@ components:
       - votingClosesAt
       - successProbability
       - imageUrl
-      - ratingAverage
-      - ratingsCount
+      - likesCount
       - initiator
       - teacher
       - createdAt
       - updatedAt
       - votesCount
       - hasVoted
-    RatingEventResponseDto:
-      type: object
-      properties:
-        id:
-          type: string
-          example: 3f2c9a4e-1b7d-4e8a-9c0f-2a6b5d7e8f90
-          format: uuid
-        name:
-          type: string
-          example: Class trip to the museum
-          description: Event name (unique)
-        description:
-          type: string
-          example: Saturday, 10:00, meeting at school
-          nullable: true
-          description: Free-form details
-        scope:
-          type: string
-          enum:
-          - CLASS
-          - GRADE
-          - SCHOOL
-          example: CLASS
-          description: 'Who may vote, relative to the author''s class: CLASS, GRADE or SCHOOL'
-        category:
-          type: string
-          enum:
-          - SPORTS
-          - INTELLECTUAL
-          - CULTURAL
-          - CREATIVE
-          - EDUCATIONAL
-          - VOLUNTEER
-          - ENVIRONMENTAL
-          - TOURISM
-          - ENTERTAINMENT
-          - OTHER
-          example: SPORTS
-          description: Kind of event
-        status:
-          type: string
-          enum:
-          - ON_MODERATION
-          - DECLINED
-          - ON_VOTE
-          - EXPIRED
-          - ON_ADMIN_MODERATION
-          - FINALIZED
-          - DECLINED_BY_ADMIN
-          example: ON_MODERATION
-          description: 'ON_MODERATION (teacher) -> ON_VOTE (pupils) -> ON_ADMIN_MODERATION (admin) ->
-            FINALIZED. DECLINED / DECLINED_BY_ADMIN: rejected by the teacher / admin. EXPIRED: not decided
-            before its deadline'
-        declineReason:
-          type: string
-          example: null
-          nullable: true
-          description: Set when declined (by the teacher or an admin) with a reason
-        voteThreshold:
-          type: integer
-          example: 15
-          description: Votes needed to move from ON_VOTE to ON_ADMIN_MODERATION
-        startsAt:
-          format: date-time
-          type: string
-          example: '2026-12-01T07:00:00.000Z'
-          description: When the event starts (UTC)
-        votingClosesAt:
-          format: date-time
-          type: string
-          example: '2026-11-29T07:00:00.000Z'
-          description: 'Computed: 2 days before startsAt. Voting and teacher moderation must finish by
-            then, otherwise the event becomes EXPIRED'
-        successProbability:
-          type: number
-          example: 0.66
-          minimum: 0
-          maximum: 1
-          description: 'Computed: probability (0..1) that the event takes place, from other events of
-            the same category with a known outcome (also not yet started ones): how close their start
-            time of day (Minsk time) is and whether they were FINALIZED or EXPIRED. Declined and pending
-            events are not counted. 0.9 when at least 5 such events all started at the same time and all
-            took place; 0.5 without history'
-        imageUrl:
-          type: string
-          example: https://res.cloudinary.com/demo/image/upload/v1/minsk_hackathon_images/3f2c9a4e.jpg
-          nullable: true
-          description: Event image URL; null when the event has none. At most one image per event
-        ratingAverage:
-          type: number
-          example: 4.33
-          nullable: true
-          minimum: 1
-          maximum: 5
-          description: Average stars (1..5, 2 decimals) of the pupils who rated the event; null until
-            the first rating
-        ratingsCount:
-          type: integer
-          example: 3
-          description: Number of ratings. Any pupil may rate an event from ON_VOTE on
-        initiator:
-          description: Pupil who created the event
-          allOf:
-          - $ref: '#/components/schemas/UserResponseDto'
-        teacher:
-          description: Teacher who moderates the event
-          allOf:
-          - $ref: '#/components/schemas/UserResponseDto'
-        createdAt:
-          format: date-time
-          type: string
-          example: '2026-11-06T10:00:00.000Z'
-          description: When the request was created (UTC)
-        updatedAt:
-          format: date-time
-          type: string
-          example: '2026-11-06T10:00:00.000Z'
-          description: Last change (UTC)
-        myRating:
-          type: integer
-          nullable: true
-          minimum: 1
-          maximum: 5
-          example: null
-          description: The caller's stars; null when the caller has not rated the event yet
-      required:
-      - id
-      - name
-      - description
-      - scope
-      - category
-      - status
-      - declineReason
-      - voteThreshold
-      - startsAt
-      - votingClosesAt
-      - successProbability
-      - imageUrl
-      - ratingAverage
-      - ratingsCount
-      - initiator
-      - teacher
-      - createdAt
-      - updatedAt
-      - myRating
+      - likedByMe
     DeclineEventDto:
       type: object
       properties:
@@ -1584,6 +1472,18 @@ components:
           minLength: 1
           maxLength: 2000
           description: Optional reason shown to the pupil
+    AdminApproveEventDto:
+      type: object
+      properties:
+        startsAt:
+          type: string
+          example: '2026-12-05T12:00:00+03:00'
+          format: date-time
+          description: >-
+            When the event takes place: ISO 8601 date-time with a timezone (Z or ±hh:mm), in the future.
+            Set once, on approval: nobody can change it afterwards
+      required:
+      - startsAt
     EventVoteResponseDto:
       type: object
       properties:
@@ -1616,45 +1516,25 @@ components:
       - votesCount
       - voteThreshold
       - status
-    RateEventDto:
-      type: object
-      properties:
-        stars:
-          type: integer
-          minimum: 1
-          maximum: 5
-          example: 5
-          description: Stars, 1 to 5
-      required:
-      - stars
-    EventRatingResponseDto:
+    EventLikeResponseDto:
       type: object
       properties:
         eventId:
           type: string
           example: 3f2c9a4e-1b7d-4e8a-9c0f-2a6b5d7e8f90
           format: uuid
-        stars:
+        liked:
+          type: boolean
+          example: true
+          description: true after PUT (like), false after DELETE (unlike)
+        likesCount:
           type: integer
-          minimum: 1
-          maximum: 5
-          example: 5
-          description: The caller's stars
-        ratingAverage:
-          type: number
-          example: 4.33
-          minimum: 1
-          maximum: 5
-          description: Average stars of all ratings of the event, 2 decimals
-        ratingsCount:
-          type: integer
-          example: 3
-          description: Number of ratings of the event
+          example: 12
+          description: Number of likes of the event
       required:
       - eventId
-      - stars
-      - ratingAverage
-      - ratingsCount
+      - liked
+      - likesCount
     RegisterDeviceTokenDto:
       type: object
       properties:

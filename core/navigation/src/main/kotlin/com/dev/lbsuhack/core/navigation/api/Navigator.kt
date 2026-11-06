@@ -5,6 +5,7 @@ import androidx.navigation3.runtime.NavKey
 import com.dev.lbsuhack.core.domain.model.UserRole
 
 interface Navigator {
+    val canGoBack: Boolean
     fun navigate(route: NavKey)
     fun replaceAll(route: NavKey)
     fun back()

@@ -8,8 +8,15 @@ class AppNavigator(
     private val backStack: NavBackStack<NavKey>,
 ) : Navigator {
 
+    override val canGoBack: Boolean
+        get() = backStack.size > 1
+
     override fun navigate(route: NavKey) {
-        if (backStack.lastOrNull() == route) return
+        val existingIndex = backStack.indexOf(route)
+        if (existingIndex >= 0) {
+            while (backStack.lastIndex > existingIndex) backStack.removeAt(backStack.lastIndex)
+            return
+        }
         backStack.add(route)
     }
 

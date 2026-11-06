@@ -50,6 +50,10 @@
     <string name="auth_error_network">Сеть недоступна. Попробуйте ещё раз.</string>
     <string name="auth_error_credentials">Неверный логин или пароль Schools.by.</string>
     <string name="auth_error_forbidden">Доступ запрещён.</string>
+    <string name="auth_error_teacher_not_registered">Учитель с этим аккаунтом Schools.by ещё не зарегистрирован. Обратитесь к организатору.</string>
+    <string name="auth_error_role_mismatch_pupil">Этот аккаунт Schools.by зарегистрирован как ученик. Выберите «Я ученик».</string>
+    <string name="auth_error_role_mismatch_teacher">Этот аккаунт Schools.by уже зарегистрирован как учитель. Выберите «Я учитель» или обратитесь к организатору.</string>
+    <string name="auth_error_role_mismatch_organizator">Этот аккаунт зарегистрирован как организатор. Выберите «Я организатор».</string>
     <string name="auth_error_unknown">Что-то пошло не так. Попробуйте ещё раз.</string>
 
     <string name="auth_password_show">Показать пароль</string>

@@ -191,6 +191,7 @@ fun RequestsScreen(
             isSubmitting = state.isSubmitting,
             onDismiss = { viewModel.accept(RequestsStore.Intent.DismissDialog) },
             onChangeReason = { viewModel.accept(RequestsStore.Intent.ChangeDeclineReason(it)) },
+            onChangeStartsAt = { viewModel.accept(RequestsStore.Intent.ChangeStartsAt(it)) },
             onConfirmApprove = { viewModel.accept(RequestsStore.Intent.ConfirmApprove) },
             onConfirmDecline = { viewModel.accept(RequestsStore.Intent.ConfirmDecline) },
         )
@@ -371,10 +372,18 @@ private fun RequestCard(
                 .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            RequestInfoRow(
-                icon = Icons.Outlined.Schedule,
-                text = stringResource(R.string.requests_date_format, request.proposedDate),
-            )
+            val proposedDate = request.proposedDate
+            if (proposedDate != null) {
+                RequestInfoRow(
+                    icon = Icons.Outlined.Schedule,
+                    text = stringResource(R.string.requests_date_format, proposedDate),
+                )
+            } else {
+                RequestInfoRow(
+                    icon = Icons.Outlined.Schedule,
+                    text = stringResource(R.string.requests_date_not_set),
+                )
+            }
         }
 
         val declineReason = request.declineReason
@@ -644,6 +653,7 @@ private fun RequestsDialog(
     isSubmitting: Boolean,
     onDismiss: () -> Unit,
     onChangeReason: (String) -> Unit,
+    onChangeStartsAt: (String) -> Unit,
     onConfirmApprove: () -> Unit,
     onConfirmDecline: () -> Unit,
 ) {
@@ -676,6 +686,18 @@ private fun RequestsDialog(
                         ),
                         style = MaterialTheme.typography.bodyMedium,
                     )
+                    val startsAt = dialog.startsAt
+                    if (startsAt != null) {
+                        Text(
+                            text = stringResource(R.string.requests_dialog_approve_date_label),
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                        )
+                        RequestDateTimeField(
+                            startsAt = startsAt,
+                            enabled = !isSubmitting,
+                            onChange = onChangeStartsAt,
+                        )
+                    }
                 }
             },
             confirmButton = {

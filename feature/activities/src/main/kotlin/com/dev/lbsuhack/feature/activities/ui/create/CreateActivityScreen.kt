@@ -180,13 +180,6 @@ fun CreateActivityScreen(
                             )
                         }
                     }
-                    FormSection(title = stringResource(R.string.create_activity_organization_section)) {
-                        ActivityDateField(
-                            startsAt = state.startsAt,
-                            enabled = !state.isSubmitting,
-                            onChange = { viewModel.accept(CreateActivityStore.Intent.ChangeStartsAt(it)) },
-                        )
-                    }
                 } else {
                     Text(stringResource(R.string.create_activity_photo_pending))
                 }

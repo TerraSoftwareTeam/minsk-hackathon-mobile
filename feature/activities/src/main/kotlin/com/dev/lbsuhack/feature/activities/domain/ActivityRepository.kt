@@ -15,6 +15,5 @@ interface ActivityRepository {
         description: String,
         scope: ActivityScope = ActivityScope.CLASS,
         voteThreshold: Int = 15,
-        startsAt: String,
     ): DomainResult<ActivityProposal>
 }

@@ -7,6 +7,7 @@ import com.dev.lbsuhack.core.domain.DomainResult
 import com.dev.lbsuhack.core.network.call.NetworkResult
 import com.dev.lbsuhack.core.network.call.safeCall
 import com.dev.lbsuhack.core.network.error.toDomain
+import com.dev.lbsuhack.core.network.generated.model.AdminApproveEventDto
 import com.dev.lbsuhack.core.network.generated.model.DeclineEventDto
 import com.dev.lbsuhack.core.network.generated.model.EventResponseDto
 import com.dev.lbsuhack.feature.requests.domain.RequestAudience
@@ -72,13 +73,21 @@ class EventReviewRequestRepository(
     override suspend fun approve(
         requestId: String,
         audience: RequestAudience,
+        startsAt: String?,
     ): DomainResult<ReviewRequest> = withContext(ioDispatcher) {
+        if (audience == RequestAudience.ADMIN && startsAt.isNullOrBlank()) {
+            return@withContext DomainResult.Failure(com.dev.lbsuhack.core.domain.DomainError.Validation)
+        }
         prepareCache()
         val requestOwner = sessionId()
         when (
             val result = safeCall {
-                httpClient.post(requestId.actionPath(audience, isDecline = false))
-                    .body<EventResponseDto>()
+                httpClient.post(requestId.actionPath(audience, isDecline = false)) {
+                    if (audience == RequestAudience.ADMIN && startsAt != null) {
+                        contentType(ContentType.Application.Json)
+                        setBody(AdminApproveEventDto(startsAt = startsAt))
+                    }
+                }.body<EventResponseDto>()
             }
         ) {
             is NetworkResult.Success -> if (sessionId() == requestOwner) {

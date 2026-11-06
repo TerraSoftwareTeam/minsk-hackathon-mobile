@@ -33,7 +33,6 @@ class CreateActivityStoreFactory(
         data class DescriptionChanged(val description: String) : Message
         data class ScopeChanged(val scope: ActivityScope) : Message
         data class VoteThresholdChanged(val threshold: Int) : Message
-        data class StartsAtChanged(val startsAt: String) : Message
         data class TargetClassChanged(val targetClass: String) : Message
         data class MinParticipantsChanged(val min: Int) : Message
         data class MaxParticipantsChanged(val max: Int) : Message
@@ -58,7 +57,6 @@ class CreateActivityStoreFactory(
                 is CreateActivityStore.Intent.ChangeDescription -> dispatch(Message.DescriptionChanged(intent.description))
                 is CreateActivityStore.Intent.ChangeScope -> dispatch(Message.ScopeChanged(intent.scope))
                 is CreateActivityStore.Intent.ChangeVoteThreshold -> dispatch(Message.VoteThresholdChanged(intent.threshold))
-                is CreateActivityStore.Intent.ChangeStartsAt -> dispatch(Message.StartsAtChanged(intent.startsAt))
                 is CreateActivityStore.Intent.ChangeTargetClass -> dispatch(Message.TargetClassChanged(intent.targetClass))
                 is CreateActivityStore.Intent.ChangeMinParticipants -> dispatch(Message.MinParticipantsChanged(intent.min))
                 is CreateActivityStore.Intent.ChangeMaxParticipants -> dispatch(Message.MaxParticipantsChanged(intent.max))
@@ -82,9 +80,7 @@ class CreateActivityStoreFactory(
                 return
             }
 
-            val startsAt = runCatching { java.time.OffsetDateTime.parse(currentState.startsAt) }.getOrNull()
-            if (currentState.createdActivityId == null && (startsAt == null ||
-                    !startsAt.isAfter(java.time.OffsetDateTime.now().plusDays(2)) ||
+            if (currentState.createdActivityId == null && (
                     currentState.title.trim().length > 200 || currentState.description.trim().length > 5000 ||
                     currentState.voteThreshold !in 1..10000)) {
                 dispatch(Message.ErrorOccurred(UiText.Resource(R.string.create_activity_error_date)))
@@ -101,7 +97,6 @@ class CreateActivityStoreFactory(
                         description = currentState.description,
                         scope = currentState.scope,
                         voteThreshold = currentState.voteThreshold,
-                        startsAt = currentState.startsAt,
                     )) {
                         is DomainResult.Success -> result.value.id.also { dispatch(Message.EventCreated(it)) }
                         is DomainResult.Failure -> {
@@ -133,7 +128,6 @@ class CreateActivityStoreFactory(
                 is Message.DescriptionChanged -> copy(description = msg.description, error = null)
                 is Message.ScopeChanged -> copy(scope = msg.scope)
                 is Message.VoteThresholdChanged -> copy(voteThreshold = msg.threshold)
-                is Message.StartsAtChanged -> copy(startsAt = msg.startsAt)
                 is Message.TargetClassChanged -> copy(targetClass = msg.targetClass)
                 is Message.MinParticipantsChanged -> copy(minParticipants = msg.min, voteThreshold = msg.min, error = null)
                 is Message.MaxParticipantsChanged -> copy(maxParticipants = msg.max, error = null)

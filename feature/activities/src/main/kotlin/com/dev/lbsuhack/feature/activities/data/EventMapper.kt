@@ -15,9 +15,11 @@ fun VotingEventResponseDto.toDomain(): ActivityProposal {
         append(author.name)
         if (author.surname.isNotBlank()) append(" ${author.surname}")
     }
-    val teacherFullName = buildString {
-        append(teacher.name)
-        if (teacher.surname.isNotBlank()) append(" ${teacher.surname}")
+    val teacherFullName = teacher?.let { assigned ->
+        buildString {
+            append(assigned.name)
+            if (assigned.surname.isNotBlank()) append(" ${assigned.surname}")
+        }
     }
 
     return ActivityProposal(
@@ -30,7 +32,7 @@ fun VotingEventResponseDto.toDomain(): ActivityProposal {
         voteThreshold = voteThreshold.toInt(),
         votesCount = votesCount.toInt(),
         hasVoted = hasVoted,
-        startsAt = startsAt,
+        startsAt = startsAt.orEmpty(),
         votingClosesAt = votingClosesAt,
         authorId = author.id,
         authorSchoolsById = author.schoolsById,
@@ -48,9 +50,11 @@ fun EventResponseDto.toDomain(votesCount: Int = 0, hasVoted: Boolean = false): A
         append(author.name)
         if (author.surname.isNotBlank()) append(" ${author.surname}")
     }
-    val teacherFullName = buildString {
-        append(teacher.name)
-        if (teacher.surname.isNotBlank()) append(" ${teacher.surname}")
+    val teacherFullName = teacher?.let { assigned ->
+        buildString {
+            append(assigned.name)
+            if (assigned.surname.isNotBlank()) append(" ${assigned.surname}")
+        }
     }
 
     return ActivityProposal(
@@ -63,7 +67,7 @@ fun EventResponseDto.toDomain(votesCount: Int = 0, hasVoted: Boolean = false): A
         voteThreshold = voteThreshold.toInt(),
         votesCount = votesCount,
         hasVoted = hasVoted,
-        startsAt = startsAt,
+        startsAt = startsAt.orEmpty(),
         votingClosesAt = votingClosesAt,
         authorId = author.id,
         authorSchoolsById = author.schoolsById,

@@ -68,7 +68,6 @@ class FakeActivityRepository(
         description: String,
         scope: ActivityScope,
         voteThreshold: Int,
-        startsAt: String,
     ): DomainResult<ActivityProposal> {
         createCalls++
         createResult?.let { return it }
@@ -82,8 +81,6 @@ class FakeActivityRepository(
             voteThreshold = voteThreshold,
             votesCount = 0,
             hasVoted = false,
-            startsAt = startsAt,
-            votingClosesAt = startsAt,
             authorId = "101",
             authorName = "Никита Ковалев",
             authorClass = "10-А",

@@ -127,11 +127,11 @@ class CreateActivityStoreTest {
     }
 
     @Test
-    fun dateInsideVotingWindowDoesNotReachBackend() = runTest(mainDispatcherRule.testDispatcher) {
+    fun voteThresholdOutsideLimitsDoesNotReachBackend() = runTest(mainDispatcherRule.testDispatcher) {
         val store = createStore()
         store.accept(CreateActivityStore.Intent.ChangeTitle("Клуб"))
         store.accept(CreateActivityStore.Intent.ChangeDescription("Описание"))
-        store.accept(CreateActivityStore.Intent.ChangeStartsAt(java.time.OffsetDateTime.now().plusDays(1).toString()))
+        store.accept(CreateActivityStore.Intent.ChangeVoteThreshold(10001))
         store.accept(CreateActivityStore.Intent.Submit)
         runCurrent()
         assertNotNull(store.state.error)

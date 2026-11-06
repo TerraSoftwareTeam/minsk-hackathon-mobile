@@ -73,7 +73,7 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun ProfileScreen(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     onOpenSettings: () -> Unit,
     onOpenRequests: (UserRole) -> Unit,
     viewModel: ProfileViewModel = koinViewModel(),

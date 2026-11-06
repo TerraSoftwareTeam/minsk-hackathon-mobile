@@ -226,7 +226,6 @@ class ActivityRepositoryImplTest {
             description = "Описание",
             scope = ActivityScope.CLASS,
             voteThreshold = 15,
-            startsAt = "2026-11-21T10:00:00.000Z",
         )
 
         assertTrue(result is com.dev.lbsuhack.core.domain.DomainResult.Success)

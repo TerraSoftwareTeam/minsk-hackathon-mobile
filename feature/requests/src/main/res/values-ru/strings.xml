@@ -19,7 +19,7 @@
     <string name="requests_kind_publication">Публикация</string>
     <string name="requests_kind_visit">Мероприятие</string>
     <string name="requests_author_format">Автор: %1$s · %2$s</string>
-    <string name="requests_date_format">Желаемая дата: %1$s</string>
+    <string name="requests_date_format">Дата проведения: %1$s</string>
     <string name="requests_decline_reason_format">Причина: %1$s</string>
 
     <string name="requests_action_approve">Одобрить</string>
@@ -51,4 +51,7 @@
     <string name="requests_success_declined">Заявка отклонена</string>
     <string name="requests_profile">Профиль</string>
     <string name="requests_refresh">Обновить</string>
+    <string name="requests_date_not_set">Дата не назначена</string>
+    <string name="requests_dialog_approve_date_label">Дата проведения</string>
+    <string name="requests_error_date_in_past">Выберите дату проведения в будущем</string>
 </resources>

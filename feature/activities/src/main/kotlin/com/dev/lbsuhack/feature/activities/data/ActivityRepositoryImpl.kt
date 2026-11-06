@@ -185,7 +185,6 @@ class ActivityRepositoryImpl(
         description: String,
         scope: ActivityScope,
         voteThreshold: Int,
-        startsAt: String,
     ): DomainResult<ActivityProposal> = withContext(ioDispatcher) {
         prepareCache()
         val requestOwner = sessionId()
@@ -193,7 +192,6 @@ class ActivityRepositoryImpl(
             name = name.trim(),
             category = category.toDto(),
             voteThreshold = voteThreshold,
-            startsAt = startsAt,
             description = description.trim().ifEmpty { null },
             scope = scope.toDto(),
         )

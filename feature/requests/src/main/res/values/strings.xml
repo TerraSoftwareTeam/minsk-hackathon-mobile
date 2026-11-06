@@ -19,7 +19,7 @@
     <string name="requests_kind_publication">Publication</string>
     <string name="requests_kind_visit">Event</string>
     <string name="requests_author_format">Author: %1$s · %2$s</string>
-    <string name="requests_date_format">Requested date: %1$s</string>
+    <string name="requests_date_format">Event date: %1$s</string>
     <string name="requests_decline_reason_format">Reason: %1$s</string>
 
     <string name="requests_action_approve">Approve</string>
@@ -51,4 +51,7 @@
     <string name="requests_success_declined">Request declined</string>
     <string name="requests_profile">Profile</string>
     <string name="requests_refresh">Refresh</string>
+    <string name="requests_date_not_set">Date not set</string>
+    <string name="requests_dialog_approve_date_label">Event date</string>
+    <string name="requests_error_date_in_past">Pick an event date in the future</string>
 </resources>

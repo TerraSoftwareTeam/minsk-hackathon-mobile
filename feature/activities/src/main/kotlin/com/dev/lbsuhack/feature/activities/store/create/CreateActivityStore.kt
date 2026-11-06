@@ -14,7 +14,6 @@ interface CreateActivityStore :
         data class ChangeDescription(val description: String) : Intent
         data class ChangeScope(val scope: ActivityScope) : Intent
         data class ChangeVoteThreshold(val threshold: Int) : Intent
-        data class ChangeStartsAt(val startsAt: String) : Intent
         data class ChangeTargetClass(val targetClass: String) : Intent
         data class ChangeMinParticipants(val min: Int) : Intent
         data class ChangeMaxParticipants(val max: Int) : Intent
@@ -30,7 +29,6 @@ interface CreateActivityStore :
         val description: String = "",
         val scope: ActivityScope = ActivityScope.CLASS,
         val voteThreshold: Int = 15,
-        val startsAt: String = java.time.OffsetDateTime.now().plusDays(3).withSecond(0).withNano(0).toString(),
         val targetClass: String = "8–11 классы",
         val minParticipants: Int = 4,
         val maxParticipants: Int = 12,

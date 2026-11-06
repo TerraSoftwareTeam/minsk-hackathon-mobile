@@ -21,7 +21,7 @@ fun EventResponseDto.toDomain(audience: RequestAudience): ReviewRequest {
         id = id,
         title = name,
         description = description.orEmpty(),
-        proposedDate = startsAt.toDisplayDate(),
+        proposedDate = startsAt?.toDisplayDate(),
         author = RequestAuthor(
             id = initiator.id,
             name = authorName,

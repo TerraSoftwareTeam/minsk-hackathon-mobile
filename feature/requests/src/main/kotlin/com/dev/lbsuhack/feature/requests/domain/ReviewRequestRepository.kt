@@ -12,6 +12,7 @@ interface ReviewRequestRepository {
     suspend fun approve(
         requestId: String,
         audience: RequestAudience,
+        startsAt: String? = null,
     ): DomainResult<ReviewRequest>
 
     suspend fun decline(

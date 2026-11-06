@@ -17,7 +17,7 @@ class ProfileNavigationInstaller : NavigationInstaller {
                 val navigator = LocalNavigator.current
                 val appNavigation = LocalAppNavigation.current
                 ProfileScreen(
-                    onBack = navigator::back,
+                    onBack = if (navigator.canGoBack) navigator::back else null,
                     onOpenSettings = { navigator.navigate(ProfileSettingsRoute) },
                     onOpenRequests = appNavigation::openRequests,
                 )

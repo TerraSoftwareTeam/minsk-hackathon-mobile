@@ -44,13 +44,15 @@ class AuthRepositoryImpl(
         if (username.isBlank()) return@withContext DomainResult.Failure(DomainError.Validation)
         if (role == UserRole.ORGANIZATOR) {
             return@withContext authenticate(LoginDto(role = LoginDto.Role.ADMIN, id = username.trim()))
-                .toSessionResult()
+                .toDomainResult()
+                .toSessionResult(expectedRole = UserRole.ORGANIZATOR)
         }
         when (val result = schoolsByRepository.loginAndGetUser(username.trim(), password, role)) {
             is DomainResult.Failure -> result
             is DomainResult.Success -> {
                 val user = result.value
-                registerUser(user, role).toSessionResult(user.schoolName)
+                val response = if (role == UserRole.TEACHER) loginTeacher(user) else registerUser(user, role).toDomainResult()
+                response.toSessionResult(expectedRole = role, schoolName = user.schoolName)
             }
         }
     }
@@ -65,6 +67,16 @@ class AuthRepositoryImpl(
             setBody(dto)
         }.body<AuthResponseDto>()
     }
+
+    private suspend fun loginTeacher(user: User): DomainResult<AuthResponseDto> =
+        when (val result = authenticate(LoginDto(role = LoginDto.Role.TEACHER, schoolsById = user.schoolsById ?: user.id))) {
+            is NetworkResult.Success -> DomainResult.Success(result.data)
+            is NetworkResult.Error -> if (result.error == NetworkError.Unauthorized) {
+                DomainResult.Failure(DomainError.BusinessRule(TEACHER_NOT_REGISTERED))
+            } else {
+                DomainResult.Failure(result.error.toDomain())
+            }
+        }
 
     private suspend fun registerUser(user: User, role: UserRole): NetworkResult<AuthResponseDto> {
         val schoolClass = (user as? User.Pupil)?.pupilClass?.trim()
@@ -98,17 +110,37 @@ class AuthRepositoryImpl(
         return result
     }
 
-    private suspend fun NetworkResult<AuthResponseDto>.toSessionResult(schoolName: String? = null): DomainResult<SessionUser> =
-        when (this) {
-            is NetworkResult.Error -> DomainResult.Failure(error.toDomain())
-            is NetworkResult.Success -> when (val saved = safeCall {
-                require(data.accessToken.isNotBlank())
-                userRepository.updateCache(data.user.toDomain(schoolName))
-                tokenStorage.saveTokens(data.accessToken, null)
-                data.user.toSessionUser(schoolName)
-            }) {
-                is NetworkResult.Success -> DomainResult.Success(saved.data)
-                is NetworkResult.Error -> DomainResult.Failure(saved.error.toDomain())
+    private fun NetworkResult<AuthResponseDto>.toDomainResult(): DomainResult<AuthResponseDto> = when (this) {
+        is NetworkResult.Success -> DomainResult.Success(data)
+        is NetworkResult.Error -> DomainResult.Failure(error.toDomain())
+    }
+
+    private suspend fun DomainResult<AuthResponseDto>.toSessionResult(
+        expectedRole: UserRole,
+        schoolName: String? = null,
+    ): DomainResult<SessionUser> = when (this) {
+        is DomainResult.Failure -> this
+        is DomainResult.Success -> {
+            val actualRole = value.user.toSessionUser().role
+            if (actualRole != expectedRole) {
+                Log.w("AuthRepository", "Backend returned role $actualRole, expected $expectedRole")
+                DomainResult.Failure(DomainError.BusinessRule(ROLE_MISMATCH, actualRole.name))
+            } else {
+                when (val saved = safeCall {
+                    require(value.accessToken.isNotBlank())
+                    userRepository.updateCache(value.user.toDomain(schoolName))
+                    tokenStorage.saveTokens(value.accessToken, null)
+                    value.user.toSessionUser(schoolName)
+                }) {
+                    is NetworkResult.Success -> DomainResult.Success(saved.data)
+                    is NetworkResult.Error -> DomainResult.Failure(saved.error.toDomain())
+                }
             }
         }
+    }
+
+    internal companion object {
+        const val TEACHER_NOT_REGISTERED = "TEACHER_NOT_REGISTERED"
+        const val ROLE_MISMATCH = "ROLE_MISMATCH"
+    }
 }
