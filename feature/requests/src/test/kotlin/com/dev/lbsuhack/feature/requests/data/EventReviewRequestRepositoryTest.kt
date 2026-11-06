@@ -66,7 +66,8 @@ class EventReviewRequestRepositoryTest {
             "role": "TEACHER"
           },
           "createdAt": "2026-11-06T00:00:00.000Z",
-          "updatedAt": "2026-11-06T00:00:00.000Z"
+          "updatedAt": "2026-11-06T00:00:00.000Z",
+          "likesCount": 0
         }
     """.trimIndent()
 
@@ -109,8 +110,8 @@ class EventReviewRequestRepositoryTest {
         assertEquals("10A", request.author.pupilClass)
         assertEquals(RequestAudience.TEACHER, request.audience)
         assertEquals(ReviewStatus.PENDING_TEACHER, request.status)
-        assertFalse(request.proposedDate.contains('T'))
-        assertTrue(request.proposedDate.isNotBlank())
+        assertFalse(request.proposedDate?.contains('T') == true)
+        assertTrue(!request.proposedDate.isNullOrBlank())
     }
 
     @Test

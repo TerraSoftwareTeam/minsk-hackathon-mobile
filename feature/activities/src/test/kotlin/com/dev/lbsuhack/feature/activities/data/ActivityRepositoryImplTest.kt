@@ -61,7 +61,9 @@ class ActivityRepositoryImplTest {
                                 "createdAt": "2026-11-06T00:00:00.000Z",
                                 "updatedAt": "2026-11-06T00:00:00.000Z",
                                 "votesCount": 5,
-                                "hasVoted": false
+                                "hasVoted": false,
+                                "likesCount": 0,
+                                "likedByMe": false
                               }
                             ]
                         """.trimIndent(),
@@ -134,6 +136,7 @@ class ActivityRepositoryImplTest {
                                 },
                                 "createdAt": "2026-11-06T00:00:00.000Z",
                                 "updatedAt": "2026-11-06T00:00:00.000Z",
+                                "likesCount": 0,
                                 "votesCount": 5,
                                 "hasVoted": false
                               }""", status = HttpStatusCode.OK, headers = responseHeaders)
@@ -204,7 +207,8 @@ class ActivityRepositoryImplTest {
                             "role": "TEACHER"
                           },
                           "createdAt": "2026-11-06T00:00:00.000Z",
-                          "updatedAt": "2026-11-06T00:00:00.000Z"
+                          "updatedAt": "2026-11-06T00:00:00.000Z",
+                          "likesCount": 0
                         }
                     """.trimIndent(),
                     status = HttpStatusCode.Created,
@@ -266,6 +270,7 @@ class ActivityRepositoryImplTest {
                                 },
                                 "createdAt": "2026-11-06T00:00:00.000Z",
                                 "updatedAt": "2026-11-06T00:00:00.000Z",
+                                "likesCount": 0,
                                 "votesCount": 5,
                                 "hasVoted": false
                               }"""
