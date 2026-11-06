@@ -390,7 +390,7 @@ private fun RequestCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        MaterialTheme.hack.successContainer,
+                        MaterialTheme.colorScheme.surfaceContainerLow,
                         MaterialTheme.shapes.large,
                     )
                     .padding(14.dp),
@@ -399,7 +399,7 @@ private fun RequestCard(
                 RequestInfoRow(
                     icon = Icons.Outlined.Schedule,
                     text = stringResource(R.string.requests_confirmed_date_format, request.confirmedDate),
-                    contentColor = MaterialTheme.hack.success,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (request.confirmedLocation != null) {
                     RequestInfoRow(
@@ -408,7 +408,7 @@ private fun RequestCard(
                             R.string.requests_confirmed_location_format,
                             request.confirmedLocation,
                         ),
-                        contentColor = MaterialTheme.hack.success,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -422,12 +422,12 @@ private fun RequestCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        MaterialTheme.hack.danger.copy(alpha = 0.12f),
+                        MaterialTheme.colorScheme.surfaceContainerLow,
                         MaterialTheme.shapes.large,
                     )
                     .padding(14.dp),
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.hack.danger,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
@@ -444,9 +444,9 @@ private fun RequestCard(
                         .height(52.dp),
                     shape = MaterialTheme.shapes.medium,
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.hack.danger,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
                     ),
-                    border = BorderStroke(1.dp, MaterialTheme.hack.danger.copy(alpha = 0.5f)),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
@@ -687,9 +687,9 @@ private fun RequestStatusBadge(status: ReviewStatus) {
 @Composable
 private fun statusColor(status: ReviewStatus): Color = when (status) {
     ReviewStatus.PENDING_TEACHER -> MaterialTheme.colorScheme.primary
-    ReviewStatus.PENDING_ADMIN -> MaterialTheme.hack.amber.accent
-    ReviewStatus.APPROVED -> MaterialTheme.hack.success
-    ReviewStatus.DECLINED -> MaterialTheme.hack.danger
+    ReviewStatus.PENDING_ADMIN -> MaterialTheme.colorScheme.onSurfaceVariant
+    ReviewStatus.APPROVED -> MaterialTheme.colorScheme.primary
+    ReviewStatus.DECLINED -> MaterialTheme.colorScheme.outline
 }
 
 @Composable

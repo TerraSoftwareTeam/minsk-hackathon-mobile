@@ -32,7 +32,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.dev.lbsuhack.core.designsystem.mode.AppThemeMode
 import com.dev.lbsuhack.core.designsystem.theme.HackTheme
-import com.dev.lbsuhack.core.designsystem.theme.hack
 
 @Composable
 fun HackEventCard(
@@ -199,14 +198,14 @@ fun HackEventCard(
                             Spacer(modifier = Modifier.weight(1f))
                             if (capacityBadgeText != null) {
                                 val background = if (isFull) {
-                                    MaterialTheme.colorScheme.errorContainer
+                                    MaterialTheme.colorScheme.surfaceContainerHigh
                                 } else {
-                                    MaterialTheme.colorScheme.primaryContainer
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
                                 }
                                 val foreground = if (isFull) {
-                                    MaterialTheme.hack.danger
+                                    MaterialTheme.colorScheme.onSurfaceVariant
                                 } else {
-                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                    MaterialTheme.colorScheme.primary
                                 }
                                 Surface(
                                     shape = CircleShape,

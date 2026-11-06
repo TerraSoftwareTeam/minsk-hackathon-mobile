@@ -134,7 +134,14 @@ fun ActivityDetailsScreen(
             ) {
                 CircularProgressIndicator()
             }
-        } else if (proposal != null) {
+        } else if (proposal == null) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(stringResource(R.string.activity_qr_not_found))
+            }
+        } else {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -144,6 +151,7 @@ fun ActivityDetailsScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 ActivityHeroCard(proposal = proposal)
+                ActivityQrCard(activityId = proposal.id, title = proposal.title)
                 ActivityStatusNotice(proposal = proposal)
                 StatusTimelineCard(status = proposal.status)
                 ParticipantsCard(proposal = proposal)
@@ -283,36 +291,36 @@ private fun ActivityStatusNotice(proposal: ActivityProposal) {
 
     when (proposal.status) {
         ActivityStatus.MODERATING -> {
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
             icon = Icons.Outlined.HourglassEmpty
             titleRes = R.string.activities_status_moderating
             descriptionRes = R.string.details_moderating_desc
         }
         ActivityStatus.RECRUITING -> {
-            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
             contentColor = MaterialTheme.colorScheme.primary
             icon = Icons.Outlined.Groups
             titleRes = R.string.details_recruiting_title
             descriptionRes = R.string.details_recruiting_desc
         }
         ActivityStatus.PENDING_ADMIN -> {
-            containerColor = MaterialTheme.hack.amber.container
-            contentColor = MaterialTheme.hack.amber.accent
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
             icon = Icons.Outlined.HourglassEmpty
             titleRes = R.string.details_admin_pending_title
             descriptionRes = R.string.details_admin_pending_desc
         }
         ActivityStatus.APPROVED -> {
-            containerColor = MaterialTheme.hack.successContainer
-            contentColor = MaterialTheme.hack.success
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            contentColor = MaterialTheme.colorScheme.primary
             icon = Icons.Default.CheckCircle
             titleRes = R.string.details_admin_approved_title
             descriptionRes = null
         }
         ActivityStatus.REJECTED -> {
-            containerColor = MaterialTheme.hack.danger.copy(alpha = 0.12f)
-            contentColor = MaterialTheme.hack.danger
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            contentColor = MaterialTheme.colorScheme.outline
             icon = Icons.Default.CheckCircle
             titleRes = R.string.details_rejected_title
             descriptionRes = R.string.details_rejected_desc
@@ -572,8 +580,7 @@ private fun ParticipantsCard(proposal: ActivityProposal) {
                 )
             },
             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-            color = if (proposal.hasQuorum) MaterialTheme.hack.success
-            else MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -711,7 +718,7 @@ private fun InteractiveSimulationSection(
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.hack.success,
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(

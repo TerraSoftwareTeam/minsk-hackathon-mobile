@@ -93,15 +93,18 @@ fun ActivitiesScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            ActivitiesTopBar(
-                userName = state.currentUser?.name,
-                pupilClass = state.currentUser?.pupilClass,
-                selectedCategory = state.selectedCategory,
-                selectedTab = state.selectedTab,
-                onSelectCategory = { viewModel.accept(ActivitiesStore.Intent.SelectCategory(it)) },
-                onSelectTab = { viewModel.accept(ActivitiesStore.Intent.SelectTab(it)) },
-                onOpenProfile = { viewModel.accept(ActivitiesStore.Intent.ClickProfile) },
-            )
+            Column {
+                ActivitiesTopBar(
+                    userName = state.currentUser?.name,
+                    pupilClass = state.currentUser?.pupilClass,
+                    selectedCategory = state.selectedCategory,
+                    selectedTab = state.selectedTab,
+                    onSelectCategory = { viewModel.accept(ActivitiesStore.Intent.SelectCategory(it)) },
+                    onSelectTab = { viewModel.accept(ActivitiesStore.Intent.SelectTab(it)) },
+                    onOpenProfile = { viewModel.accept(ActivitiesStore.Intent.ClickProfile) },
+                )
+                ActivityScanButton(onOpenDetails = onOpenDetails)
+            }
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
@@ -473,8 +476,7 @@ private fun ActivityCard(
                         )
                     },
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = if (proposal.hasQuorum) MaterialTheme.hack.success
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -557,7 +559,7 @@ private fun ConfirmedActivityInfo(proposal: ActivityProposal) {
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                MaterialTheme.hack.successContainer,
+                MaterialTheme.colorScheme.surfaceContainerLow,
                 MaterialTheme.shapes.large,
             )
             .padding(14.dp),
@@ -582,7 +584,7 @@ private fun ConfirmedInfoRow(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(18.dp),
-            tint = MaterialTheme.hack.success,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(modifier = Modifier.width(9.dp))
         Text(
@@ -659,9 +661,9 @@ internal fun StatusBadge(status: ActivityStatus) {
 private fun statusColor(status: ActivityStatus): Color = when (status) {
     ActivityStatus.MODERATING -> MaterialTheme.colorScheme.onSurfaceVariant
     ActivityStatus.RECRUITING -> MaterialTheme.colorScheme.primary
-    ActivityStatus.PENDING_ADMIN -> MaterialTheme.hack.amber.accent
-    ActivityStatus.APPROVED -> MaterialTheme.hack.success
-    ActivityStatus.REJECTED -> MaterialTheme.hack.danger
+    ActivityStatus.PENDING_ADMIN -> MaterialTheme.colorScheme.onSurfaceVariant
+    ActivityStatus.APPROVED -> MaterialTheme.colorScheme.primary
+    ActivityStatus.REJECTED -> MaterialTheme.colorScheme.outline
 }
 
 @Composable

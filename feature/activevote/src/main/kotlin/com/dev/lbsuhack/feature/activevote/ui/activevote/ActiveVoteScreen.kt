@@ -46,7 +46,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.dev.lbsuhack.core.designsystem.theme.hack
 import com.dev.lbsuhack.core.localization.text.resolve
 import com.dev.lbsuhack.core.ui.component.HackEmptyState
 import com.dev.lbsuhack.core.ui.component.HackEventCard
@@ -302,7 +301,7 @@ private fun VotingBlock(
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Surface(
                                         shape = CircleShape,
-                                        color = MaterialTheme.hack.successContainer,
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
                                     ) {
                                         Row(
                                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -313,12 +312,12 @@ private fun VotingBlock(
                                                 imageVector = Icons.Default.Check,
                                                 contentDescription = null,
                                                 modifier = Modifier.size(12.dp),
-                                                tint = MaterialTheme.hack.success,
+                                                tint = MaterialTheme.colorScheme.primary,
                                             )
                                             Text(
                                                 text = stringResource(R.string.active_vote_your_choice),
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.hack.success,
+                                                color = MaterialTheme.colorScheme.primary,
                                             )
                                         }
                                     }
@@ -422,7 +421,7 @@ private fun UsersBlock(
                         if (user.hasVoted) {
                             Surface(
                                 shape = CircleShape,
-                                color = MaterialTheme.hack.successContainer,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
                             ) {
                                 Row(
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -433,12 +432,12 @@ private fun UsersBlock(
                                         imageVector = Icons.Default.Check,
                                         contentDescription = null,
                                         modifier = Modifier.size(12.dp),
-                                        tint = MaterialTheme.hack.success,
+                                        tint = MaterialTheme.colorScheme.primary,
                                     )
                                     Text(
                                         text = stringResource(R.string.active_vote_user_status_voted),
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.hack.success,
+                                        color = MaterialTheme.colorScheme.primary,
                                     )
                                 }
                             }
@@ -479,8 +478,8 @@ private fun ActiveVoteFloatingButton(
     if (hasVoted) {
         ExtendedFloatingActionButton(
             onClick = {},
-            containerColor = MaterialTheme.hack.successContainer,
-            contentColor = MaterialTheme.hack.success,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.primary,
             elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
             icon = {
                 Icon(
