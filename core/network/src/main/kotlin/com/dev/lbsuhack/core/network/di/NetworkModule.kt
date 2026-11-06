@@ -1,7 +1,7 @@
 package com.dev.lbsuhack.core.network.di
 
 import com.dev.lbsuhack.core.network.auth.EncryptedTokenStorage
-import com.dev.lbsuhack.core.network.auth.TokenRefresher
+import com.dev.lbsuhack.core.domain.session.ClearSessionUseCase
 import com.dev.lbsuhack.core.network.auth.TokenStorage
 import com.dev.lbsuhack.core.network.client.AppHttpClientFactory
 import io.ktor.client.HttpClient
@@ -22,21 +22,13 @@ val networkModule = module {
     single(named("unauthenticatedHttpClient")) {
         AppHttpClientFactory.createUnauthenticated(localeProvider = get())
     }
-    single {
-        TokenRefresher(
-            tokenStorage = get(),
-            unauthenticatedClientProvider = {
-                get<HttpClient>(named("unauthenticatedHttpClient"))
-            },
-        )
-    }
-
     single(named("authenticatedHttpClient")) {
         AppHttpClientFactory.createAuthenticated(
             localeProvider = get(),
             tokenStorage = get(),
         ) {
-            get<TokenRefresher>().refresh()
+            get<ClearSessionUseCase>()()
+            false
         }
     }
     single<HttpClient> { get(named("authenticatedHttpClient")) }

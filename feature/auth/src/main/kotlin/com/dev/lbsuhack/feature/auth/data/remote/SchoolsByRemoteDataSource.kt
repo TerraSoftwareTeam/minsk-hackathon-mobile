@@ -1,6 +1,7 @@
 package com.dev.lbsuhack.feature.auth.data.remote
 
 import com.dev.lbsuhack.feature.auth.data.model.RemoteProfileResult
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -145,6 +146,8 @@ class SchoolsByRemoteDataSourceImpl(
             profileConn.disconnect()
 
             RemoteProfileResult.Success(html = profileHtml, profileUrl = finalUrl)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             RemoteProfileResult.Error(e)
         }

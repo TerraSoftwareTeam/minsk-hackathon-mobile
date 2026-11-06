@@ -19,10 +19,8 @@
     <string name="profile_edit_dialog_title">Редактирование профиля</string>
     <string name="profile_edit_name_label">Имя</string>
     <string name="profile_edit_surname_label">Фамилия</string>
-    <string name="profile_edit_fathers_name_label">Отчество</string>
     <string name="profile_edit_name_hint">Например: Иван</string>
     <string name="profile_edit_surname_hint">Например: Иванов</string>
-    <string name="profile_edit_fathers_name_hint">Например: Иванович</string>
     <string name="profile_edit_save">Сохранить</string>
     <string name="profile_edit_error_fields_required">Заполните имя и фамилию</string>
     <string name="profile_success_updated">Профиль обновлён</string>

@@ -15,6 +15,7 @@ data class ActivityProposal(
     val authorId: String,
     val authorName: String,
     val authorClass: String,
+    val authorSchoolsById: String? = null,
     val teacherName: String? = null,
     val declineReason: String? = null,
     val photoUri: String? = null,
@@ -33,5 +34,6 @@ data class ActivityProposal(
     val progress: Float
         get() = if (voteThreshold > 0) (votesCount.toFloat() / voteThreshold).coerceIn(0f, 1f) else 0f
 
-    fun isJoined(pupilId: String): Boolean = hasVoted || authorId == pupilId
+    fun isCreatedBy(schoolsById: String?): Boolean =
+        !schoolsById.isNullOrBlank() && schoolsById == authorSchoolsById
 }

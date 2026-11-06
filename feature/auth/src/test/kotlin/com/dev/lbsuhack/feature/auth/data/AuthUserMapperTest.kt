@@ -11,7 +11,6 @@ class AuthUserMapperTest {
         schoolsById = "3575208",
         name = "Иван",
         surname = "Иванов",
-        fathersName = "Иванович",
         propertyClass = "10-А",
         role = role,
     )

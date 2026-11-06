@@ -18,7 +18,7 @@ import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.ui.component.ActivityPhoto
 
 @Composable
-internal fun ActivityCardCover(proposal: ActivityProposal, photoUri: String) {
+internal fun ActivityCardCover(proposal: ActivityProposal, photoUri: String, isAuthor: Boolean = false) {
     val scrim = MaterialTheme.colorScheme.scrim
     Box(modifier = Modifier.fillMaxWidth().aspectRatio(1.6f)) {
         ActivityPhoto(
@@ -35,6 +35,7 @@ internal fun ActivityCardCover(proposal: ActivityProposal, photoUri: String) {
         ActivityMetadata(
             proposal = proposal,
             onPhoto = true,
+            isAuthor = isAuthor,
             modifier = Modifier.align(Alignment.TopStart).padding(12.dp),
         )
     }

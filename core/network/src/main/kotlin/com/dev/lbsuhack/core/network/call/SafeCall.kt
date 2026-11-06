@@ -1,6 +1,9 @@
 package com.dev.lbsuhack.core.network.call
 
 import android.util.Log
+import kotlinx.coroutines.CancellationException
+import java.net.SocketTimeoutException
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import com.dev.lbsuhack.core.network.client.AppHttpClientFactory
 import com.dev.lbsuhack.core.network.error.NetworkError
 import io.ktor.client.plugins.ClientRequestException
@@ -14,10 +17,18 @@ import kotlinx.serialization.json.JsonPrimitive
 suspend inline fun <T> safeCall(crossinline block: suspend () -> T): NetworkResult<T> {
     return try {
         NetworkResult.Success(block())
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: ClientRequestException) {
         val status = e.response.status.value
-        val bodyText = runCatching { e.response.bodyAsText() }.getOrNull()
-        Log.e("HttpClient", "Client error $status: $bodyText", e)
+        val bodyText = try {
+            e.response.bodyAsText()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            null
+        }
+        Log.e("HttpClient", "${e.response.call.request.method.value} ${e.response.call.request.url.encodedPath}: HTTP $status")
         val errorMessage = extractErrorMessage(bodyText)
         when (status) {
             401 -> NetworkResult.Error(NetworkError.Unauthorized)
@@ -26,12 +37,15 @@ suspend inline fun <T> safeCall(crossinline block: suspend () -> T): NetworkResu
             else -> NetworkResult.Error(NetworkError.ClientError(status, errorMessage))
         }
     } catch (e: ServerResponseException) {
-        val bodyText = runCatching { e.response.bodyAsText() }.getOrNull()
-        Log.e("HttpClient", "Server error ${e.response.status.value}: $bodyText", e)
+        Log.e("HttpClient", "${e.response.call.request.method.value} ${e.response.call.request.url.encodedPath}: HTTP ${e.response.status.value}")
         NetworkResult.Error(NetworkError.ServerError(e.response.status.value))
+    } catch (e: HttpRequestTimeoutException) {
+        NetworkResult.Error(NetworkError.Timeout)
+    } catch (e: SocketTimeoutException) {
+        NetworkResult.Error(NetworkError.Timeout)
     } catch (e: IOException) {
         Log.e("HttpClient", "Network IO error: ${e.message}", e)
-        NetworkResult.Error(NetworkError.Timeout)
+        NetworkResult.Error(NetworkError.NoInternet)
     } catch (e: Exception) {
         Log.e("HttpClient", "Unexpected error: ${e.message}", e)
         NetworkResult.Error(NetworkError.Exception(e))

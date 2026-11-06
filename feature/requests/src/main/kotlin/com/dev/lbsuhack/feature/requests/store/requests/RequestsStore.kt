@@ -65,7 +65,11 @@ interface RequestsStore : Store<RequestsStore.Intent, RequestsStore.State, Reque
         val isSubmitting: Boolean = false,
     ) {
         val canReview: Boolean
-            get() = audience != null && isReviewer(currentUser?.role)
+            get() = when (audience) {
+                RequestAudience.TEACHER -> currentUser?.role == UserRole.TEACHER
+                RequestAudience.ADMIN -> currentUser?.role == UserRole.ORGANIZATOR
+                null -> false
+            }
 
         val queueRequests: List<ReviewRequest>
             get() {

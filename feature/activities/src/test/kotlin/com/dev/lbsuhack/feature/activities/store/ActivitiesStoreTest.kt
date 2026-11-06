@@ -34,6 +34,7 @@ class ActivitiesStoreTest {
     private val sessionUser = SessionUser(
         id = "101",
         name = "Никита Ковалев",
+        schoolsById = "schools-101",
         schoolName = "School #1",
         pupilClass = "10-А",
     )
@@ -56,6 +57,7 @@ class ActivitiesStoreTest {
             startsAt = "2026-11-21T10:00:00.000Z",
             votingClosesAt = "2026-11-19T10:00:00.000Z",
             authorId = "101",
+            authorSchoolsById = "schools-101",
             authorName = "Никита Ковалев",
             authorClass = "10-А",
         ),
@@ -72,6 +74,7 @@ class ActivitiesStoreTest {
             startsAt = "2026-11-21T12:00:00.000Z",
             votingClosesAt = "2026-11-19T12:00:00.000Z",
             authorId = "202",
+            authorSchoolsById = "schools-202",
             authorName = "Мария",
             authorClass = "10-Б",
         ),
@@ -122,7 +125,7 @@ class ActivitiesStoreTest {
         runCurrent()
 
         assertEquals(ActivityTab.MY_PROPOSALS, store.state.selectedTab)
-        assertTrue(store.state.filteredActivities.all { it.authorId == sessionUser.id })
+        assertTrue(store.state.filteredActivities.all { it.isCreatedBy(sessionUser.schoolsById) })
     }
 
     @Test
@@ -149,5 +152,50 @@ class ActivitiesStoreTest {
         val itemAfter = store.state.activities.find { it.id == "act-1" }
         assertTrue(itemAfter?.hasVoted == true)
         assertEquals(11, itemAfter?.votesCount)
+    }
+    @Test
+    fun failedRefreshStopsLoadingAndExposesError() = runTest(mainDispatcherRule.testDispatcher) {
+        activityRepository.refreshResult = com.dev.lbsuhack.core.domain.DomainResult.Failure(com.dev.lbsuhack.core.domain.DomainError.Network)
+        val store = createStore()
+        store.accept(ActivitiesStore.Intent.Load)
+        runCurrent()
+        assertFalse(store.state.isLoading)
+        assertTrue(store.state.error != null)
+        activityRepository.refreshResult = com.dev.lbsuhack.core.domain.DomainResult.Success(Unit)
+        store.accept(ActivitiesStore.Intent.Refresh)
+        runCurrent()
+        assertFalse(store.state.isLoading)
+        assertEquals(null, store.state.error)
+        store.dispose()
+    }
+
+    @Test
+    fun failedVoteExposesError() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore()
+        store.accept(ActivitiesStore.Intent.Vote("missing"))
+        runCurrent()
+        assertTrue(store.state.error != null)
+        store.dispose()
+    }
+    @Test
+    fun ownershipUsesSchoolsIdWhenBackendIdsDiffer() {
+        val proposal = initialProposals.first().copy(authorId = "another-backend-id")
+        val state = ActivitiesStore.State(
+            activities = listOf(proposal, initialProposals.last()),
+            currentUser = sessionUser,
+            selectedTab = ActivityTab.MY_PROPOSALS,
+        )
+        assertTrue(proposal.isCreatedBy(sessionUser.schoolsById))
+        assertEquals(listOf(proposal), state.filteredActivities)
+        assertEquals(1, state.myProposalsCount)
+    }
+
+    @Test
+    fun missingOrDifferentSchoolsIdDoesNotClaimOwnership() {
+        val proposal = initialProposals.first()
+        assertFalse(proposal.isCreatedBy(null))
+        assertFalse(proposal.isCreatedBy(""))
+        assertFalse(proposal.isCreatedBy("other-school-user"))
+        assertFalse(proposal.copy(authorSchoolsById = null).isCreatedBy(null))
     }
 }

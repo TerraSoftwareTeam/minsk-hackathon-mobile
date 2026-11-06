@@ -34,7 +34,9 @@ class DefaultUserRepository(
     private val preferences = context.applicationContext.getSharedPreferences(
         PREFS_NAME,
         Context.MODE_PRIVATE,
-    )
+    ).apply {
+        edit().remove("fathers_name").apply()
+    }
 
     private val mutex = Mutex()
     private val _currentUser = MutableStateFlow<User?>(null)
@@ -49,25 +51,17 @@ class DefaultUserRepository(
 
     override suspend fun getCurrentUser(forceRefresh: Boolean): DomainResult<User> = withContext(ioDispatcher) {
         mutex.withLock {
-            val inMemory = _currentUser.value
-            if (!forceRefresh && inMemory != null) {
-                return@withLock DomainResult.Success(inMemory)
-            }
-
-            val cached = readFromPrefs()
-            if (!forceRefresh && cached != null) {
-                _currentUser.value = cached
-                return@withLock DomainResult.Success(cached)
-            }
-
             val sessionState = sessionRepository.state.value
-            val userId = when (sessionState) {
-                is SessionState.Authenticated -> sessionState.user.id
-                else -> null
-            }
-
+            val userId = (sessionState as? SessionState.Authenticated)?.user?.id
             if (userId.isNullOrBlank()) {
                 return@withLock DomainResult.Failure(DomainError.Unauthorized)
+            }
+            val inMemory = _currentUser.value?.takeIf { it.id == userId }
+            val cached = readFromPrefs()?.takeIf { it.id == userId }
+            if (!forceRefresh && (inMemory != null || cached != null)) {
+                val user = requireNotNull(inMemory ?: cached)
+                _currentUser.value = user
+                return@withLock DomainResult.Success(user)
             }
 
             val result: NetworkResult<UserResponseDto> = safeCall {
@@ -85,11 +79,7 @@ class DefaultUserRepository(
                     DomainResult.Success(domainUser)
                 }
                 is NetworkResult.Error -> {
-                    if (cached != null) {
-                        DomainResult.Success(cached)
-                    } else {
-                        DomainResult.Failure(result.error.toDomain())
-                    }
+                    DomainResult.Failure(result.error.toDomain())
                 }
             }
         }
@@ -117,7 +107,6 @@ class DefaultUserRepository(
         val id = preferences.getString(KEY_ID, null) ?: return null
         val name = preferences.getString(KEY_NAME, null) ?: return null
         val surname = preferences.getString(KEY_SURNAME, null)
-        val fathersName = preferences.getString(KEY_FATHERS_NAME, null)
         val schoolsById = preferences.getString(KEY_SCHOOLS_BY_ID, null)
         val schoolName = preferences.getString(KEY_SCHOOL_NAME, null)
         val roleStr = preferences.getString(KEY_ROLE, null)
@@ -129,7 +118,6 @@ class DefaultUserRepository(
                 id = id,
                 name = name,
                 surname = surname,
-                fathersName = fathersName,
                 schoolsById = schoolsById,
                 schoolName = schoolName,
                 pupilClass = pupilClass.orEmpty(),
@@ -138,7 +126,6 @@ class DefaultUserRepository(
                 id = id,
                 name = name,
                 surname = surname,
-                fathersName = fathersName,
                 schoolsById = schoolsById,
                 schoolName = schoolName,
             )
@@ -146,7 +133,6 @@ class DefaultUserRepository(
                 id = id,
                 name = name,
                 surname = surname,
-                fathersName = fathersName,
             )
         }
     }
@@ -156,7 +142,6 @@ class DefaultUserRepository(
             .putString(KEY_ID, user.id)
             .putString(KEY_NAME, user.name)
             .putString(KEY_SURNAME, user.surname)
-            .putString(KEY_FATHERS_NAME, user.fathersName)
             .putString(KEY_SCHOOLS_BY_ID, user.schoolsById)
             .putString(KEY_SCHOOL_NAME, user.schoolName)
             .putString(KEY_ROLE, user.role.name)
@@ -174,7 +159,6 @@ class DefaultUserRepository(
             id = id,
             name = name,
             surname = surname,
-            fathersName = fathersName,
             schoolsById = schoolsById,
             schoolName = existingSchoolName,
             pupilClass = propertyClass.orEmpty(),
@@ -183,7 +167,6 @@ class DefaultUserRepository(
             id = id,
             name = name,
             surname = surname,
-            fathersName = fathersName,
             schoolsById = schoolsById,
             schoolName = existingSchoolName,
         )
@@ -191,7 +174,6 @@ class DefaultUserRepository(
             id = id,
             name = name,
             surname = surname,
-            fathersName = fathersName,
         )
     }
 
@@ -200,7 +182,6 @@ class DefaultUserRepository(
         const val KEY_ID = "id"
         const val KEY_NAME = "name"
         const val KEY_SURNAME = "surname"
-        const val KEY_FATHERS_NAME = "fathers_name"
         const val KEY_SCHOOLS_BY_ID = "schools_by_id"
         const val KEY_SCHOOL_NAME = "school_name"
         const val KEY_ROLE = "role"

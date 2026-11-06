@@ -31,12 +31,10 @@ class ProfileRepositoryImpl(
         userId: String,
         name: String,
         surname: String,
-        fathersName: String,
     ): DomainResult<User> = userProfileApi.updateProfile(
         userId = userId,
         name = name,
         surname = surname,
-        fathersName = fathersName,
     )
 
     private companion object {

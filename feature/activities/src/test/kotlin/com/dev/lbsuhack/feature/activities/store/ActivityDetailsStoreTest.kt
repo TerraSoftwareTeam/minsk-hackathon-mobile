@@ -34,6 +34,7 @@ class ActivityDetailsStoreTest {
     private val sessionUser = SessionUser(
         id = "101",
         name = "Никита Ковалев",
+        schoolsById = "schools-101",
         schoolName = "School #1",
         pupilClass = "10-А",
     )
@@ -56,6 +57,7 @@ class ActivityDetailsStoreTest {
             startsAt = "2026-11-21T10:00:00.000Z",
             votingClosesAt = "2026-11-19T10:00:00.000Z",
             authorId = "101",
+            authorSchoolsById = "schools-101",
             authorName = "Никита Ковалев",
             authorClass = "10-А",
         ),

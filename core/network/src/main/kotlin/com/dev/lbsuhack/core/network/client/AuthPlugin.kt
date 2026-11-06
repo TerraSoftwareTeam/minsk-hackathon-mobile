@@ -44,8 +44,10 @@ val AuthPlugin = createClientPlugin("AuthPlugin", ::AuthPluginConfig) {
             val tokenUsedForRequest = request.headers[HttpHeaders.Authorization]
                 ?.removePrefix("Bearer ")
 
-            if (currentToken != null && currentToken != tokenUsedForRequest) {
-                true
+            if (currentToken.isNullOrBlank()) {
+                false
+            } else if (currentToken != tokenUsedForRequest) {
+                false
             } else {
                 refreshTokens()
             }

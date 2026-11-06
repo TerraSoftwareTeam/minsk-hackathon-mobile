@@ -39,7 +39,6 @@ class ProfileStoreTest {
         id = "7",
         name = "Nikita",
         surname = "Ivanov",
-        fathersName = "Petrovich",
         schoolsById = "3575208",
         schoolName = "School #1",
         pupilClass = "10-А",
@@ -78,7 +77,7 @@ class ProfileStoreTest {
             runCurrent()
 
             assertFalse(store.state.isLoading)
-            assertEquals("Nikita Ivanov Petrovich", store.state.fullName)
+            assertEquals("Nikita Ivanov", store.state.fullName)
             assertEquals("School #1", store.state.schoolName)
             assertEquals("10-А", store.state.pupilClass)
             assertEquals(0, store.state.savedCount)
@@ -125,6 +124,41 @@ class ProfileStoreTest {
 
             assertTrue(sessionRepository.cleared)
         }
+    @Test
+    fun profileEditPreservesLocalSchoolInProfileAndSession() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore()
+        store.accept(ProfileStore.Intent.Load)
+        runCurrent()
+        store.accept(ProfileStore.Intent.ClickEdit)
+        runCurrent()
+        store.accept(ProfileStore.Intent.ChangeName("Ivan"))
+        store.accept(ProfileStore.Intent.ConfirmEdit)
+        runCurrent()
+        assertEquals("School #1", store.state.schoolName)
+        assertEquals("Ivan Ivanov", store.state.fullName)
+        val session = sessionRepository.state.value as SessionState.Authenticated
+        assertEquals("School #1", session.user.schoolName)
+        assertEquals("Ivan", session.user.name)
+        assertEquals("10-А", session.user.pupilClass)
+        store.dispose()
+    }
+
+    @Test
+    fun localProfileRemainsVisibleWhenRefreshFails() = runTest(mainDispatcherRule.testDispatcher) {
+        val repo = FakeUserRepository(testUser).apply { refreshFails = true }
+        val store = ProfileStoreFactory(
+            DefaultStoreFactory(), profileRepository, GetCurrentUserUseCase(repo), UpdateUserCacheUseCase(repo),
+            SaveSessionUseCase(sessionRepository), ClearSessionUseCase(sessionRepository),
+        ).create()
+        store.accept(ProfileStore.Intent.Load)
+        runCurrent()
+        assertEquals("School #1", store.state.schoolName)
+        assertEquals("Nikita Ivanov", store.state.fullName)
+        assertEquals("10-А", store.state.pupilClass)
+        assertFalse(store.state.isLoading)
+        store.dispose()
+    }
+
     private class FakeProfileRepository : ProfileRepository {
         private var notifications = true
 
@@ -140,23 +174,23 @@ class ProfileStoreTest {
             userId: String,
             name: String,
             surname: String,
-            fathersName: String,
         ): DomainResult<User> = DomainResult.Success(
             User.Pupil(
                 id = userId,
                 name = name,
                 surname = surname,
-                fathersName = fathersName,
                 pupilClass = "10-А",
             ),
         )
     }
 
     private class FakeUserRepository(initialUser: User? = null) : UserRepository {
+        var refreshFails = false
         private val _user = MutableStateFlow(initialUser)
         override val currentUser: StateFlow<User?> = _user.asStateFlow()
 
         override suspend fun getCurrentUser(forceRefresh: Boolean): DomainResult<User> {
+            if (forceRefresh && refreshFails) return DomainResult.Failure(DomainError.Network)
             val user = _user.value ?: return DomainResult.Failure(DomainError.NotFound)
             return DomainResult.Success(user)
         }

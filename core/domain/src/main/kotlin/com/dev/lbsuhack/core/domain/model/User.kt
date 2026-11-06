@@ -11,7 +11,6 @@ sealed interface User {
     val name: String
     val role: UserRole
     val surname: String? get() = null
-    val fathersName: String? get() = null
     val schoolsById: String? get() = null
     val schoolName: String? get() = null
 
@@ -19,7 +18,6 @@ sealed interface User {
         override val id: String,
         override val name: String,
         override val surname: String? = null,
-        override val fathersName: String? = null,
         override val schoolsById: String? = null,
         override val schoolName: String? = null,
         val pupilClass: String,
@@ -32,7 +30,6 @@ sealed interface User {
         override val id: String,
         override val name: String,
         override val surname: String? = null,
-        override val fathersName: String? = null,
         override val schoolsById: String? = null,
         override val schoolName: String? = null,
     ) : User {
@@ -43,7 +40,6 @@ sealed interface User {
         override val id: String,
         override val name: String,
         override val surname: String? = null,
-        override val fathersName: String? = null,
     ) : User {
         override val role: UserRole get() = UserRole.ORGANIZATOR
     }

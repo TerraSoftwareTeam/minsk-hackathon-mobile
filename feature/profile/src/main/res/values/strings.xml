@@ -19,10 +19,8 @@
     <string name="profile_edit_dialog_title">Edit profile</string>
     <string name="profile_edit_name_label">First name</string>
     <string name="profile_edit_surname_label">Surname</string>
-    <string name="profile_edit_fathers_name_label">Patronymic</string>
     <string name="profile_edit_name_hint">For example: Ivan</string>
     <string name="profile_edit_surname_hint">For example: Ivanov</string>
-    <string name="profile_edit_fathers_name_hint">For example: Ivanovich</string>
     <string name="profile_edit_save">Save</string>
     <string name="profile_edit_error_fields_required">Fill in the first name and surname</string>
     <string name="profile_success_updated">Profile updated</string>

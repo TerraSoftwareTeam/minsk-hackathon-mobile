@@ -16,7 +16,7 @@ class SchoolsByProfileParser {
         options = setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
     )
     private val schoolHeaderRegex = Regex(
-        pattern = """<span\s+class=["']name["'][^>]*>\s*<a[^>]*>(.*?)</a>\s*</span>""",
+        pattern = """<span\b[^>]*class=["'][^"']*\bname\b[^"']*["'][^>]*>\s*<a[^>]*>(.*?)</a>\s*</span>""",
         options = setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
     )
     private val htmlTagRegex = Regex("""<[^>]+>""")
@@ -47,12 +47,10 @@ class SchoolsByProfileParser {
         if (rawName.isNotEmpty() && !id.isNullOrEmpty() && !className.isNullOrEmpty()) {
             val parts = rawName.split(whitespaceRegex).filter { it.isNotBlank() }
             val surname = parts.firstOrNull()
-            val fathersName = parts.drop(2).joinToString(" ").ifBlank { null }
 
             return Pupil(
-                name = rawName,
+                name = parts.getOrNull(1) ?: rawName,
                 surname = surname,
-                fathersName = fathersName,
                 schoolsById = id,
                 schoolName = schoolName,
                 pupilClass = className,
@@ -72,13 +70,11 @@ class SchoolsByProfileParser {
         if (rawName.isNotEmpty() && !id.isNullOrEmpty()) {
             val parts = rawName.split(whitespaceRegex).filter { it.isNotBlank() }
             val surname = parts.firstOrNull()
-            val fathersName = parts.drop(2).joinToString(" ").ifBlank { null }
 
             return Teacher(
                 id = id,
-                name = rawName,
+                name = parts.getOrNull(1) ?: rawName,
                 surname = surname,
-                fathersName = fathersName,
                 schoolsById = id,
                 schoolName = schoolName,
             )
@@ -155,6 +151,11 @@ class SchoolsByProfileParser {
 
     private fun unescapeHtml(text: String): String {
         return text
+            .replace(Regex("&#(x[0-9a-fA-F]+|[0-9]+);")) { match ->
+                val encoded = match.groupValues[1]
+                val codePoint = if (encoded.startsWith("x")) encoded.drop(1).toIntOrNull(16) else encoded.toIntOrNull()
+                if (codePoint != null && Character.isValidCodePoint(codePoint)) String(Character.toChars(codePoint)) else match.value
+            }
             .replace("&quot;", "\"")
             .replace("&#34;", "\"")
             .replace("&apos;", "'")
@@ -163,5 +164,8 @@ class SchoolsByProfileParser {
             .replace("&lt;", "<")
             .replace("&gt;", ">")
             .replace("&nbsp;", " ")
+            .replace('\u00A0', ' ')
+            .replace(whitespaceRegex, " ")
+            .trim()
     }
 }

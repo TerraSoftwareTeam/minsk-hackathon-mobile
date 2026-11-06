@@ -82,6 +82,7 @@ openApiGenerate {
             "modelTests" to "false",
         )
     )
+    typeMappings.set(mapOf("UUID" to "kotlin.String"))
     configOptions.set(
         mapOf(
             "serializationLibrary" to "kotlinx_serialization",

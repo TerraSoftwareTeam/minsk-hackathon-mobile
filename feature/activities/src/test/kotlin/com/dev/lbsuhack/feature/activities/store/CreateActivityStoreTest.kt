@@ -105,4 +105,37 @@ class CreateActivityStoreTest {
         assertEquals(UiText.Raw("Pupil class has no teacher"), store.state.error)
         store.dispose()
     }
+    @Test
+    fun photoRetryDoesNotCreateDuplicateEvent() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore()
+        activityRepository.photoResult = DomainResult.Failure(DomainError.Network)
+        store.accept(CreateActivityStore.Intent.ChangeTitle("Клуб"))
+        store.accept(CreateActivityStore.Intent.ChangeDescription("Описание"))
+        store.accept(CreateActivityStore.Intent.ChangePhoto("content://photos/first"))
+        store.accept(CreateActivityStore.Intent.Submit)
+        runCurrent()
+        assertEquals("created-id", store.state.createdActivityId)
+        assertNotNull(store.state.error)
+        activityRepository.photoResult = null
+        store.labels.test {
+            store.accept(CreateActivityStore.Intent.Submit)
+            assertTrue(awaitItem() is CreateActivityStore.Label.Created)
+        }
+        assertEquals(1, activityRepository.createCalls)
+        assertEquals(2, activityRepository.photoCalls)
+        store.dispose()
+    }
+
+    @Test
+    fun dateInsideVotingWindowDoesNotReachBackend() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore()
+        store.accept(CreateActivityStore.Intent.ChangeTitle("Клуб"))
+        store.accept(CreateActivityStore.Intent.ChangeDescription("Описание"))
+        store.accept(CreateActivityStore.Intent.ChangeStartsAt(java.time.OffsetDateTime.now().plusDays(1).toString()))
+        store.accept(CreateActivityStore.Intent.Submit)
+        runCurrent()
+        assertNotNull(store.state.error)
+        assertEquals(0, activityRepository.createCalls)
+        store.dispose()
+    }
 }

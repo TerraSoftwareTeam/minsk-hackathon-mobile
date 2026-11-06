@@ -22,7 +22,7 @@ class ActivityRepositoryImplTest {
     private val json = AppHttpClientFactory.defaultJson
 
     @Test
-    fun refreshLoadsVotingAndMyEvents() = runTest {
+    fun refreshLoadsVotingEvents() = runTest {
         val mockEngine = MockEngine { request ->
             val responseHeaders = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             when (request.url.encodedPath) {
@@ -37,8 +37,9 @@ class ActivityRepositoryImplTest {
                                 "scope": "SCHOOL",
                                 "category": "SPORTS",
                                 "status": "ON_VOTE",
+                                "successProbability": 0.5, "imageUrl": null, "ratingAverage": null, "ratingsCount": 0,
                                 "declineReason": null,
-                                "voteThreshold": 15.0,
+                                "voteThreshold": 15,
                                 "startsAt": "2026-11-21T10:00:00.000Z",
                                 "votingClosesAt": "2026-11-19T10:00:00.000Z",
                                 "initiator": {
@@ -46,7 +47,6 @@ class ActivityRepositoryImplTest {
                                   "schoolsById": "school-1",
                                   "name": "Иван",
                                   "surname": "Иванов",
-                                  "fathersName": "Иванович",
                                   "class": "10A",
                                   "role": "PUPIL"
                                 },
@@ -55,13 +55,12 @@ class ActivityRepositoryImplTest {
                                   "schoolsById": "school-2",
                                   "name": "Петр",
                                   "surname": "Петров",
-                                  "fathersName": "Петрович",
                                   "class": "10A",
                                   "role": "TEACHER"
                                 },
                                 "createdAt": "2026-11-06T00:00:00.000Z",
                                 "updatedAt": "2026-11-06T00:00:00.000Z",
-                                "votesCount": 5.0,
+                                "votesCount": 5,
                                 "hasVoted": false
                               }
                             ]
@@ -96,6 +95,7 @@ class ActivityRepositoryImplTest {
         assertEquals("Турнир по волейболу", (event as com.dev.lbsuhack.core.domain.DomainResult.Success).value.title)
         assertEquals(ActivityCategory.SPORTS, event.value.category)
         assertEquals(5, event.value.votesCount)
+        assertEquals("school-1", event.value.authorSchoolsById)
         assertEquals(15, event.value.voteThreshold)
     }
 
@@ -103,13 +103,47 @@ class ActivityRepositoryImplTest {
     fun votePostsEventIdAndReturnsUpdated() = runTest {
         val mockEngine = MockEngine { request ->
             val responseHeaders = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            if (request.url.encodedPath == "/api/v1/events/vote-1/vote") {
+            if (request.url.encodedPath == "/api/v1/events/vote-1") {
+                respond(content = """{
+                                "id": "vote-1",
+                                "name": "Турнир по волейболу",
+                                "description": "В спортзале",
+                                "scope": "SCHOOL",
+                                "category": "SPORTS",
+                                "status": "ON_VOTE",
+                                "successProbability": 0.5, "imageUrl": null, "ratingAverage": null, "ratingsCount": 0,
+                                "declineReason": null,
+                                "voteThreshold": 15,
+                                "startsAt": "2026-11-21T10:00:00.000Z",
+                                "votingClosesAt": "2026-11-19T10:00:00.000Z",
+                                "initiator": {
+                                  "id": "1",
+                                  "schoolsById": "school-1",
+                                  "name": "Иван",
+                                  "surname": "Иванов",
+                                  "class": "10A",
+                                  "role": "PUPIL"
+                                },
+                                "teacher": {
+                                  "id": "2",
+                                  "schoolsById": "school-2",
+                                  "name": "Петр",
+                                  "surname": "Петров",
+                                  "class": "10A",
+                                  "role": "TEACHER"
+                                },
+                                "createdAt": "2026-11-06T00:00:00.000Z",
+                                "updatedAt": "2026-11-06T00:00:00.000Z",
+                                "votesCount": 5,
+                                "hasVoted": false
+                              }""", status = HttpStatusCode.OK, headers = responseHeaders)
+            } else if (request.url.encodedPath == "/api/v1/events/vote-1/vote") {
                 respond(
                     content = """
                         {
                           "eventId": "vote-1",
-                          "votesCount": 6.0,
-                          "voteThreshold": 15.0,
+                          "votesCount": 6,
+                          "voteThreshold": 15,
                           "status": "ON_VOTE"
                         }
                     """.trimIndent(),
@@ -148,8 +182,9 @@ class ActivityRepositoryImplTest {
                           "scope": "CLASS",
                           "category": "CULTURAL",
                           "status": "ON_MODERATION",
-                          "declineReason": null,
-                          "voteThreshold": 15.0,
+                          "successProbability": 0.5, "imageUrl": null, "ratingAverage": null, "ratingsCount": 0,
+                                "declineReason": null,
+                          "voteThreshold": 15,
                           "startsAt": "2026-11-21T10:00:00.000Z",
                           "votingClosesAt": "2026-11-19T10:00:00.000Z",
                           "initiator": {
@@ -157,7 +192,6 @@ class ActivityRepositoryImplTest {
                             "schoolsById": "school-1",
                             "name": "Иван",
                             "surname": "Иванов",
-                            "fathersName": "Иванович",
                             "class": "10A",
                             "role": "PUPIL"
                           },
@@ -166,7 +200,6 @@ class ActivityRepositoryImplTest {
                             "schoolsById": "school-2",
                             "name": "Петр",
                             "surname": "Петров",
-                            "fathersName": "Петрович",
                             "class": "10A",
                             "role": "TEACHER"
                           },
@@ -202,4 +235,83 @@ class ActivityRepositoryImplTest {
         assertEquals("Новое событие", proposal.title)
         assertEquals(ActivityCategory.CULTURAL, proposal.category)
     }
+    @Test
+    fun photoUploadUsesMultipartAndReturnsRemoteImage() = runTest {
+        val fixture = """{
+                                "id": "vote-1",
+                                "name": "Турнир по волейболу",
+                                "description": "В спортзале",
+                                "scope": "SCHOOL",
+                                "category": "SPORTS",
+                                "status": "ON_VOTE",
+                                "successProbability": 0.5, "imageUrl": "https://example.test/photo.jpg", "ratingAverage": null, "ratingsCount": 0,
+                                "declineReason": null,
+                                "voteThreshold": 15,
+                                "startsAt": "2026-11-21T10:00:00.000Z",
+                                "votingClosesAt": "2026-11-19T10:00:00.000Z",
+                                "initiator": {
+                                  "id": "1",
+                                  "schoolsById": "school-1",
+                                  "name": "Иван",
+                                  "surname": "Иванов",
+                                  "class": "10A",
+                                  "role": "PUPIL"
+                                },
+                                "teacher": {
+                                  "id": "2",
+                                  "schoolsById": "school-2",
+                                  "name": "Петр",
+                                  "surname": "Петров",
+                                  "class": "10A",
+                                  "role": "TEACHER"
+                                },
+                                "createdAt": "2026-11-06T00:00:00.000Z",
+                                "updatedAt": "2026-11-06T00:00:00.000Z",
+                                "votesCount": 5,
+                                "hasVoted": false
+                              }"""
+        HttpClient(MockEngine { request ->
+            assertEquals(io.ktor.http.HttpMethod.Put, request.method)
+            assertEquals("/api/v1/events/vote-1/image", request.url.encodedPath)
+            assertTrue(request.body is io.ktor.client.request.forms.MultiPartFormDataContent)
+            respond(fixture, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+        }) {
+            install(ContentNegotiation) { json(json) }
+        }.use { client ->
+            val repository = ActivityRepositoryImpl(client, imageSource = ActivityImageSource {
+                ActivityImage(byteArrayOf(1, 2, 3), "image/png")
+            })
+            val result = repository.uploadPhoto("vote-1", "content://photos/1")
+            assertEquals("https://example.test/photo.jpg", (result as com.dev.lbsuhack.core.domain.DomainResult.Success).value.photoUri)
+        }
+    }
+
+    @Test
+    fun mainFeedUsesRoleAppropriateEndpoint() = runTest {
+        val roles = mapOf(
+            com.dev.lbsuhack.core.domain.model.UserRole.PUPIL to "/api/v1/events/voting",
+            com.dev.lbsuhack.core.domain.model.UserRole.TEACHER to "/api/v1/events/voting",
+            com.dev.lbsuhack.core.domain.model.UserRole.ORGANIZATOR to "/api/v1/events/admin-moderation",
+        )
+        for ((role, path) in roles) {
+            val requests = mutableListOf<String>()
+            val session = com.dev.lbsuhack.feature.activities.util.FakeSessionRepository(
+                com.dev.lbsuhack.core.domain.session.SessionState.Authenticated(
+                    com.dev.lbsuhack.core.domain.session.SessionUser("user", "Иван", role = role),
+                ),
+            )
+            HttpClient(MockEngine { request ->
+                requests += request.url.encodedPath
+                respond("[]", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            }) {
+                install(ContentNegotiation) { json(json) }
+            }.use { client ->
+                val repository = ActivityRepositoryImpl(client,
+                    observeSession = com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase(session))
+                assertTrue(repository.refresh() is com.dev.lbsuhack.core.domain.DomainResult.Success)
+                assertEquals(listOf(path), requests)
+            }
+        }
+    }
+
 }

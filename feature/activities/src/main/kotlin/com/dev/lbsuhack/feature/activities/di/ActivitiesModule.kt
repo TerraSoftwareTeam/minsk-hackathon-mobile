@@ -1,6 +1,8 @@
 package com.dev.lbsuhack.feature.activities.di
 
 import com.dev.lbsuhack.core.navigation.api.NavigationInstaller
+import com.dev.lbsuhack.feature.activities.data.ActivityPhotoSource
+import org.koin.core.qualifier.named
 import com.dev.lbsuhack.feature.activities.data.ActivityRepositoryImpl
 import com.dev.lbsuhack.feature.activities.domain.ActivityRepository
 import com.dev.lbsuhack.feature.activities.navigation.ActivitiesNavigationInstaller
@@ -10,6 +12,8 @@ import com.dev.lbsuhack.feature.activities.presentation.details.ActivityDetailsV
 import com.dev.lbsuhack.feature.activities.store.activities.ActivitiesStoreFactory
 import com.dev.lbsuhack.feature.activities.store.create.CreateActivityStoreFactory
 import com.dev.lbsuhack.feature.activities.store.details.ActivityDetailsStoreFactory
+import com.dev.lbsuhack.feature.activities.data.AndroidActivityImageSource
+import org.koin.android.ext.koin.androidContext
 import kotlinx.coroutines.Dispatchers
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
@@ -21,8 +25,12 @@ val activitiesModule = module {
         ActivityRepositoryImpl(
             httpClient = get(),
             ioDispatcher = Dispatchers.IO,
+            observeSession = get(),
+            imageSource = AndroidActivityImageSource(androidContext().contentResolver),
         )
     }
+
+    single { ActivityPhotoSource(httpClient = get(named("unauthenticatedHttpClient"))) }
 
     singleOf(::ActivitiesStoreFactory)
     singleOf(::CreateActivityStoreFactory)

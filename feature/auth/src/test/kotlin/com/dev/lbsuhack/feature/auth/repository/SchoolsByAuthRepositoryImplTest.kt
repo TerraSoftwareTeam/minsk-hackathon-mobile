@@ -39,7 +39,7 @@ class SchoolsByAuthRepositoryImplTest {
         val user = (result as DomainResult.Success).value
         assertTrue(user is Pupil)
         val pupil = user as Pupil
-        assertEquals("Смирнов Владислав", pupil.name)
+        assertEquals("Владислав", pupil.name)
         assertEquals("11 \"М\"", pupil.pupilClass)
         assertEquals("3575208", pupil.id)
     }
@@ -65,7 +65,7 @@ class SchoolsByAuthRepositoryImplTest {
         val user = (result as DomainResult.Success).value
         assertTrue(user is Teacher)
         val teacher = user as Teacher
-        assertEquals("Божедомова Ирина Валерьевна", teacher.name)
+        assertEquals("Ирина", teacher.name)
         assertEquals("1234567", teacher.id)
     }
 

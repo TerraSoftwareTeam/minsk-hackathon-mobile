@@ -16,12 +16,13 @@ class FakeActivityRepository(
     initialActivities: List<ActivityProposal> = emptyList(),
 ) : ActivityRepository {
 
+    var refreshResult: DomainResult<Unit> = DomainResult.Success(Unit)
     var createResult: DomainResult<ActivityProposal>? = null
     private val activities = MutableStateFlow(initialActivities)
 
     override fun observeActivities(): Flow<List<ActivityProposal>> = activities.asStateFlow()
 
-    override suspend fun refresh(): DomainResult<Unit> = DomainResult.Success(Unit)
+    override suspend fun refresh(): DomainResult<Unit> = refreshResult
 
     override suspend fun getEventById(id: String): DomainResult<ActivityProposal> {
         val found = activities.value.find { it.id == id }
@@ -30,6 +31,15 @@ class FakeActivityRepository(
         } else {
             DomainResult.Failure(DomainError.NotFound)
         }
+    }
+
+    var photoResult: DomainResult<ActivityProposal>? = null
+    var createCalls = 0
+    var photoCalls = 0
+
+    override suspend fun uploadPhoto(eventId: String, photoUri: String): DomainResult<ActivityProposal> {
+        photoCalls++
+        return photoResult ?: getEventById(eventId)
     }
 
     override suspend fun vote(eventId: String): DomainResult<ActivityProposal> {
@@ -60,6 +70,7 @@ class FakeActivityRepository(
         voteThreshold: Int,
         startsAt: String,
     ): DomainResult<ActivityProposal> {
+        createCalls++
         createResult?.let { return it }
         val proposal = ActivityProposal(
             id = "created-id",

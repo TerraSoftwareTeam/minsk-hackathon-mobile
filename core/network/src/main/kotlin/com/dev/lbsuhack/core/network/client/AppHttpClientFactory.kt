@@ -4,6 +4,7 @@ import android.util.Log
 import com.dev.lbsuhack.core.domain.localization.LocaleProvider
 import com.dev.lbsuhack.core.network.BuildConfig
 import com.dev.lbsuhack.core.network.auth.TokenStorage
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -35,7 +36,7 @@ object AppHttpClientFactory {
         }
     }
 
-    private val logLevel = if (BuildConfig.DEBUG) LogLevel.ALL else LogLevel.NONE
+    private val logLevel = if (BuildConfig.DEBUG) LogLevel.HEADERS else LogLevel.NONE
     private val httpLogger = object : Logger {
         override fun log(message: String) {
             Log.d("HttpClient", message)
@@ -45,13 +46,18 @@ object AppHttpClientFactory {
     fun createUnauthenticated(localeProvider: LocaleProvider): HttpClient = HttpClient(CIO) {
         expectSuccess = false
         install(ContentNegotiation) { json(defaultJson) }
+        install(HttpTimeout) {
+            requestTimeoutMillis = 30_000
+            connectTimeoutMillis = 15_000
+            socketTimeoutMillis = 30_000
+        }
         install(Logging) {
             logger = httpLogger
             level = logLevel
+            sanitizeHeader { it == HttpHeaders.Authorization || it == HttpHeaders.Cookie || it == HttpHeaders.SetCookie }
         }
         defaultRequest {
             url(BASE_URL)
-            contentType(ContentType.Application.Json)
             header(HttpHeaders.AcceptLanguage, localeProvider.currentLanguageTag())
         }
     }
@@ -63,9 +69,15 @@ object AppHttpClientFactory {
     ): HttpClient = HttpClient(CIO) {
         expectSuccess = true
         install(ContentNegotiation) { json(defaultJson) }
+        install(HttpTimeout) {
+            requestTimeoutMillis = 30_000
+            connectTimeoutMillis = 15_000
+            socketTimeoutMillis = 30_000
+        }
         install(Logging) {
             logger = httpLogger
             level = logLevel
+            sanitizeHeader { it == HttpHeaders.Authorization || it == HttpHeaders.Cookie || it == HttpHeaders.SetCookie }
         }
         install(AuthPlugin) {
             this.tokenStorage = tokenStorage
@@ -78,7 +90,6 @@ object AppHttpClientFactory {
         }
         defaultRequest {
             url(BASE_URL)
-            contentType(ContentType.Application.Json)
             header(HttpHeaders.AcceptLanguage, localeProvider.currentLanguageTag())
         }
     }

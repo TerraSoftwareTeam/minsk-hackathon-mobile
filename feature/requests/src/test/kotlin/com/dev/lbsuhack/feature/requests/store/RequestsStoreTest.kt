@@ -164,7 +164,7 @@ class RequestsStoreTest {
     }
 
     @Test
-    fun `teacher can open the admin queue through the route`() =
+    fun `teacher cannot open the admin queue through the route`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val store = createStore(
                 user = teacher,
@@ -176,10 +176,10 @@ class RequestsStoreTest {
             store.accept(RequestsStore.Intent.Load(UserRole.ORGANIZATOR))
             runCurrent()
 
-            assertTrue(store.state.canReview)
-            assertEquals(RequestAudience.ADMIN, store.state.audience)
-            assertTrue(store.state.queueRequests.all { it.audience == RequestAudience.ADMIN })
-            assertEquals(1, store.state.pendingCount)
+            assertFalse(store.state.canReview)
+            assertNull(store.state.audience)
+            assertTrue(store.state.queueRequests.isEmpty())
+            assertEquals(0, store.state.pendingCount)
         }
 
     @Test
@@ -212,7 +212,7 @@ class RequestsStoreTest {
         runCurrent()
 
         assertFalse(store.state.canReview)
-        assertEquals(RequestAudience.TEACHER, store.state.audience)
+        assertNull(store.state.audience)
         assertTrue(store.state.visibleRequests.isEmpty())
     }
 

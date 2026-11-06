@@ -21,7 +21,7 @@ val dataModule = module {
     single {
         DefaultSessionRepository(
             context = androidContext(),
-            tokenStorage = getOrNull<TokenStorage>(),
+            tokenStorage = get<TokenStorage>(),
             ioDispatcher = Dispatchers.IO,
         )
     } bind SessionRepository::class

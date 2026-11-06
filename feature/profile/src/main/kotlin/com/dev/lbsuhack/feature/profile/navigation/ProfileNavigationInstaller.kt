@@ -16,11 +16,10 @@ class ProfileNavigationInstaller : NavigationInstaller {
             entry<ProfileRoute>(metadata = GlobalLayerMeta.entry()) {
                 val navigator = LocalNavigator.current
                 val appNavigation = LocalAppNavigation.current
-
                 ProfileScreen(
                     onBack = navigator::back,
                     onOpenSettings = { navigator.navigate(ProfileSettingsRoute) },
-                    onOpenRequests = { role -> appNavigation.openRequests(role) },
+                    onOpenRequests = appNavigation::openRequests,
                 )
             }
 

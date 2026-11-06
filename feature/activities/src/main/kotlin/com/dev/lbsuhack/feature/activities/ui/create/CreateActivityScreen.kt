@@ -20,6 +20,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import com.dev.lbsuhack.feature.activities.domain.ActivityScope
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -154,43 +156,39 @@ fun CreateActivityScreen(
                     )
                 }
 
-                FormSection(title = stringResource(R.string.create_activity_participants_section)) {
-                    FieldLabel(text = stringResource(R.string.create_activity_limits_label))
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (state.createdActivityId == null) {
+                    FormSection(title = stringResource(R.string.create_activity_participants_section)) {
                         ParticipantCountRow(
-                            title = stringResource(R.string.create_activity_min_title),
-                            value = state.minParticipants,
-                            decrementEnabled = state.minParticipants > 2,
-                            incrementEnabled = state.minParticipants < 50 && state.minParticipants < state.maxParticipants,
-                            onDecrement = { viewModel.accept(CreateActivityStore.Intent.ChangeMinParticipants(state.minParticipants - 1)) },
-                            onIncrement = { viewModel.accept(CreateActivityStore.Intent.ChangeMinParticipants(state.minParticipants + 1)) },
+                            title = stringResource(R.string.create_activity_threshold_label),
+                            value = state.voteThreshold,
+                            decrementEnabled = state.voteThreshold > 1 && !state.isSubmitting,
+                            incrementEnabled = state.voteThreshold < 10000 && !state.isSubmitting,
+                            onDecrement = { viewModel.accept(CreateActivityStore.Intent.ChangeVoteThreshold(state.voteThreshold - 1)) },
+                            onIncrement = { viewModel.accept(CreateActivityStore.Intent.ChangeVoteThreshold(state.voteThreshold + 1)) },
                         )
-                        ParticipantCountRow(
-                            title = stringResource(R.string.create_activity_max_title),
-                            value = state.maxParticipants,
-                            decrementEnabled = state.maxParticipants > state.minParticipants,
-                            incrementEnabled = state.maxParticipants < 100,
-                            onDecrement = { viewModel.accept(CreateActivityStore.Intent.ChangeMaxParticipants(state.maxParticipants - 1)) },
-                            onIncrement = { viewModel.accept(CreateActivityStore.Intent.ChangeMaxParticipants(state.maxParticipants + 1)) },
+                        FieldLabel(text = stringResource(R.string.create_activity_scope_label))
+                        ActivityScope.entries.forEach { scope ->
+                            FilterChip(
+                                selected = state.scope == scope,
+                                enabled = !state.isSubmitting,
+                                onClick = { viewModel.accept(CreateActivityStore.Intent.ChangeScope(scope)) },
+                                label = { Text(stringResource(when (scope) {
+                                    ActivityScope.CLASS -> R.string.create_activity_scope_class
+                                    ActivityScope.GRADE -> R.string.create_activity_scope_grade
+                                    ActivityScope.SCHOOL -> R.string.create_activity_scope_school
+                                })) },
+                            )
+                        }
+                    }
+                    FormSection(title = stringResource(R.string.create_activity_organization_section)) {
+                        ActivityDateField(
+                            startsAt = state.startsAt,
+                            enabled = !state.isSubmitting,
+                            onChange = { viewModel.accept(CreateActivityStore.Intent.ChangeStartsAt(it)) },
                         )
                     }
-                    Spacer(modifier = Modifier.height(20.dp))
-                    TargetClassPicker(
-                        value = state.targetClass,
-                        enabled = !state.isSubmitting,
-                        onSelect = { viewModel.accept(CreateActivityStore.Intent.ChangeTargetClass(it)) },
-                    )
-                }
-
-                FormSection(title = stringResource(R.string.create_activity_organization_section)) {
-                    FormTextField(
-                        label = stringResource(R.string.create_activity_preferences_label),
-                        hint = stringResource(R.string.create_activity_preferences_hint),
-                        value = state.preferenceNotes,
-                        onValueChange = { viewModel.accept(CreateActivityStore.Intent.ChangePreferences(it)) },
-                        modifier = Modifier.height(104.dp),
-                    )
+                } else {
+                    Text(stringResource(R.string.create_activity_photo_pending))
                 }
 
                 Spacer(modifier = Modifier.height(112.dp))

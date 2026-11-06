@@ -27,7 +27,6 @@ data class SessionUser(
     val id: String,
     val name: String,
     val surname: String? = null,
-    val fathersName: String? = null,
     val schoolsById: String? = null,
     val schoolName: String? = null,
     val role: UserRole = UserRole.PUPIL,

@@ -7,6 +7,7 @@ interface ActivityRepository {
     fun observeActivities(): Flow<List<ActivityProposal>>
     suspend fun refresh(): DomainResult<Unit>
     suspend fun getEventById(id: String): DomainResult<ActivityProposal>
+    suspend fun uploadPhoto(eventId: String, photoUri: String): DomainResult<ActivityProposal>
     suspend fun vote(eventId: String): DomainResult<ActivityProposal>
     suspend fun createEvent(
         name: String,
@@ -14,6 +15,6 @@ interface ActivityRepository {
         description: String,
         scope: ActivityScope = ActivityScope.CLASS,
         voteThreshold: Int = 15,
-        startsAt: String = "2026-11-21T10:00:00.000Z",
+        startsAt: String,
     ): DomainResult<ActivityProposal>
 }

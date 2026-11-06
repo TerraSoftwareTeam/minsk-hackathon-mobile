@@ -87,10 +87,14 @@ fun AppRootScreen(
                 )
             }
 
-            is SessionState.Authenticated -> key(GLOBAL_HOST_KEY) {
+            is SessionState.Authenticated -> key(GLOBAL_HOST_KEY, (sessionState as SessionState.Authenticated).user.id, (sessionState as SessionState.Authenticated).user.role) {
+                val user = (sessionState as SessionState.Authenticated).user
+                LaunchedEffect(user.role, pendingActivityId) {
+                    if (user.role != UserRole.PUPIL && pendingActivityId != null) onActivityLinkConsumed()
+                }
                 AppNavHost(
-                    startRoute = ActivitiesRoute,
-                    pendingRoute = pendingActivityId?.let(::ActivityDetailsRoute),
+                    startRoute = if (user.role == UserRole.PUPIL) ActivitiesRoute else ProfileRoute,
+                    pendingRoute = pendingActivityId?.takeIf { user.role == UserRole.PUPIL }?.let(::ActivityDetailsRoute),
                     onRouteConsumed = onActivityLinkConsumed,
                     installers = installers,
                     layers = layers,
@@ -101,7 +105,7 @@ fun AppRootScreen(
                             }
 
                             override fun openRequests(role: UserRole) {
-                                navigator.navigate(RequestsRoute(role))
+                                if (role == user.role && role != UserRole.PUPIL) navigator.navigate(RequestsRoute(role))
                             }
                         }
                     },

@@ -1,5 +1,6 @@
 package com.dev.lbsuhack.feature.requests.navigation
 
+import com.dev.lbsuhack.core.navigation.api.LocalAppNavigation
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.dev.lbsuhack.core.navigation.api.LocalNavigator
@@ -13,10 +14,12 @@ class RequestsNavigationInstaller : NavigationInstaller {
         with(scope) {
             entry<RequestsRoute>(metadata = GlobalLayerMeta.entry()) { route ->
                 val navigator = LocalNavigator.current
+                val appNavigation = LocalAppNavigation.current
 
                 RequestsScreen(
                     role = route.role,
                     onBack = navigator::back,
+                    onOpenProfile = appNavigation::openProfile,
                 )
             }
         }

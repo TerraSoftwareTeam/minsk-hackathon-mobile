@@ -45,14 +45,14 @@ interface ActivitiesStore : Store<ActivitiesStore.Intent, ActivitiesStore.State,
                     ActivityTab.ON_VOTE -> proposal.status == ActivityStatus.ON_VOTE
                     ActivityTab.ON_ADMIN_MODERATION -> proposal.status == ActivityStatus.ON_ADMIN_MODERATION
                     ActivityTab.FINALIZED -> proposal.status == ActivityStatus.FINALIZED
-                    ActivityTab.MY_PROPOSALS -> currentUser != null && proposal.authorId == currentUser.id
+                    ActivityTab.MY_PROPOSALS -> proposal.isCreatedBy(currentUser?.schoolsById)
                     ActivityTab.MY_VOTES -> proposal.hasVoted
                 }
                 matchesCategory && matchesTab
             }
 
         val myProposalsCount: Int
-            get() = if (currentUser == null) 0 else activities.count { it.authorId == currentUser.id }
+            get() = if (currentUser == null) 0 else activities.count { it.isCreatedBy(currentUser.schoolsById) }
 
         val myVotesCount: Int
             get() = activities.count { it.hasVoted }

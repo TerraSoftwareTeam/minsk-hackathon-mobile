@@ -14,5 +14,7 @@ dependencies {
     implementation(project(":core:navigation"))
     implementation(project(":core:network"))
 
+    testImplementation("io.ktor:ktor-client-mock:3.0.3")
+
     implementation(libs.coroutines.core)
 }

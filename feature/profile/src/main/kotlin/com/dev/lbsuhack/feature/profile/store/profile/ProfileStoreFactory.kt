@@ -51,7 +51,6 @@ class ProfileStoreFactory(
         data class DialogOpened(val dialog: ProfileEditDialog?) : Message
         data class NameChanged(val value: String) : Message
         data class SurnameChanged(val value: String) : Message
-        data class FathersNameChanged(val value: String) : Message
         data object Saving : Message
         data object SavingFinished : Message
         data object LoadingFinished : Message
@@ -70,7 +69,6 @@ class ProfileStoreFactory(
                 ProfileStore.Intent.DismissDialog -> dispatch(Message.DialogOpened(null))
                 is ProfileStore.Intent.ChangeName -> dispatch(Message.NameChanged(intent.value))
                 is ProfileStore.Intent.ChangeSurname -> dispatch(Message.SurnameChanged(intent.value))
-                is ProfileStore.Intent.ChangeFathersName -> dispatch(Message.FathersNameChanged(intent.value))
                 ProfileStore.Intent.ConfirmEdit -> confirmEdit()
                 ProfileStore.Intent.Logout -> logout()
             }
@@ -80,6 +78,17 @@ class ProfileStoreFactory(
             scope.launch {
                 val notificationsEnabled = profileRepository.isNotificationsEnabled()
                 val savedCount = profileRepository.savedCount()
+                val cached = (getCurrentUser() as? DomainResult.Success)?.value
+                if (cached != null) {
+                    dispatch(Message.UserLoaded(
+                        fullName = cached.displayName(),
+                        pupilClass = (cached as? User.Pupil)?.pupilClass.orEmpty(),
+                        schoolName = cached.schoolName.orEmpty(),
+                        role = cached.role,
+                        notificationsEnabled = notificationsEnabled,
+                        savedCount = savedCount,
+                    ))
+                }
                 when (val result = getCurrentUser(forceRefresh = true)) {
                     is DomainResult.Success -> {
                         val user = result.value
@@ -122,7 +131,6 @@ class ProfileStoreFactory(
                         ProfileEditDialog(
                             name = user?.name.orEmpty(),
                             surname = user?.surname.orEmpty(),
-                            fathersName = user?.fathersName.orEmpty(),
                         ),
                     ),
                 )
@@ -140,7 +148,8 @@ class ProfileStoreFactory(
 
             dispatch(Message.Saving)
             scope.launch {
-                val userId = getCurrentUser().let { (it as? DomainResult.Success)?.value?.id }
+                val previousUser = (getCurrentUser() as? DomainResult.Success)?.value
+                val userId = previousUser?.id
                 if (userId.isNullOrBlank()) {
                     dispatch(Message.SavingFinished)
                     publish(ProfileStore.Label.ShowMessage(UiText.Resource(R.string.profile_error_unknown)))
@@ -152,11 +161,14 @@ class ProfileStoreFactory(
                         userId = userId,
                         name = dialog.name,
                         surname = dialog.surname,
-                        fathersName = dialog.fathersName,
                     )
                 ) {
                     is DomainResult.Success -> {
-                        val user = result.value
+                        val user = when (val updated = result.value) {
+                            is User.Pupil -> updated.copy(schoolName = previousUser?.schoolName)
+                            is User.Teacher -> updated.copy(schoolName = previousUser?.schoolName)
+                            is User.Organizator -> updated
+                        }
                         updateUserCache(user)
                         saveSession(user.toSessionUser())
                         dispatch(
@@ -204,7 +216,6 @@ class ProfileStoreFactory(
             is Message.DialogOpened -> copy(dialog = msg.dialog, isSaving = false)
             is Message.NameChanged -> copy(dialog = dialog?.copy(name = msg.value))
             is Message.SurnameChanged -> copy(dialog = dialog?.copy(surname = msg.value))
-            is Message.FathersNameChanged -> copy(dialog = dialog?.copy(fathersName = msg.value))
             Message.Saving -> copy(isSaving = true)
             Message.SavingFinished -> copy(isSaving = false)
             Message.LoadingFinished -> copy(isLoading = false)
@@ -214,14 +225,12 @@ class ProfileStoreFactory(
     private fun User.displayName(): String = listOfNotNull(
         name.takeIf { it.isNotBlank() },
         surname?.takeIf { it.isNotBlank() },
-        fathersName?.takeIf { it.isNotBlank() },
     ).joinToString(" ")
 
     private fun User.toSessionUser(): SessionUser = SessionUser(
         id = id,
         name = name,
         surname = surname,
-        fathersName = fathersName,
         schoolsById = schoolsById,
         schoolName = schoolName,
         role = role,

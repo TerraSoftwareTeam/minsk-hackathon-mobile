@@ -30,7 +30,7 @@ class SchoolsByProfileParserTest {
         assertNotNull(user)
         assertTrue(user is Pupil)
         val pupil = user as Pupil
-        assertEquals("Смирнов Владислав", pupil.name)
+        assertEquals("Владислав", pupil.name)
         assertEquals("11 \"М\"", pupil.pupilClass)
         assertEquals("11 \"М\"", pupil.`class`)
         assertEquals("3575208", pupil.id)
@@ -50,7 +50,7 @@ class SchoolsByProfileParserTest {
         assertNotNull(user)
         assertTrue(user is Teacher)
         val teacher = user as Teacher
-        assertEquals("Божедомова Ирина Валерьевна", teacher.name)
+        assertEquals("Ирина", teacher.name)
         assertEquals("1234567", teacher.id)
         assertEquals(UserRole.TEACHER, teacher.role)
     }
@@ -68,7 +68,7 @@ class SchoolsByProfileParserTest {
         assertNotNull(user)
         assertTrue(user is Teacher)
         val teacher = user as Teacher
-        assertEquals("Смирнов Владислав", teacher.name)
+        assertEquals("Владислав", teacher.name)
         assertEquals("3575208", teacher.id)
         assertEquals(UserRole.TEACHER, teacher.role)
     }

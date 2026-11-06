@@ -21,7 +21,7 @@ interface ActivityDetailsStore :
         val error: UiText? = null,
     ) {
         val isAuthor: Boolean
-            get() = currentUser != null && activity?.authorId == currentUser.id
+            get() = activity?.isCreatedBy(currentUser?.schoolsById) == true
 
         val hasVoted: Boolean
             get() = activity?.hasVoted == true

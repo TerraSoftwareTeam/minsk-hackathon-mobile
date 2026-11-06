@@ -15,6 +15,5 @@ interface ProfileRepository {
         userId: String,
         name: String,
         surname: String,
-        fathersName: String,
     ): DomainResult<User>
 }

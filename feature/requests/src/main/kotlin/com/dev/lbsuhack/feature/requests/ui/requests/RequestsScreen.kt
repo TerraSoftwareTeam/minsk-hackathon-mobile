@@ -23,6 +23,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Inbox
@@ -65,6 +67,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dev.lbsuhack.core.designsystem.theme.hack
 import com.dev.lbsuhack.core.domain.model.UserRole
@@ -85,6 +88,7 @@ import org.koin.androidx.compose.koinViewModel
 fun RequestsScreen(
     role: UserRole,
     onBack: () -> Unit,
+    onOpenProfile: () -> Unit = {},
     viewModel: RequestsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -92,12 +96,16 @@ fun RequestsScreen(
     val context = LocalContext.current
 
     LaunchedEffect(viewModel, role) {
-        viewModel.accept(RequestsStore.Intent.Load(role))
         viewModel.labels.collect { label ->
             when (label) {
                 is RequestsStore.Label.ShowMessage -> snackbarHostState.showSnackbar(label.text.resolve(context))
             }
         }
+    }
+
+    LifecycleResumeEffect(viewModel) {
+        viewModel.accept(RequestsStore.Intent.Load(role))
+        onPauseOrDispose {}
     }
 
     Scaffold(
@@ -115,6 +123,14 @@ fun RequestsScreen(
                         ),
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     )
+                },
+                actions = {
+                    IconButton(onClick = { viewModel.accept(RequestsStore.Intent.Load(role)) }, enabled = !state.isLoading) {
+                        Icon(Icons.Default.Refresh, stringResource(R.string.requests_refresh))
+                    }
+                    IconButton(onClick = onOpenProfile) {
+                        Icon(Icons.Default.Person, stringResource(R.string.requests_profile))
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

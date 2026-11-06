@@ -39,6 +39,7 @@ class CreateActivityStoreFactory(
         data class MaxParticipantsChanged(val max: Int) : Message
         data class PreferencesChanged(val preferences: String) : Message
         data class PhotoChanged(val photoUri: String?) : Message
+        data class EventCreated(val id: String) : Message
         data object Submitting : Message
         data class ErrorOccurred(val error: UiText) : Message
         data object ErrorDismissed : Message
@@ -49,6 +50,8 @@ class CreateActivityStoreFactory(
         CoroutineExecutor<CreateActivityStore.Intent, Nothing, CreateActivityStore.State, Message, CreateActivityStore.Label>() {
 
         override fun executeIntent(intent: CreateActivityStore.Intent) {
+            if (state().createdActivityId != null && intent !is CreateActivityStore.Intent.ChangePhoto &&
+                intent != CreateActivityStore.Intent.Submit && intent != CreateActivityStore.Intent.DismissError) return
             when (intent) {
                 is CreateActivityStore.Intent.ChangeCategory -> dispatch(Message.CategoryChanged(intent.category))
                 is CreateActivityStore.Intent.ChangeTitle -> dispatch(Message.TitleChanged(intent.title))
@@ -79,28 +82,45 @@ class CreateActivityStoreFactory(
                 return
             }
 
-            scope.launch {
-                dispatch(Message.Submitting)
+            val startsAt = runCatching { java.time.OffsetDateTime.parse(currentState.startsAt) }.getOrNull()
+            if (currentState.createdActivityId == null && (startsAt == null ||
+                    !startsAt.isAfter(java.time.OffsetDateTime.now().plusDays(2)) ||
+                    currentState.title.trim().length > 200 || currentState.description.trim().length > 5000 ||
+                    currentState.voteThreshold !in 1..10000)) {
+                dispatch(Message.ErrorOccurred(UiText.Resource(R.string.create_activity_error_date)))
+                return
+            }
 
-                when (
-                    val result = activityRepository.createEvent(
+            dispatch(Message.Submitting)
+            scope.launch {
+                val existingId = currentState.createdActivityId
+                val id = if (existingId != null) existingId else {
+                    when (val result = activityRepository.createEvent(
                         name = currentState.title,
                         category = currentState.category,
                         description = currentState.description,
                         scope = currentState.scope,
-                        voteThreshold = maxOf(currentState.voteThreshold, currentState.minParticipants),
+                        voteThreshold = currentState.voteThreshold,
                         startsAt = currentState.startsAt,
-                    )
-                ) {
-                    is DomainResult.Success -> {
-                        dispatch(Message.Submitted)
-                        publish(CreateActivityStore.Label.Created(result.value.id))
-                    }
-
-                    is DomainResult.Failure -> {
-                        dispatch(Message.ErrorOccurred(result.error.toUiText()))
+                    )) {
+                        is DomainResult.Success -> result.value.id.also { dispatch(Message.EventCreated(it)) }
+                        is DomainResult.Failure -> {
+                            dispatch(Message.ErrorOccurred(result.error.toUiText()))
+                            return@launch
+                        }
                     }
                 }
+                currentState.photoUri?.let { photo ->
+                    when (activityRepository.uploadPhoto(id, photo)) {
+                        is DomainResult.Success -> Unit
+                        is DomainResult.Failure -> {
+                            dispatch(Message.ErrorOccurred(UiText.Resource(R.string.create_activity_error_photo_upload)))
+                            return@launch
+                        }
+                    }
+                }
+                dispatch(Message.Submitted)
+                publish(CreateActivityStore.Label.Created(id))
             }
         }
     }
@@ -119,6 +139,7 @@ class CreateActivityStoreFactory(
                 is Message.MaxParticipantsChanged -> copy(maxParticipants = msg.max, error = null)
                 is Message.PreferencesChanged -> copy(preferenceNotes = msg.preferences)
                 is Message.PhotoChanged -> copy(photoUri = msg.photoUri)
+                is Message.EventCreated -> copy(createdActivityId = msg.id)
                 Message.Submitting -> copy(isSubmitting = true, error = null)
                 is Message.ErrorOccurred -> copy(isSubmitting = false, error = msg.error)
                 Message.ErrorDismissed -> copy(error = null)

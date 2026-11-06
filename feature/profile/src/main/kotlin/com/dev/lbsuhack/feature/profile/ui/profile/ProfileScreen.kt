@@ -110,7 +110,6 @@ fun ProfileScreen(
             onDismiss = { viewModel.accept(ProfileStore.Intent.DismissDialog) },
             onChangeName = { viewModel.accept(ProfileStore.Intent.ChangeName(it)) },
             onChangeSurname = { viewModel.accept(ProfileStore.Intent.ChangeSurname(it)) },
-            onChangeFathersName = { viewModel.accept(ProfileStore.Intent.ChangeFathersName(it)) },
             onConfirm = { viewModel.accept(ProfileStore.Intent.ConfirmEdit) },
         )
     }
@@ -154,7 +153,9 @@ fun ProfileScreen(
                 school = state.schoolName.ifBlank { stringResource(R.string.profile_school_not_specified) },
             )
 
-            ProfileRequestsSection(onOpenRequests = onOpenRequests)
+            if (state.canReviewRequests) {
+                ProfileRequestsSection(role = state.role, onOpenRequests = onOpenRequests)
+            }
 
             NotificationsCard(
                 title = stringResource(R.string.profile_notifications),
@@ -163,7 +164,7 @@ fun ProfileScreen(
                 onToggle = { viewModel.accept(ProfileStore.Intent.ToggleNotifications) },
             )
 
-            SavedCard(
+            if (state.role == UserRole.PUPIL) SavedCard(
                 count = state.savedCount,
                 title = stringResource(R.string.profile_saved_title),
                 countText = pluralStringResource(
@@ -238,7 +239,7 @@ private fun ProfileInfoRow(icon: ImageVector, text: String) {
 }
 
 @Composable
-private fun ProfileRequestsSection(onOpenRequests: (UserRole) -> Unit) {
+private fun ProfileRequestsSection(role: UserRole, onOpenRequests: (UserRole) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = stringResource(R.string.profile_requests),
@@ -248,15 +249,9 @@ private fun ProfileRequestsSection(onOpenRequests: (UserRole) -> Unit) {
         )
         ProfileCard(contentPadding = 0.dp) {
             ProfileActionRow(
-                icon = Icons.AutoMirrored.Filled.FactCheck,
-                text = stringResource(R.string.profile_requests_teacher),
-                onClick = { onOpenRequests(UserRole.TEACHER) },
-            )
-            HorizontalDivider(modifier = Modifier.padding(start = 56.dp), color = MaterialTheme.colorScheme.outlineVariant)
-            ProfileActionRow(
-                icon = Icons.Outlined.Event,
-                text = stringResource(R.string.profile_requests_admin),
-                onClick = { onOpenRequests(UserRole.ORGANIZATOR) },
+                icon = if (role == UserRole.TEACHER) Icons.AutoMirrored.Filled.FactCheck else Icons.Outlined.Event,
+                text = stringResource(if (role == UserRole.TEACHER) R.string.profile_requests_teacher else R.string.profile_requests_admin),
+                onClick = { onOpenRequests(role) },
             )
         }
     }
@@ -390,7 +385,6 @@ private fun EditProfileDialog(
     onDismiss: () -> Unit,
     onChangeName: (String) -> Unit,
     onChangeSurname: (String) -> Unit,
-    onChangeFathersName: (String) -> Unit,
     onConfirm: () -> Unit,
 ) {
     AlertDialog(
@@ -417,12 +411,6 @@ private fun EditProfileDialog(
                     onValueChange = onChangeSurname,
                     label = stringResource(R.string.profile_edit_surname_label),
                     hint = stringResource(R.string.profile_edit_surname_hint),
-                )
-                EditTextField(
-                    value = dialog.fathersName,
-                    onValueChange = onChangeFathersName,
-                    label = stringResource(R.string.profile_edit_fathers_name_label),
-                    hint = stringResource(R.string.profile_edit_fathers_name_hint),
                 )
             }
         },

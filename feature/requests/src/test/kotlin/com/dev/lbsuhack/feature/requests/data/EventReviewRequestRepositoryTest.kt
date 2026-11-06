@@ -44,8 +44,9 @@ class EventReviewRequestRepositoryTest {
           "scope": "CLASS",
           "category": "CULTURAL",
           "status": "$status",
-          "declineReason": ${declineReason?.let { "\"$it\"" } ?: "null"},
-          "voteThreshold": 15.0,
+          "successProbability": 0.5, "imageUrl": null, "ratingAverage": null, "ratingsCount": 0,
+                                "declineReason": ${declineReason?.let { "\"$it\"" } ?: "null"},
+          "voteThreshold": 15,
           "startsAt": "2026-11-21T10:00:00.000Z",
           "votingClosesAt": "2026-11-19T10:00:00.000Z",
           "initiator": {
@@ -53,7 +54,6 @@ class EventReviewRequestRepositoryTest {
             "schoolsById": "school-1",
             "name": "Иван",
             "surname": "Иванов",
-            "fathersName": "Иванович",
             "class": "10A",
             "role": "PUPIL"
           },
@@ -62,7 +62,6 @@ class EventReviewRequestRepositoryTest {
             "schoolsById": "school-2",
             "name": "Петр",
             "surname": "Петров",
-            "fathersName": "Петрович",
             "class": null,
             "role": "TEACHER"
           },

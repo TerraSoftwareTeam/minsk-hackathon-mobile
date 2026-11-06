@@ -26,12 +26,10 @@ class UserProfileApi(
         userId: String,
         name: String,
         surname: String,
-        fathersName: String,
     ): DomainResult<User> = withContext(ioDispatcher) {
         val dto = UpdateUserDto(
             name = name.trim(),
             surname = surname.trim(),
-            fathersName = fathersName.trim(),
         )
 
         when (
@@ -52,7 +50,6 @@ class UserProfileApi(
             id = id,
             name = name,
             surname = surname,
-            fathersName = fathersName,
             schoolsById = schoolsById,
             pupilClass = propertyClass.orEmpty(),
         )
@@ -61,7 +58,6 @@ class UserProfileApi(
             id = id,
             name = name,
             surname = surname,
-            fathersName = fathersName,
             schoolsById = schoolsById,
         )
 
@@ -69,7 +65,6 @@ class UserProfileApi(
             id = id,
             name = name,
             surname = surname,
-            fathersName = fathersName,
         )
     }
 }

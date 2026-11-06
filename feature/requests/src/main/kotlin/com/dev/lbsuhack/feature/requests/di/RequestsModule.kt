@@ -17,6 +17,7 @@ val requestsModule = module {
         EventReviewRequestRepository(
             httpClient = get(),
             ioDispatcher = Dispatchers.IO,
+            observeSession = get(),
         )
     }
 

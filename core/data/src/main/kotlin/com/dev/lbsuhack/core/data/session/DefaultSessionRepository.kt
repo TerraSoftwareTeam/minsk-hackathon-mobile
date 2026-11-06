@@ -17,14 +17,16 @@ import kotlinx.coroutines.withContext
 
 class DefaultSessionRepository(
     context: Context,
-    private val tokenStorage: TokenStorage? = null,
+    private val tokenStorage: TokenStorage,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : SessionRepository {
 
     private val preferences = context.applicationContext.getSharedPreferences(
         PREFERENCES_NAME,
         Context.MODE_PRIVATE,
-    )
+    ).apply {
+        edit().remove("fathers_name").apply()
+    }
 
     private val mutex = Mutex()
     private val _state = MutableStateFlow<SessionState>(SessionState.Unknown)
@@ -40,7 +42,6 @@ class DefaultSessionRepository(
                 val id = preferences.getString(KEY_ID, null)
                 val name = preferences.getString(KEY_NAME, null)
                 val surname = preferences.getString(KEY_SURNAME, null)
-                val fathersName = preferences.getString(KEY_FATHERS_NAME, null)
                 val schoolsById = preferences.getString(KEY_SCHOOLS_BY_ID, null)
                 val schoolName = preferences.getString(KEY_SCHOOL_NAME, null)
                 val roleStr = preferences.getString(KEY_ROLE, null)
@@ -48,13 +49,12 @@ class DefaultSessionRepository(
                     ?: UserRole.PUPIL
                 val pupilClass = preferences.getString(KEY_CLASS, null)
 
-                _state.value = if (!id.isNullOrBlank() && !name.isNullOrBlank()) {
+                _state.value = if (!id.isNullOrBlank() && !name.isNullOrBlank() && !tokenStorage.getAccessToken().isNullOrBlank()) {
                     SessionState.Authenticated(
                         SessionUser(
                             id = id,
                             name = name,
                             surname = surname,
-                            fathersName = fathersName,
                             schoolsById = schoolsById,
                             schoolName = schoolName,
                             role = role,
@@ -76,7 +76,6 @@ class DefaultSessionRepository(
                     .putString(KEY_ID, user.id)
                     .putString(KEY_NAME, user.name)
                     .putString(KEY_SURNAME, user.surname)
-                    .putString(KEY_FATHERS_NAME, user.fathersName)
                     .putString(KEY_SCHOOLS_BY_ID, user.schoolsById)
                     .putString(KEY_SCHOOL_NAME, user.schoolName)
                     .putString(KEY_ROLE, user.role.name)
@@ -93,7 +92,7 @@ class DefaultSessionRepository(
         withContext(ioDispatcher) {
             mutex.withLock {
                 preferences.edit().clear().apply()
-                tokenStorage?.clear()
+                tokenStorage.clear()
                 _state.value = SessionState.Unauthenticated
                 restored = true
             }
@@ -105,7 +104,6 @@ class DefaultSessionRepository(
         const val KEY_ID = "id"
         const val KEY_NAME = "name"
         const val KEY_SURNAME = "surname"
-        const val KEY_FATHERS_NAME = "fathers_name"
         const val KEY_SCHOOLS_BY_ID = "schools_by_id"
         const val KEY_SCHOOL_NAME = "school_name"
         const val KEY_ROLE = "role"

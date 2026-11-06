@@ -21,55 +21,66 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.ui.component.ActivityTag
 
 @Composable
-internal fun ActivityMetadata(proposal: ActivityProposal, modifier: Modifier = Modifier, onPhoto: Boolean = false) {
+internal fun ActivityMetadata(
+    proposal: ActivityProposal,
+    modifier: Modifier = Modifier,
+    onPhoto: Boolean = false,
+    isAuthor: Boolean = false,
+) {
     val foreground = if (onPhoto) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
     val secondary = if (onPhoto) foreground.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
     val shape = MaterialTheme.shapes.medium
-    Row(
-        modifier = modifier.fillMaxWidth().height(IntrinsicSize.Min),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.Top,
-    ) {
-        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-            ActivityTag(
-                modifier = Modifier.fillMaxSize(),
-                text = stringResource(proposal.category.labelRes()),
-                icon = proposal.category.icon(),
-                onPhoto = onPhoto,
-            )
-        }
-        Box(modifier = Modifier.weight(1.3f).fillMaxHeight(), contentAlignment = Alignment.Center) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        if (onPhoto) MaterialTheme.colorScheme.scrim.copy(alpha = 0.72f)
-                        else MaterialTheme.colorScheme.surfaceContainerHigh,
-                        shape,
-                    )
-                    .border(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f), shape)
-                    .padding(horizontal = 12.dp, vertical = 9.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically),
-            ) {
-                Text(
-                    text = stringResource(proposal.status.labelRes()),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Medium,
-                    color = foreground,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    text = stringResource(proposal.initiative.labelRes()),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = secondary,
-                    textAlign = TextAlign.Center,
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                ActivityTag(
+                    modifier = Modifier.fillMaxSize(),
+                    text = stringResource(proposal.category.labelRes()),
+                    icon = proposal.category.icon(),
+                    onPhoto = onPhoto,
                 )
             }
+            Box(modifier = Modifier.weight(1.3f).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            if (onPhoto) MaterialTheme.colorScheme.scrim.copy(alpha = 0.72f)
+                            else MaterialTheme.colorScheme.surfaceContainerHigh,
+                            shape,
+                        )
+                        .border(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f), shape)
+                        .padding(horizontal = 12.dp, vertical = 9.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically),
+                ) {
+                    Text(
+                        text = stringResource(proposal.status.labelRes()),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = foreground,
+                        textAlign = TextAlign.Center,
+                    )
+                    Text(
+                        text = stringResource(proposal.initiative.labelRes()),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = secondary,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+        }
+        if (isAuthor) {
+            ActivityTag(text = stringResource(R.string.activity_created_by_me), onPhoto = onPhoto)
         }
     }
 }

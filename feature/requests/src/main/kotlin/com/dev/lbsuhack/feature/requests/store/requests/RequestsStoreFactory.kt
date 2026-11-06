@@ -34,6 +34,7 @@ class RequestsStoreFactory(
             ) {}
 
     private sealed interface Message {
+        data object Refreshed : Message
         data object Loading : Message
         data class AudienceResolved(val audience: RequestAudience?) : Message
         data class UserUpdated(val user: SessionUser?) : Message
@@ -55,7 +56,8 @@ class RequestsStoreFactory(
         override fun executeIntent(intent: RequestsStore.Intent) {
             when (intent) {
                 is RequestsStore.Intent.Load -> {
-                    val audience = intent.role.toRequestAudience()
+                    val actualRole = (observeSessionUseCase.state.value as? SessionState.Authenticated)?.user?.role
+                    val audience = if (actualRole == intent.role) intent.role.toRequestAudience() else null
                     dispatch(Message.AudienceResolved(audience))
                     startObserving(audience)
                 }
@@ -71,7 +73,10 @@ class RequestsStoreFactory(
         }
 
         private fun startObserving(audience: RequestAudience?) {
-            if (observing) return
+            if (observing) {
+                refresh(audience)
+                return
+            }
             observing = true
 
             scope.launch {
@@ -88,11 +93,15 @@ class RequestsStoreFactory(
                 }
             }
 
-            if (audience == null) return
+            refresh(audience)
+        }
 
+        private fun refresh(audience: RequestAudience?) {
+            if (audience == null) return
+            dispatch(Message.Loading)
             scope.launch {
                 when (val result = requestRepository.refresh(audience)) {
-                    is DomainResult.Success -> Unit
+                    is DomainResult.Success -> dispatch(Message.Refreshed)
                     is DomainResult.Failure -> {
                         dispatch(Message.RequestsLoadFailed)
                         publish(RequestsStore.Label.ShowMessage(result.error.toUiText()))
@@ -180,6 +189,7 @@ class RequestsStoreFactory(
 
     private object ReducerImpl : Reducer<RequestsStore.State, Message> {
         override fun RequestsStore.State.reduce(msg: Message): RequestsStore.State = when (msg) {
+            Message.Refreshed -> copy(isLoading = false)
             Message.Loading -> copy(isLoading = true)
             is Message.AudienceResolved -> copy(audience = msg.audience)
             is Message.UserUpdated -> copy(currentUser = msg.user)

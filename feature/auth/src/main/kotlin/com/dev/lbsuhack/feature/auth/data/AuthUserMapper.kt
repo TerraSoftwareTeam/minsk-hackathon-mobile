@@ -9,7 +9,6 @@ internal fun UserResponseDto.toSessionUser(schoolName: String? = null): SessionU
     id = id,
     name = name,
     surname = surname,
-    fathersName = fathersName,
     schoolsById = schoolsById,
     schoolName = schoolName?.takeIf { it.isNotBlank() },
     role = role.toDomainRole(),
@@ -21,7 +20,6 @@ internal fun UserResponseDto.toDomain(schoolName: String? = null): User = when (
         id = id,
         name = name,
         surname = surname,
-        fathersName = fathersName,
         schoolsById = schoolsById,
         schoolName = schoolName?.takeIf { it.isNotBlank() },
         pupilClass = propertyClass.orEmpty(),
@@ -30,7 +28,6 @@ internal fun UserResponseDto.toDomain(schoolName: String? = null): User = when (
         id = id,
         name = name,
         surname = surname,
-        fathersName = fathersName,
         schoolsById = schoolsById,
         schoolName = schoolName?.takeIf { it.isNotBlank() },
     )
@@ -38,7 +35,6 @@ internal fun UserResponseDto.toDomain(schoolName: String? = null): User = when (
         id = id,
         name = name,
         surname = surname,
-        fathersName = fathersName,
     )
 }
 

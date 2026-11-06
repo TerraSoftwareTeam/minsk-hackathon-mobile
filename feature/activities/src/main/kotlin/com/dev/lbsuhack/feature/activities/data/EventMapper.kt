@@ -33,10 +33,12 @@ fun VotingEventResponseDto.toDomain(): ActivityProposal {
         startsAt = startsAt,
         votingClosesAt = votingClosesAt,
         authorId = author.id,
+        authorSchoolsById = author.schoolsById,
         authorName = authorFullName,
         authorClass = author.propertyClass.orEmpty(),
         teacherName = teacherFullName,
         declineReason = declineReason,
+        photoUri = imageUrl,
     )
 }
 
@@ -64,10 +66,12 @@ fun EventResponseDto.toDomain(votesCount: Int = 0, hasVoted: Boolean = false): A
         startsAt = startsAt,
         votingClosesAt = votingClosesAt,
         authorId = author.id,
+        authorSchoolsById = author.schoolsById,
         authorName = authorFullName,
         authorClass = author.propertyClass.orEmpty(),
         teacherName = teacherFullName,
         declineReason = declineReason,
+        photoUri = imageUrl,
     )
 }
 

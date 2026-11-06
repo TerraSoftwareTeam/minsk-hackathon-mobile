@@ -49,4 +49,6 @@
     <string name="requests_error_unknown">Что-то пошло не так. Попробуйте ещё раз</string>
     <string name="requests_success_approved">Заявка одобрена</string>
     <string name="requests_success_declined">Заявка отклонена</string>
+    <string name="requests_profile">Профиль</string>
+    <string name="requests_refresh">Обновить</string>
 </resources>

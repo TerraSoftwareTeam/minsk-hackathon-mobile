@@ -43,6 +43,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import com.dev.lbsuhack.core.localization.text.resolve
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -55,8 +60,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dev.lbsuhack.core.designsystem.theme.hack
+import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
@@ -74,9 +81,19 @@ fun ActivitiesScreen(
     viewModel: ActivitiesViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbar = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    val retry = stringResource(R.string.activities_retry)
+    LaunchedEffect(state.error) {
+        state.error?.let {
+            val result = snackbar.showSnackbar(it.resolve(context), actionLabel = retry)
+            if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                viewModel.accept(ActivitiesStore.Intent.Refresh)
+            }
+        }
+    }
 
     LaunchedEffect(viewModel) {
-        viewModel.accept(ActivitiesStore.Intent.Load)
         viewModel.labels.collect { label ->
             when (label) {
                 is ActivitiesStore.Label.OpenDetails -> onOpenDetails(label.activityId)
@@ -86,7 +103,13 @@ fun ActivitiesScreen(
         }
     }
 
+    LifecycleResumeEffect(viewModel) {
+        viewModel.accept(ActivitiesStore.Intent.Load)
+        onPauseOrDispose {}
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             ActivitiesTopBar(
@@ -129,7 +152,7 @@ fun ActivitiesScreen(
                         ) { proposal ->
                             ActivityCard(
                                 proposal = proposal,
-                                currentUserId = state.currentUser?.id,
+                                isAuthor = proposal.isCreatedBy(state.currentUser?.schoolsById),
                                 onClick = {
                                     viewModel.accept(ActivitiesStore.Intent.ClickActivity(proposal.id))
                                 },
@@ -166,7 +189,7 @@ fun ActivitiesScreen(
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = stringResource(R.string.activities_create_action),
+                        text = stringResource(if (state.currentUser?.role == UserRole.PUPIL) R.string.activities_create_action else R.string.activities_review_action),
                         fontWeight = FontWeight.Bold,
                         maxLines = 2,
                         textAlign = TextAlign.Center,
@@ -265,11 +288,11 @@ private fun ProfileAvatar(
 @Composable
 private fun ActivityCard(
     proposal: ActivityProposal,
-    currentUserId: String?,
+    isAuthor: Boolean,
     onClick: () -> Unit,
     onToggleJoin: () -> Unit,
 ) {
-    val isJoined = proposal.hasVoted || (currentUserId != null && proposal.isJoined(currentUserId))
+    val isJoined = proposal.hasVoted || isAuthor
     val progress = proposal.progress
 
     Column(
@@ -285,11 +308,11 @@ private fun ActivityCard(
             .clickable(onClick = onClick),
     ) {
         proposal.photoUri?.let { photoUri ->
-            ActivityCardCover(proposal = proposal, photoUri = photoUri)
+            ActivityCardCover(proposal = proposal, photoUri = photoUri, isAuthor = isAuthor)
         }
         Column(modifier = Modifier.padding(20.dp)) {
             if (proposal.photoUri == null) {
-                ActivityMetadata(proposal = proposal)
+                ActivityMetadata(proposal = proposal, isAuthor = isAuthor)
                 Spacer(modifier = Modifier.height(16.dp))
             }
 

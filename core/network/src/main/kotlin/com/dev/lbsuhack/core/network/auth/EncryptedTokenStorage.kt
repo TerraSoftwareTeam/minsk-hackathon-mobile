@@ -76,8 +76,7 @@ class EncryptedTokenStorage(
 
                 val newState = AuthState(
                     accessToken = accessToken,
-                    refreshToken = refreshToken
-                        ?: _authState.value.refreshToken,
+                    refreshToken = refreshToken,
                 )
 
                 val plaintext = encode(newState)

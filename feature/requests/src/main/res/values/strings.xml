@@ -49,4 +49,6 @@
     <string name="requests_error_unknown">Something went wrong. Try again</string>
     <string name="requests_success_approved">Request approved</string>
     <string name="requests_success_declined">Request declined</string>
+    <string name="requests_profile">Profile</string>
+    <string name="requests_refresh">Refresh</string>
 </resources>

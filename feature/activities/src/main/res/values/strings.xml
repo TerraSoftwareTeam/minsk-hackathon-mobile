@@ -143,4 +143,11 @@
     <string name="create_activity_info_dismiss">Понятно</string>
     <string name="activity_initiative_student">Инициатива ученика</string>
     <string name="activity_initiative_school">Инициатива школы</string>
+    <string name="activities_retry">Повторить</string>
+    <string name="create_activity_date_hint">2026-12-01T10:00:00+03:00</string>
+    <string name="create_activity_error_date">Дата должна быть с часовым поясом и более чем через 2 дня. Название — до 200 символов, описание — до 5000, порог голосов — от 1 до 10000.</string>
+    <string name="create_activity_error_photo_upload">Мероприятие создано, но фото не загружено. Проверьте подключение и выберите JPEG, PNG, WebP или GIF до 5 МБ. Повторная отправка загрузит только фото.</string>
+    <string name="create_activity_photo_pending">Мероприятие уже создано. Повторите загрузку фото или удалите его из формы и продолжите без фото.</string>
+    <string name="activities_review_action">Заявки на мероприятия</string>
+    <string name="activity_created_by_me">Создано мной</string>
 </resources>

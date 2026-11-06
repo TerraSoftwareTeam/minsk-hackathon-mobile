@@ -40,6 +40,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import com.dev.lbsuhack.core.localization.text.resolve
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -78,6 +83,17 @@ fun ActivityDetailsScreen(
     viewModel: ActivityDetailsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbar = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    val retry = stringResource(R.string.activities_retry)
+    LaunchedEffect(state.error) {
+        state.error?.let {
+            val result = snackbar.showSnackbar(it.resolve(context), actionLabel = retry)
+            if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                viewModel.accept(ActivityDetailsStore.Intent.Load(activityId))
+            }
+        }
+    }
 
     LaunchedEffect(activityId) {
         viewModel.accept(ActivityDetailsStore.Intent.Load(activityId))
@@ -92,6 +108,7 @@ fun ActivityDetailsScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
@@ -143,7 +160,7 @@ fun ActivityDetailsScreen(
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    ActivityHeroCard(proposal = proposal)
+                    ActivityHeroCard(proposal = proposal, isAuthor = state.isAuthor)
                     ActivityQrCard(activityId = proposal.id, title = proposal.title)
                     if (proposal.status != ActivityStatus.ON_VOTE) {
                         ActivityStatusNotice(proposal = proposal)
@@ -165,7 +182,7 @@ fun ActivityDetailsScreen(
 }
 
 @Composable
-private fun ActivityHeroCard(proposal: ActivityProposal) {
+private fun ActivityHeroCard(proposal: ActivityProposal, isAuthor: Boolean) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -178,11 +195,11 @@ private fun ActivityHeroCard(proposal: ActivityProposal) {
             ),
     ) {
         proposal.photoUri?.let { photoUri ->
-            ActivityCardCover(proposal = proposal, photoUri = photoUri)
+            ActivityCardCover(proposal = proposal, photoUri = photoUri, isAuthor = isAuthor)
         }
         Column(modifier = Modifier.padding(20.dp)) {
             if (proposal.photoUri == null) {
-                ActivityMetadata(proposal = proposal)
+                ActivityMetadata(proposal = proposal, isAuthor = isAuthor)
                 Spacer(modifier = Modifier.height(16.dp))
             }
             Text(

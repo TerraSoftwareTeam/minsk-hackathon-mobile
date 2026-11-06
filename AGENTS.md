@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Local contract for AI agents working in this repository.
+Local !!! contract for AI agents working in this repository.
 
 This file is intentionally untracked. Do not `git add -f` it and do not commit it.
 

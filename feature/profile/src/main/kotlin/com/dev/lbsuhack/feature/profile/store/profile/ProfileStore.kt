@@ -7,7 +7,6 @@ import com.dev.lbsuhack.core.localization.text.UiText
 data class ProfileEditDialog(
     val name: String = "",
     val surname: String = "",
-    val fathersName: String = "",
 )
 
 interface ProfileStore : Store<ProfileStore.Intent, ProfileStore.State, ProfileStore.Label> {
@@ -19,7 +18,6 @@ interface ProfileStore : Store<ProfileStore.Intent, ProfileStore.State, ProfileS
         data object DismissDialog : Intent
         data class ChangeName(val value: String) : Intent
         data class ChangeSurname(val value: String) : Intent
-        data class ChangeFathersName(val value: String) : Intent
         data object ConfirmEdit : Intent
         data object Logout : Intent
     }
