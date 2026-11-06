@@ -37,6 +37,7 @@ import com.dev.lbsuhack.core.navigation.api.NavigationInstaller
 import com.dev.lbsuhack.core.navigation.event.AppEvent
 import com.dev.lbsuhack.core.navigation.event.AppEventBus
 import com.dev.lbsuhack.core.navigation.layer.NavigationLayer
+import com.dev.lbsuhack.feature.activities.navigation.ActivityDetailsRoute
 import com.dev.lbsuhack.feature.activities.navigation.ActivitiesRoute
 import com.dev.lbsuhack.feature.auth.navigation.AuthLoginRoute
 import com.dev.lbsuhack.feature.profile.navigation.ProfileRoute
@@ -47,6 +48,8 @@ import org.koin.compose.koinInject
 
 @Composable
 fun AppRootScreen(
+    pendingActivityId: String? = null,
+    onActivityLinkConsumed: () -> Unit = {},
     bus: AppEventBus = koinInject(),
     observeSession: ObserveSessionUseCase = koinInject(),
     restoreSession: RestoreSessionUseCase = koinInject(),
@@ -87,6 +90,8 @@ fun AppRootScreen(
             is SessionState.Authenticated -> key(GLOBAL_HOST_KEY) {
                 AppNavHost(
                     startRoute = ActivitiesRoute,
+                    pendingRoute = pendingActivityId?.let(::ActivityDetailsRoute),
+                    onRouteConsumed = onActivityLinkConsumed,
                     installers = installers,
                     layers = layers,
                     appNavigationFactory = { navigator ->
@@ -127,9 +132,18 @@ private fun AppNavHost(
     installers: List<NavigationInstaller>,
     layers: List<NavigationLayer>,
     appNavigationFactory: ((Navigator) -> AppNavigation)? = null,
+    pendingRoute: NavKey? = null,
+    onRouteConsumed: () -> Unit = {},
 ) {
     val backStack = rememberNavBackStack(startRoute)
     val navigator = remember(backStack, startRoute) { AppNavigator(backStack) }
+
+    LaunchedEffect(pendingRoute) {
+        pendingRoute?.let {
+            navigator.navigate(it)
+            onRouteConsumed()
+        }
+    }
 
     val entryProvider = remember(installers) {
         entryProvider {

@@ -31,6 +31,8 @@ google-services = "4.5.0"
 firebase-bom = "35.1.0"
 
 [libraries]
+zxing-core = { module = "com.google.zxing:core", version = "3.5.4" }
+google-code-scanner = { module = "com.google.android.gms:play-services-code-scanner", version = "16.1.0" }
 android-gradle-plugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
 kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-compose-gradle-plugin = { group = "org.jetbrains.kotlin", name = "compose-compiler-gradle-plugin", version.ref = "kotlin" }

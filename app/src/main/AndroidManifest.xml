@@ -26,6 +26,10 @@
         </service>
 
         <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="barcode_ui" />
+
+        <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="kola_notifications" />
         <meta-data
@@ -43,10 +47,17 @@
 
         <activity
             android:name=".MainActivity"
+            android:launchMode="singleTop"
             android:configChanges="locale|layoutDirection"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.Lbsuhack">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="kola" android:host="activity" android:pathPrefix="/" />
+            </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

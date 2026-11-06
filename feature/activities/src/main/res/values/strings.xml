@@ -103,4 +103,12 @@
     <string name="details_rejected_desc">Инициатива не прошла проверку. Организатор может создать новую заявку с учётом замечаний.</string>
     <string name="details_recruiting_title">Идёт набор участников</string>
     <string name="details_recruiting_desc">Когда наберётся минимальное число участников, заявку можно будет передать администрации.</string>
+    <string name="activity_qr_title">Пригласить на мероприятие</string>
+    <string name="activity_qr_hint">Откройте список мероприятий в Кола на другом телефоне и нажмите «Сканировать QR-код». После сканирования можно записаться на мероприятие.</string>
+    <string name="activity_qr_description">QR-код мероприятия «%1$s»</string>
+    <string name="activity_qr_share">Поделиться ссылкой</string>
+    <string name="activity_qr_scan">Сканировать QR-код</string>
+    <string name="activity_qr_invalid">Это не QR-код мероприятия Кола.</string>
+    <string name="activity_qr_scan_error">Не удалось открыть сканер. Проверьте сервисы Google Play и подключение к интернету, затем повторите.</string>
+    <string name="activity_qr_not_found">Мероприятие не найдено. Возможно, оно удалено или недоступно на этом устройстве.</string>
 </resources>

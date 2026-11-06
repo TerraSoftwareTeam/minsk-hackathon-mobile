@@ -13,4 +13,6 @@ dependencies {
     implementation(project(":core:navigation"))
 
     implementation(libs.coroutines.core)
+    implementation(libs.zxing.core)
+    implementation(libs.google.code.scanner)
 }
