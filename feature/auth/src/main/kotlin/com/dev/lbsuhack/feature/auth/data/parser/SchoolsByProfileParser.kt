@@ -15,6 +15,10 @@ class SchoolsByProfileParser {
         pattern = """<title[^>]*>(.*?)</title>""",
         options = setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
     )
+    private val schoolHeaderRegex = Regex(
+        pattern = """<span\s+class=["']name["'][^>]*>\s*<a[^>]*>(.*?)</a>\s*</span>""",
+        options = setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
+    )
     private val htmlTagRegex = Regex("""<[^>]+>""")
     private val whitespaceRegex = Regex("""\s+""")
     private val idInTextRegex = Regex("""ID\s*(\d+)""", RegexOption.IGNORE_CASE)
@@ -96,12 +100,49 @@ class SchoolsByProfileParser {
     }
 
     private fun extractSchoolName(html: String): String? {
+        val headerMatch = schoolHeaderRegex.find(html)
+        if (headerMatch != null) {
+            val textOnly = htmlTagRegex.replace(headerMatch.groupValues[1], " ")
+            val normalized = whitespaceRegex.replace(textOnly, " ").trim()
+            val clean = unescapeHtml(normalized)
+            if (clean.isNotBlank()) return clean
+        }
+
         val titleMatch = schoolRegex.find(html) ?: return null
         val rawTitle = titleMatch.groupValues[1]
         val textOnly = htmlTagRegex.replace(rawTitle, " ")
         val normalized = whitespaceRegex.replace(textOnly, " ").trim()
         val unescaped = unescapeHtml(normalized)
-        return unescaped.substringAfter("—").substringAfter("-").trim().ifBlank { null }
+        if (unescaped.isBlank()) return null
+
+        if (unescaped.contains("—")) {
+            val after = unescaped.substringAfterLast("—").trim()
+            if (after.isNotBlank()) return after
+        }
+        if (unescaped.contains(" - ")) {
+            val after = unescaped.substringAfterLast(" - ").trim()
+            if (after.isNotBlank()) return after
+        }
+
+        val lowerTitle = unescaped.lowercase()
+        val keywordIndices = listOf("гуо", "гудо", "гимнази", "средняя школа", "школа", "лицей", "колледж", "ясли")
+            .map { lowerTitle.indexOf(it) }
+            .filter { it >= 0 }
+
+        if (keywordIndices.isNotEmpty()) {
+            val minIndex = keywordIndices.minOrNull() ?: 0
+            val schoolCandidate = unescaped.substring(minIndex).trim()
+            if (schoolCandidate.isNotBlank()) {
+                return schoolCandidate
+            }
+        }
+
+        val sentences = unescaped.split(".").map { it.trim() }.filter { it.isNotBlank() }
+        if (sentences.size > 2) {
+            return sentences.last()
+        }
+
+        return null
     }
 
     private fun extractCleanH1(html: String): String? {

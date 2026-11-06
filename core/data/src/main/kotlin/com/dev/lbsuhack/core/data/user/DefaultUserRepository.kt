@@ -76,7 +76,10 @@ class DefaultUserRepository(
 
             when (result) {
                 is NetworkResult.Success -> {
-                    val domainUser = result.data.toDomain()
+                    val existingSchoolName = inMemory?.schoolName
+                        ?: cached?.schoolName
+                        ?: (sessionState as? SessionState.Authenticated)?.user?.schoolName
+                    val domainUser = result.data.toDomain(existingSchoolName)
                     _currentUser.value = domainUser
                     writeToPrefs(domainUser)
                     DomainResult.Success(domainUser)
@@ -166,14 +169,14 @@ class DefaultUserRepository(
         editor.apply()
     }
 
-    private fun UserResponseDto.toDomain(): User = when (role) {
+    private fun UserResponseDto.toDomain(existingSchoolName: String? = null): User = when (role) {
         UserResponseDto.Role.PUPIL -> User.Pupil(
             id = id,
             name = name,
             surname = surname,
             fathersName = fathersName,
             schoolsById = schoolsById,
-            schoolName = null,
+            schoolName = existingSchoolName,
             pupilClass = propertyClass.orEmpty(),
         )
         UserResponseDto.Role.TEACHER -> User.Teacher(
@@ -182,7 +185,7 @@ class DefaultUserRepository(
             surname = surname,
             fathersName = fathersName,
             schoolsById = schoolsById,
-            schoolName = null,
+            schoolName = existingSchoolName,
         )
         UserResponseDto.Role.ADMIN -> User.Organizator(
             id = id,

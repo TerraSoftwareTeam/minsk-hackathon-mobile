@@ -79,4 +79,37 @@ class SchoolsByProfileParserTest {
         val user = parser.parse(html, role = UserRole.PUPIL)
         assertNull(user)
     }
+
+    @Test
+    fun parse_extracts_school_name_from_header() {
+        val html = """
+            <span class="name"><a href="/">ГУО &quot;Гимназия № 41 г. Минска им. Серебряного В.Х.&quot;</a></span>
+            <h1>Смирнов Владислав, 11 &quot;М&quot; класс, ID 3575208</h1>
+        """.trimIndent()
+        val user = parser.parse(html, role = UserRole.PUPIL)
+        assertNotNull(user)
+        assertEquals("ГУО \"Гимназия № 41 г. Минска им. Серебряного В.Х.\"", user?.schoolName)
+    }
+
+    @Test
+    fun parse_extracts_school_name_from_title_sentence() {
+        val html = """
+            <title>Смирнов Владислав. Обучающийся 11 &quot;М&quot;. ГУО &quot;Гимназия № 41 г. Минска им. Серебряного В.Х.&quot;</title>
+            <h1>Смирнов Владислав, 11 &quot;М&quot; класс, ID 3575208</h1>
+        """.trimIndent()
+        val user = parser.parse(html, role = UserRole.PUPIL)
+        assertNotNull(user)
+        assertEquals("ГУО \"Гимназия № 41 г. Минска им. Серебряного В.Х.\"", user?.schoolName)
+    }
+
+    @Test
+    fun parse_extracts_school_name_from_title_dash() {
+        val html = """
+            <title>Смирнов Владислав — Гимназия № 41</title>
+            <h1>Смирнов Владислав, 11 &quot;М&quot; класс, ID 3575208</h1>
+        """.trimIndent()
+        val user = parser.parse(html, role = UserRole.PUPIL)
+        assertNotNull(user)
+        assertEquals("Гимназия № 41", user?.schoolName)
+    }
 }

@@ -22,7 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FactCheck
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.outlined.BookmarkBorder
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.ChevronRight
@@ -153,7 +152,6 @@ fun ProfileScreen(
                 fullName = state.fullName,
                 pupilClass = state.pupilClass,
                 school = state.schoolName.ifBlank { stringResource(R.string.profile_school_not_specified) },
-                onEdit = { viewModel.accept(ProfileStore.Intent.ClickEdit) },
             )
 
             ProfileRequestsSection(onOpenRequests = onOpenRequests)
@@ -202,7 +200,6 @@ private fun UserInfoCard(
     fullName: String,
     pupilClass: String,
     school: String,
-    onEdit: () -> Unit,
 ) {
     ProfileCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -227,20 +224,6 @@ private fun UserInfoCard(
                     ProfileInfoRow(icon = Icons.Outlined.School, text = school)
                 }
             }
-        }
-        Spacer(modifier = Modifier.height(14.dp))
-        TextButton(
-            onClick = onEdit,
-            contentPadding = PaddingValues(start = 0.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Edit,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(stringResource(R.string.profile_edit))
         }
     }
 }

@@ -40,7 +40,7 @@ class ProfileStoreTest {
         name = "Nikita",
         surname = "Ivanov",
         fathersName = "Petrovich",
-        schoolsById = "School #1",
+        schoolsById = "3575208",
         schoolName = "School #1",
         pupilClass = "10-А",
     )

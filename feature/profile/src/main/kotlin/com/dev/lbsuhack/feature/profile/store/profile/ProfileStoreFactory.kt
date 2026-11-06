@@ -87,7 +87,7 @@ class ProfileStoreFactory(
                             Message.UserLoaded(
                                 fullName = user.displayName(),
                                 pupilClass = (user as? User.Pupil)?.pupilClass.orEmpty(),
-                                schoolName = user.schoolsById.orEmpty(),
+                                schoolName = user.schoolName.orEmpty(),
                                 role = user.role,
                                 notificationsEnabled = notificationsEnabled,
                                 savedCount = savedCount,
@@ -163,7 +163,7 @@ class ProfileStoreFactory(
                             Message.UserLoaded(
                                 fullName = user.displayName(),
                                 pupilClass = (user as? User.Pupil)?.pupilClass.orEmpty(),
-                                schoolName = user.schoolsById.orEmpty(),
+                                schoolName = user.schoolName.orEmpty(),
                                 role = user.role,
                                 notificationsEnabled = state().notificationsEnabled,
                                 savedCount = state().savedCount,
@@ -223,6 +223,7 @@ class ProfileStoreFactory(
         surname = surname,
         fathersName = fathersName,
         schoolsById = schoolsById,
+        schoolName = schoolName,
         role = role,
         pupilClass = (this as? User.Pupil)?.pupilClass,
     )

@@ -41,7 +41,7 @@ val configuredBaseUrl: String? = providers.gradleProperty("BASE_URL").orNull
     ?: dotEnvValues["BASE_URL"]
     ?: localProperties.getProperty("BASE_URL")
 
-val baseUrl = configuredBaseUrl?.takeIf { it.isNotBlank() } ?: "https://3.148.251.46/"
+val baseUrl = configuredBaseUrl?.takeIf { it.isNotBlank() } ?: "https://api.kola6.online/"
 
 if (configuredBaseUrl.isNullOrBlank()) {
     logger.warn("BASE_URL is not configured. Falling back to $baseUrl")
