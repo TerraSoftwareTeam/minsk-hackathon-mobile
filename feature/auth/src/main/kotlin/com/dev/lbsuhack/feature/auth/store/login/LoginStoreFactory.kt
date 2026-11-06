@@ -64,7 +64,7 @@ class LoginStoreFactory(
 
             when (state().role) {
                 UserRole.ORGANIZATOR -> authenticate {
-                    authRepository.login(randomSchoolsById(), password = "", role = UserRole.ORGANIZATOR)
+                    authRepository.registerOrganizer(randomSchoolsById())
                 }
 
                 UserRole.TEACHER -> submitTeacher()

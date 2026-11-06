@@ -53,6 +53,9 @@ class ActivityDetailsStoreFactory(
             when (intent) {
                 is ActivityDetailsStore.Intent.Load -> load(intent.activityId)
                 ActivityDetailsStore.Intent.Vote -> vote()
+                ActivityDetailsStore.Intent.Unvote -> unvote()
+                ActivityDetailsStore.Intent.Like -> act { activityRepository.like(it) }
+                ActivityDetailsStore.Intent.Unlike -> act { activityRepository.unlike(it) }
                 ActivityDetailsStore.Intent.StartPolling -> startPolling()
                 ActivityDetailsStore.Intent.StopPolling -> {
                     pollingJob?.cancel()
@@ -100,12 +103,24 @@ class ActivityDetailsStoreFactory(
 
         private fun vote() {
             val activity = state().activity ?: return
-            if (voting || activity.hasVoted) return
+            if (activity.hasVoted) return
+            act { activityRepository.vote(it) }
+        }
+
+        private fun unvote() {
+            val activity = state().activity ?: return
+            if (!activity.hasVoted || state().isAuthor) return
+            act { activityRepository.unvote(it) }
+        }
+
+        private fun act(action: suspend (String) -> DomainResult<ActivityProposal>) {
+            val activity = state().activity ?: return
+            if (voting) return
             voting = true
             dispatch(Message.ClearError)
             scope.launch {
                 try {
-                    when (val result = activityRepository.vote(activity.id)) {
+                    when (val result = action(activity.id)) {
                         is DomainResult.Success -> dispatch(Message.Loaded(result.value))
                         is DomainResult.Failure -> dispatch(Message.Failed(result.error.toUiText()))
                     }

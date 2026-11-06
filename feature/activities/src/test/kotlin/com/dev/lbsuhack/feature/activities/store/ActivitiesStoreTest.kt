@@ -245,4 +245,40 @@ class ActivitiesStoreTest {
         assertTrue(own.isCreatedBy(sessionUser.id, null))
         assertFalse(own.isCreatedBy("other", null))
     }
+
+    @Test
+    fun authorCannotCancelOwnVoteButOthersCan() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore()
+        store.accept(ActivitiesStore.Intent.Load)
+        runCurrent()
+
+        store.accept(ActivitiesStore.Intent.Unvote("act-1"))
+        runCurrent()
+        assertEquals(0, activityRepository.unvoteCalls)
+
+        store.accept(ActivitiesStore.Intent.Unvote("act-2"))
+        runCurrent()
+        assertEquals(1, activityRepository.unvoteCalls)
+        assertFalse(store.state.activities.first { it.id == "act-2" }.hasVoted)
+        store.dispose()
+    }
+
+    @Test
+    fun likeAndUnlikeUpdateRating() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore()
+        store.accept(ActivitiesStore.Intent.Load)
+        runCurrent()
+
+        store.accept(ActivitiesStore.Intent.Like("act-2"))
+        runCurrent()
+        assertEquals(1, store.state.activities.first { it.id == "act-2" }.likesCount)
+        assertTrue(store.state.activities.first { it.id == "act-2" }.likedByMe)
+
+        store.accept(ActivitiesStore.Intent.Unlike("act-2"))
+        runCurrent()
+        assertEquals(0, store.state.activities.first { it.id == "act-2" }.likesCount)
+        assertEquals(1, activityRepository.likeCalls)
+        assertEquals(1, activityRepository.unlikeCalls)
+        store.dispose()
+    }
 }

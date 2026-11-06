@@ -66,7 +66,10 @@ class ActivitiesStoreFactory(
                 is ActivitiesStore.Intent.ClickActivity -> publish(ActivitiesStore.Label.OpenDetails(intent.activityId))
                 ActivitiesStore.Intent.ClickCreate -> publish(ActivitiesStore.Label.OpenCreate)
                 ActivitiesStore.Intent.ClickProfile -> publish(ActivitiesStore.Label.OpenProfile)
-                is ActivitiesStore.Intent.Vote -> vote(intent.activityId)
+                is ActivitiesStore.Intent.Vote -> act(intent.activityId) { activityRepository.vote(it) }
+                is ActivitiesStore.Intent.Unvote -> unvote(intent.activityId)
+                is ActivitiesStore.Intent.Like -> act(intent.activityId) { activityRepository.like(it) }
+                is ActivitiesStore.Intent.Unlike -> act(intent.activityId) { activityRepository.unlike(it) }
             }
         }
 
@@ -124,15 +127,20 @@ class ActivitiesStoreFactory(
             }
         }
 
-        private fun vote(activityId: String) {
+        private fun unvote(activityId: String) {
+            val user = state().currentUser
+            val activity = state().activities.find { it.id == activityId } ?: return
+            if (activity.isCreatedBy(user?.id, user?.schoolsById)) return
+            act(activityId) { activityRepository.unvote(it) }
+        }
+
+        private fun act(activityId: String, action: suspend (String) -> DomainResult<*>) {
             if (!voting.add(activityId)) return
             dispatch(Message.ClearError)
             scope.launch {
                 try {
-                    when (val result = activityRepository.vote(activityId)) {
-                        is DomainResult.Success -> Unit
-                        is DomainResult.Failure -> dispatch(Message.Failed(result.error.toUiText()))
-                    }
+                    val result = action(activityId)
+                    if (result is DomainResult.Failure) dispatch(Message.Failed(result.error.toUiText()))
                 } finally {
                     voting.remove(activityId)
                 }

@@ -67,6 +67,33 @@ class FakeActivityRepository(
             ?: DomainResult.Failure(DomainError.NotFound)
     }
 
+    var unvoteCalls = 0
+    var likeCalls = 0
+    var unlikeCalls = 0
+
+    override suspend fun unvote(eventId: String): DomainResult<ActivityProposal> {
+        unvoteCalls++
+        return change(eventId) { it.copy(votesCount = it.votesCount - 1, hasVoted = false) }
+    }
+
+    override suspend fun like(eventId: String): DomainResult<ActivityProposal> {
+        likeCalls++
+        return change(eventId) { it.copy(likesCount = it.likesCount + 1, likedByMe = true) }
+    }
+
+    override suspend fun unlike(eventId: String): DomainResult<ActivityProposal> {
+        unlikeCalls++
+        return change(eventId) { it.copy(likesCount = it.likesCount - 1, likedByMe = false) }
+    }
+
+    private fun change(eventId: String, transform: (ActivityProposal) -> ActivityProposal): DomainResult<ActivityProposal> {
+        var updated: ActivityProposal? = null
+        activities.update { list ->
+            list.map { item -> if (item.id == eventId) transform(item).also { updated = it } else item }
+        }
+        return updated?.let { DomainResult.Success(it) } ?: DomainResult.Failure(DomainError.NotFound)
+    }
+
     override suspend fun createEvent(
         name: String,
         category: ActivityCategory,

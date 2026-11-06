@@ -71,6 +71,10 @@ import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
 import com.dev.lbsuhack.feature.activities.presentation.details.ActivityDetailsViewModel
 import com.dev.lbsuhack.feature.activities.store.details.ActivityDetailsStore
+import com.dev.lbsuhack.core.domain.model.UserRole
+import com.dev.lbsuhack.feature.activities.ui.component.ActivityRating
+import com.dev.lbsuhack.feature.activities.ui.component.ActivityVoteButton
+import com.dev.lbsuhack.feature.activities.ui.component.ActivityVotersList
 import com.dev.lbsuhack.feature.activities.ui.activities.ActivityCardCover
 import com.dev.lbsuhack.feature.activities.ui.activities.ActivityMetadata
 import com.dev.lbsuhack.feature.activities.ui.activities.FloatingActionsBackdrop
@@ -173,13 +177,17 @@ fun ActivityDetailsScreen(
                     }
                     StatusTimelineCard(status = proposal.status)
                     VotingStatusCard(proposal = proposal)
+                    ParticipantsCard(voters = proposal.voters)
                     Spacer(modifier = Modifier.height(144.dp))
                 }
                 DetailsFloatingActions(
                     proposal = proposal,
-                    hasVoted = state.hasVoted,
                     isAuthor = state.isAuthor,
+                    canInteract = state.currentUser?.role == UserRole.PUPIL,
                     onVote = { viewModel.accept(ActivityDetailsStore.Intent.Vote) },
+                    onUnvote = { viewModel.accept(ActivityDetailsStore.Intent.Unvote) },
+                    onLike = { viewModel.accept(ActivityDetailsStore.Intent.Like) },
+                    onUnlike = { viewModel.accept(ActivityDetailsStore.Intent.Unlike) },
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
@@ -225,7 +233,7 @@ private fun ActivityHeroCard(proposal: ActivityProposal, isAuthor: Boolean) {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "${proposal.authorName}, ${proposal.authorClass}",
+                    text = listOf(proposal.authorName, proposal.authorClass).filter(String::isNotBlank).joinToString(", "),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -648,14 +656,14 @@ private fun VotingStatusCard(proposal: ActivityProposal) {
 @Composable
 private fun DetailsFloatingActions(
     proposal: ActivityProposal,
-    hasVoted: Boolean,
     isAuthor: Boolean,
+    canInteract: Boolean,
     onVote: () -> Unit,
+    onUnvote: () -> Unit,
+    onLike: () -> Unit,
+    onUnlike: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val canVote = proposal.status == ActivityStatus.ON_VOTE
-    if (!isAuthor && !hasVoted && !canVote) return
-
     Box(modifier = modifier.fillMaxWidth().height(180.dp)) {
         FloatingActionsBackdrop(modifier = Modifier.matchParentSize())
         Column(
@@ -679,56 +687,65 @@ private fun DetailsFloatingActions(
                     Text(
                         text = stringResource(R.string.details_author_badge),
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-                        color = MaterialTheme.colorScheme.onPrimary,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }
-
-            when {
-                hasVoted -> {
-                    OutlinedButton(
-                        onClick = {},
-                        enabled = false,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(72.dp),
-                        shape = MaterialTheme.shapes.large,
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                            contentColor = MaterialTheme.colorScheme.onSurface,
-                        ),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.activities_leave_action),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        )
-                    }
-                }
-                canVote -> {
-                    Button(
-                        onClick = onVote,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(72.dp),
-                        shape = MaterialTheme.shapes.large,
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                        ),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.activities_join_action),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        )
-                    }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ActivityRating(
+                    likesCount = proposal.likesCount,
+                    likedByMe = proposal.likedByMe,
+                    enabled = canInteract && proposal.canLike,
+                    onLike = onLike,
+                    onUnlike = onUnlike,
+                    modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer, CircleShape),
+                )
+                if (canInteract) {
+                    ActivityVoteButton(
+                        proposal = proposal,
+                        isAuthor = isAuthor,
+                        onVote = onVote,
+                        onUnvote = onUnvote,
+                        modifier = Modifier.weight(1f).height(60.dp),
+                    )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ParticipantsCard(voters: List<String>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.extraLarge)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant,
+                shape = MaterialTheme.shapes.extraLarge,
+            )
+            .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.details_participants_title, voters.size),
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        if (voters.isEmpty()) {
+            Text(
+                text = stringResource(R.string.details_participants_empty),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            ActivityVotersList(voters = voters)
         }
     }
 }

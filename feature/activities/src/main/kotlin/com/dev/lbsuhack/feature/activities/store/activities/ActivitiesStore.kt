@@ -26,6 +26,9 @@ interface ActivitiesStore : Store<ActivitiesStore.Intent, ActivitiesStore.State,
         data class SelectCategory(val category: ActivityCategory?) : Intent
         data class SelectTab(val tab: ActivityTab) : Intent
         data class Vote(val activityId: String) : Intent
+        data class Unvote(val activityId: String) : Intent
+        data class Like(val activityId: String) : Intent
+        data class Unlike(val activityId: String) : Intent
         data class ClickActivity(val activityId: String) : Intent
         data object ClickCreate : Intent
         data object ClickProfile : Intent

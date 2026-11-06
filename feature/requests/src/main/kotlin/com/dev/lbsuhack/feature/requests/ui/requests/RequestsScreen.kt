@@ -31,6 +31,9 @@ import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.outlined.Campaign
 import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.HowToVote
+import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.AlertDialog
@@ -345,11 +348,11 @@ private fun RequestCard(
 
         RequestInfoRow(
             icon = Icons.Outlined.Person,
-            text = stringResource(
-                R.string.requests_author_format,
-                request.author.name,
-                request.author.pupilClass,
-            ),
+            text = if (request.author.pupilClass.isBlank()) {
+                stringResource(R.string.requests_author_name_format, request.author.name)
+            } else {
+                stringResource(R.string.requests_author_format, request.author.name, request.author.pupilClass)
+            },
         )
 
         Spacer(modifier = Modifier.height(14.dp))
@@ -382,6 +385,20 @@ private fun RequestCard(
                 RequestInfoRow(
                     icon = Icons.Outlined.Schedule,
                     text = stringResource(R.string.requests_date_not_set),
+                )
+            }
+            RequestInfoRow(
+                icon = Icons.Outlined.HowToVote,
+                text = stringResource(R.string.requests_votes_format, request.votesCount, request.voteThreshold),
+            )
+            RequestInfoRow(
+                icon = Icons.Outlined.ThumbUp,
+                text = stringResource(R.string.requests_rating_format, request.likesCount),
+            )
+            if (request.voters.isNotEmpty()) {
+                RequestInfoRow(
+                    icon = Icons.Outlined.Groups,
+                    text = stringResource(R.string.requests_voters_format, request.voters.joinToString(", ")),
                 )
             }
         }

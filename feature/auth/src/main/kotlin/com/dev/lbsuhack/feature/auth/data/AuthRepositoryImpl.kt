@@ -44,7 +44,7 @@ class AuthRepositoryImpl(
     ): DomainResult<SessionUser> = withContext(ioDispatcher) {
         if (username.isBlank()) return@withContext DomainResult.Failure(DomainError.Validation)
         if (role == UserRole.ORGANIZATOR) {
-            return@withContext authenticate(LoginDto(role = LoginDto.Role.ADMIN, id = username.trim()))
+            return@withContext authenticate(LoginDto(role = LoginDto.Role.ADMIN, schoolsById = username.trim()))
                 .toDomainResult()
                 .toSessionResult(expectedRole = UserRole.ORGANIZATOR)
         }
@@ -85,6 +85,26 @@ class AuthRepositoryImpl(
         }
             .toDomainResult()
             .toSessionResult(expectedRole = UserRole.TEACHER)
+    }
+
+    override suspend fun registerOrganizer(schoolsById: String): DomainResult<SessionUser> = withContext(ioDispatcher) {
+        if (schoolsById.isBlank()) return@withContext DomainResult.Failure(DomainError.Validation)
+        safeCall {
+            httpClient.post("api/v1/auth/register") {
+                expectSuccess = true
+                contentType(ContentType.Application.Json)
+                setBody(
+                    RegisterDto(
+                        schoolsById = schoolsById,
+                        name = ORGANIZER_NAME,
+                        surname = ORGANIZER_SURNAME,
+                        role = RegisterDto.Role.ADMIN,
+                    ),
+                )
+            }.body<AuthResponseDto>()
+        }
+            .toDomainResult()
+            .toSessionResult(expectedRole = UserRole.ORGANIZATOR)
     }
 
     private suspend fun authenticate(dto: LoginDto): NetworkResult<AuthResponseDto> = safeCall {
@@ -158,5 +178,7 @@ class AuthRepositoryImpl(
 
     internal companion object {
         const val ROLE_MISMATCH = "ROLE_MISMATCH"
+        const val ORGANIZER_NAME = "Организатор"
+        const val ORGANIZER_SURNAME = "Школы"
     }
 }

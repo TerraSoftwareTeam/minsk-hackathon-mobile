@@ -27,6 +27,10 @@ data class ReviewRequest(
     val status: ReviewStatus,
     val audience: RequestAudience,
     val declineReason: String? = null,
+    val voters: List<String> = emptyList(),
+    val votesCount: Int = 0,
+    val voteThreshold: Int = 0,
+    val likesCount: Int = 0,
 )
 
 val ReviewRequest.isPending: Boolean

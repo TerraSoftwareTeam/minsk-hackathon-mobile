@@ -1,7 +1,9 @@
 package com.dev.lbsuhack.feature.activities.data
 
 import com.dev.lbsuhack.core.network.generated.model.CreateEventDto
+import com.dev.lbsuhack.core.network.generated.model.EventLikeResponseDto
 import com.dev.lbsuhack.core.network.generated.model.EventResponseDto
+import com.dev.lbsuhack.core.network.generated.model.EventUserResponseDto
 import com.dev.lbsuhack.core.network.generated.model.EventVoteResponseDto
 import com.dev.lbsuhack.core.network.generated.model.VotingEventResponseDto
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
@@ -13,88 +15,86 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-fun VotingEventResponseDto.toDomain(): ActivityProposal {
-    val author = initiator
-    val authorFullName = buildString {
-        append(author.name)
-        if (author.surname.isNotBlank()) append(" ${author.surname}")
-    }
-    val teacherFullName = teacher?.let { assigned ->
-        buildString {
-            append(assigned.name)
-            if (assigned.surname.isNotBlank()) append(" ${assigned.surname}")
-        }
-    }
+fun VotingEventResponseDto.toDomain(isMine: Boolean = false): ActivityProposal = ActivityProposal(
+    id = id,
+    title = name,
+    description = description.orEmpty(),
+    category = category.toDomain(),
+    scope = scope.toDomain(),
+    status = status.toDomain(),
+    voteThreshold = voteThreshold,
+    votesCount = votesCount,
+    hasVoted = hasVoted,
+    startsAt = startsAt.orEmpty(),
+    votingClosesAt = votingClosesAt,
+    createdAt = createdAt,
+    authorId = "",
+    authorName = initiator.fullName(),
+    authorClass = "",
+    teacherName = teacher?.fullName(),
+    declineReason = declineReason,
+    photoUri = imageUrl,
+    confirmedTime = startsAt?.toDisplayDateTime(),
+    voters = voters.map { it.fullName() },
+    likesCount = likesCount,
+    likedByMe = likedByMe,
+    isMine = isMine,
+)
 
-    return ActivityProposal(
-        id = id,
-        title = name,
-        description = description.orEmpty(),
-        category = category.toDomain(),
-        scope = scope.toDomain(),
-        status = status.toDomain(),
-        voteThreshold = voteThreshold.toInt(),
-        votesCount = votesCount.toInt(),
-        hasVoted = hasVoted,
-        startsAt = startsAt.orEmpty(),
-        votingClosesAt = votingClosesAt,
-        createdAt = createdAt,
-        authorId = author.id,
-        authorSchoolsById = author.schoolsById,
-        authorName = authorFullName,
-        authorClass = author.propertyClass.orEmpty(),
-        teacherName = teacherFullName,
-        declineReason = declineReason,
-        photoUri = imageUrl,
-        confirmedTime = startsAt?.toDisplayDateTime(),
-    )
-}
+fun EventResponseDto.toDomain(
+    hasVoted: Boolean = false,
+    likedByMe: Boolean = false,
+    isMine: Boolean = false,
+): ActivityProposal = ActivityProposal(
+    id = id,
+    title = name,
+    description = description.orEmpty(),
+    category = category.toDomain(),
+    scope = scope.toDomain(),
+    status = status.toDomain(),
+    voteThreshold = voteThreshold,
+    votesCount = votesCount,
+    hasVoted = hasVoted,
+    startsAt = startsAt.orEmpty(),
+    votingClosesAt = votingClosesAt,
+    createdAt = createdAt,
+    authorId = "",
+    authorName = initiator.fullName(),
+    authorClass = "",
+    teacherName = teacher?.fullName(),
+    declineReason = declineReason,
+    photoUri = imageUrl,
+    confirmedTime = startsAt?.toDisplayDateTime(),
+    voters = voters.map { it.fullName() },
+    likesCount = likesCount,
+    likedByMe = likedByMe,
+    isMine = isMine,
+)
 
-fun EventResponseDto.toDomain(votesCount: Int = 0, hasVoted: Boolean = false): ActivityProposal {
-    val author = initiator
-    val authorFullName = buildString {
-        append(author.name)
-        if (author.surname.isNotBlank()) append(" ${author.surname}")
-    }
-    val teacherFullName = teacher?.let { assigned ->
-        buildString {
-            append(assigned.name)
-            if (assigned.surname.isNotBlank()) append(" ${assigned.surname}")
-        }
-    }
+private fun EventUserResponseDto.fullName(): String =
+    listOf(name, surname).filter(String::isNotBlank).joinToString(" ")
 
-    return ActivityProposal(
-        id = id,
-        title = name,
-        description = description.orEmpty(),
-        category = category.toDomain(),
-        scope = scope.toDomain(),
-        status = status.toDomain(),
-        voteThreshold = voteThreshold.toInt(),
-        votesCount = votesCount,
-        hasVoted = hasVoted,
-        startsAt = startsAt.orEmpty(),
-        votingClosesAt = votingClosesAt,
-        createdAt = createdAt,
-        authorId = author.id,
-        authorSchoolsById = author.schoolsById,
-        authorName = authorFullName,
-        authorClass = author.propertyClass.orEmpty(),
-        teacherName = teacherFullName,
-        declineReason = declineReason,
-        photoUri = imageUrl,
-        confirmedTime = startsAt?.toDisplayDateTime(),
-    )
-}
+fun ActivityProposal.withVoteResult(
+    voteResult: EventVoteResponseDto,
+    voted: Boolean,
+    voterName: String?,
+): ActivityProposal = copy(
+    votesCount = voteResult.votesCount,
+    voteThreshold = voteResult.voteThreshold,
+    status = voteResult.status.toDomain(),
+    hasVoted = voted,
+    voters = when {
+        voterName.isNullOrBlank() -> voters
+        voted && voterName !in voters -> voters + voterName
+        !voted -> voters.toMutableList().apply { remove(voterName) }
+        else -> voters
+    },
+)
 
-fun ActivityProposal.withVoteResult(voteResult: EventVoteResponseDto): ActivityProposal {
-    return copy(
-        votesCount = voteResult.votesCount.toInt(),
-        voteThreshold = voteResult.voteThreshold.toInt(),
-        status = voteResult.status.toDomain(),
-        hasVoted = true,
-    )
-}
+fun ActivityProposal.withLikeResult(likeResult: EventLikeResponseDto): ActivityProposal = copy(
+    likesCount = likeResult.likesCount,
+    likedByMe = likeResult.liked,
+)
 
 fun ActivityCategory.toDto(): CreateEventDto.Category = when (this) {
     ActivityCategory.SPORTS -> CreateEventDto.Category.SPORTS

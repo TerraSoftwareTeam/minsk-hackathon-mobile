@@ -71,6 +71,9 @@ import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
 import com.dev.lbsuhack.feature.activities.presentation.activities.ActivitiesViewModel
 import com.dev.lbsuhack.feature.activities.store.activities.ActivitiesStore
 import com.dev.lbsuhack.feature.activities.store.activities.ActivityTab
+import com.dev.lbsuhack.feature.activities.ui.component.ActivityRating
+import com.dev.lbsuhack.feature.activities.ui.component.ActivityVoteButton
+import com.dev.lbsuhack.feature.activities.ui.component.ActivityVotersSummary
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -156,9 +159,11 @@ fun ActivitiesScreen(
                                 onClick = {
                                     viewModel.accept(ActivitiesStore.Intent.ClickActivity(proposal.id))
                                 },
-                                onToggleJoin = {
-                                    viewModel.accept(ActivitiesStore.Intent.Vote(proposal.id))
-                                },
+                                canInteract = state.currentUser?.role == UserRole.PUPIL,
+                                onVote = { viewModel.accept(ActivitiesStore.Intent.Vote(proposal.id)) },
+                                onUnvote = { viewModel.accept(ActivitiesStore.Intent.Unvote(proposal.id)) },
+                                onLike = { viewModel.accept(ActivitiesStore.Intent.Like(proposal.id)) },
+                                onUnlike = { viewModel.accept(ActivitiesStore.Intent.Unlike(proposal.id)) },
                             )
                         }
                     }
@@ -289,10 +294,13 @@ private fun ProfileAvatar(
 private fun ActivityCard(
     proposal: ActivityProposal,
     isAuthor: Boolean,
+    canInteract: Boolean,
     onClick: () -> Unit,
-    onToggleJoin: () -> Unit,
+    onVote: () -> Unit,
+    onUnvote: () -> Unit,
+    onLike: () -> Unit,
+    onUnlike: () -> Unit,
 ) {
-    val isJoined = proposal.hasVoted
     val progress = proposal.progress
 
     Column(
@@ -335,7 +343,7 @@ private fun ActivityCard(
                 )
                 Spacer(modifier = Modifier.width(7.dp))
                 Text(
-                    text = "${proposal.authorName}, ${proposal.authorClass}",
+                    text = listOf(proposal.authorName, proposal.authorClass).filter(String::isNotBlank).joinToString(", "),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -407,64 +415,35 @@ private fun ActivityCard(
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                ActivityVotersSummary(voters = proposal.voters)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            when {
-                isJoined -> {
-                    OutlinedButton(
-                        onClick = {},
-                        enabled = false,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        shape = MaterialTheme.shapes.medium,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.activities_leave_action),
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                        )
-                    }
-                }
-
-                proposal.status == ActivityStatus.ON_VOTE -> {
-                    Button(
-                        onClick = onToggleJoin,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        shape = MaterialTheme.shapes.medium,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                        ),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.activities_join_action),
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                        )
-                    }
-                }
-
-                else -> {
-                    OutlinedButton(
-                        onClick = onClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        shape = MaterialTheme.shapes.medium,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.activities_open_details),
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                        )
-                    }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ActivityRating(
+                    likesCount = proposal.likesCount,
+                    likedByMe = proposal.likedByMe,
+                    enabled = canInteract && proposal.canLike,
+                    onLike = onLike,
+                    onUnlike = onUnlike,
+                )
+                if (canInteract) {
+                    ActivityVoteButton(
+                        proposal = proposal,
+                        isAuthor = isAuthor,
+                        onVote = onVote,
+                        onUnvote = onUnvote,
+                        onOpenDetails = onClick,
+                        modifier = Modifier.weight(1f).height(50.dp),
+                    )
                 }
             }
         }

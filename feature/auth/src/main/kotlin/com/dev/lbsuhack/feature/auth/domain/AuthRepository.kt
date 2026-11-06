@@ -12,6 +12,8 @@ interface AuthRepository {
         role: UserRole = UserRole.PUPIL,
     ): DomainResult<SessionUser>
 
+    suspend fun registerOrganizer(schoolsById: String): DomainResult<SessionUser>
+
     suspend fun registerTeacher(
         schoolsById: String,
         name: String,

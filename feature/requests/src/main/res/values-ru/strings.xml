@@ -19,6 +19,10 @@
     <string name="requests_kind_publication">Публикация</string>
     <string name="requests_kind_visit">Мероприятие</string>
     <string name="requests_author_format">Автор: %1$s · %2$s</string>
+    <string name="requests_author_name_format">Автор: %1$s</string>
+    <string name="requests_votes_format">Голоса: %1$d из %2$d</string>
+    <string name="requests_rating_format">Рейтинг: %1$d</string>
+    <string name="requests_voters_format">Идут: %1$s</string>
     <string name="requests_date_format">Дата проведения: %1$s</string>
     <string name="requests_decline_reason_format">Причина: %1$s</string>
 

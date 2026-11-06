@@ -9,6 +9,9 @@ interface ActivityRepository {
     suspend fun getEventById(id: String): DomainResult<ActivityProposal>
     suspend fun uploadPhoto(eventId: String, photoUri: String): DomainResult<ActivityProposal>
     suspend fun vote(eventId: String): DomainResult<ActivityProposal>
+    suspend fun unvote(eventId: String): DomainResult<ActivityProposal>
+    suspend fun like(eventId: String): DomainResult<ActivityProposal>
+    suspend fun unlike(eventId: String): DomainResult<ActivityProposal>
     suspend fun createEvent(
         name: String,
         category: ActivityCategory,

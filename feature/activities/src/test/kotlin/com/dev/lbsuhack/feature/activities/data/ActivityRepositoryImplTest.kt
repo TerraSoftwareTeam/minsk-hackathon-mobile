@@ -63,7 +63,7 @@ class ActivityRepositoryImplTest {
                                 "updatedAt": "2026-11-06T00:00:00.000Z",
                                 "votesCount": 5,
                                 "hasVoted": false,
-                                "likesCount": 0,
+                                "voters": [{"name": "Пётр", "surname": "Петров"}], "likesCount": 0,
                                 "likedByMe": false
                               }
                             ]
@@ -98,7 +98,7 @@ class ActivityRepositoryImplTest {
         assertEquals("Турнир по волейболу", (event as com.dev.lbsuhack.core.domain.DomainResult.Success).value.title)
         assertEquals(ActivityCategory.SPORTS, event.value.category)
         assertEquals(5, event.value.votesCount)
-        assertEquals("school-1", event.value.authorSchoolsById)
+        assertEquals(listOf("Пётр Петров"), event.value.voters)
         assertEquals(15, event.value.voteThreshold)
     }
 
@@ -137,7 +137,7 @@ class ActivityRepositoryImplTest {
                                 },
                                 "createdAt": "2026-11-06T00:00:00.000Z",
                                 "updatedAt": "2026-11-06T00:00:00.000Z",
-                                "likesCount": 0,
+                                "voters": [{"name": "Пётр", "surname": "Петров"}], "likesCount": 0,
                                 "votesCount": 5,
                                 "hasVoted": false
                               }""", status = HttpStatusCode.OK, headers = responseHeaders)
@@ -209,7 +209,7 @@ class ActivityRepositoryImplTest {
                           },
                           "createdAt": "2026-11-06T00:00:00.000Z",
                           "updatedAt": "2026-11-06T00:00:00.000Z",
-                          "likesCount": 0
+                          "voters": [{"name": "Пётр", "surname": "Петров"}], "votesCount": 1, "likesCount": 0
                         }
                     """.trimIndent(),
                     status = HttpStatusCode.Created,
@@ -271,7 +271,7 @@ class ActivityRepositoryImplTest {
                                 },
                                 "createdAt": "2026-11-06T00:00:00.000Z",
                                 "updatedAt": "2026-11-06T00:00:00.000Z",
-                                "likesCount": 0,
+                                "voters": [{"name": "Пётр", "surname": "Петров"}], "likesCount": 0,
                                 "votesCount": 5,
                                 "hasVoted": false
                               }"""
@@ -326,7 +326,7 @@ class ActivityRepositoryImplTest {
               "id": "$id", "name": "Event $id", "description": null, "scope": "CLASS", "category": "SPORTS",
               "status": "$status", "declineReason": null, "voteThreshold": 10, "startsAt": null,
               "votingClosesAt": "2026-12-06T10:00:00.000Z", "successProbability": 0.5, "imageUrl": null,
-              "likesCount": 0,
+              "voters": [{"name": "Пётр", "surname": "Петров"}], "votesCount": 1, "likesCount": 0,
               "initiator": {"id": "me", "schoolsById": "s-me", "name": "Иван", "surname": "Иванов", "class": "10A", "role": "PUPIL"},
               "teacher": null,
               "createdAt": "2026-11-06T10:00:00.000Z", "updatedAt": "2026-11-06T10:00:00.000Z",
@@ -357,6 +357,7 @@ class ActivityRepositoryImplTest {
             assertTrue(repository.refresh() is com.dev.lbsuhack.core.domain.DomainResult.Success)
             val items = repository.observeActivities().first()
             assertEquals(listOf("shared", "mine"), items.map { it.id })
+            assertTrue(items.all { it.isMine })
             assertEquals(
                 com.dev.lbsuhack.feature.activities.domain.ActivityStatus.ON_MODERATION,
                 items.last().status,
@@ -374,5 +375,69 @@ class ActivityRepositoryImplTest {
             ),
         )
         assertEquals("not-a-date", "not-a-date".toDisplayDateTime())
+    }
+
+    @Test
+    fun unvoteLikeAndUnlikeHitEndpointsAndUpdateEvent() = runTest {
+        val calls = mutableListOf<String>()
+        val event = """
+            {
+              "id": "e1", "name": "Поход", "description": null, "scope": "CLASS", "category": "TOURISM",
+              "status": "ON_VOTE", "declineReason": null, "voteThreshold": 10, "startsAt": null,
+              "votingClosesAt": "2026-12-06T10:00:00.000Z", "successProbability": 0.5, "imageUrl": null,
+              "likesCount": 2, "initiator": {"name": "Аня", "surname": "Смирнова"}, "teacher": null,
+              "voters": [{"name": "Иван", "surname": "Иванов"}, {"name": "Пётр", "surname": "Петров"}],
+              "votesCount": 2, "createdAt": "2026-11-06T10:00:00.000Z", "updatedAt": "2026-11-06T10:00:00.000Z",
+              "hasVoted": true, "likedByMe": false
+            }
+        """.trimIndent()
+        val session = com.dev.lbsuhack.feature.activities.util.FakeSessionRepository(
+            com.dev.lbsuhack.core.domain.session.SessionState.Authenticated(
+                com.dev.lbsuhack.core.domain.session.SessionUser(
+                    "me", "Иван", surname = "Иванов", role = com.dev.lbsuhack.core.domain.model.UserRole.PUPIL,
+                ),
+            ),
+        )
+        HttpClient(MockEngine { request ->
+            calls += "${request.method.value} ${request.url.encodedPath}"
+            val body = when (request.url.encodedPath) {
+                "/api/v1/events/voting" -> "[$event]"
+                "/api/v1/events/my" -> "[]"
+                "/api/v1/events/e1/vote" -> """{"eventId": "e1", "votesCount": 1, "voteThreshold": 10, "status": "ON_VOTE"}"""
+                "/api/v1/events/e1/like" -> if (request.method.value == "PUT") {
+                    """{"eventId": "e1", "liked": true, "likesCount": 3}"""
+                } else {
+                    """{"eventId": "e1", "liked": false, "likesCount": 2}"""
+                }
+                else -> error("unexpected ${request.url.encodedPath}")
+            }
+            respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+        }) {
+            install(ContentNegotiation) { json(json) }
+        }.use { client ->
+            val repository = ActivityRepositoryImpl(
+                client,
+                observeSession = com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase(session),
+            )
+            repository.refresh()
+            assertTrue(!repository.observeActivities().first().single().isMine)
+
+            val unvoted = (repository.unvote("e1") as com.dev.lbsuhack.core.domain.DomainResult.Success).value
+            assertEquals(1, unvoted.votesCount)
+            assertTrue(!unvoted.hasVoted)
+            assertEquals(listOf("Пётр Петров"), unvoted.voters)
+
+            val liked = (repository.like("e1") as com.dev.lbsuhack.core.domain.DomainResult.Success).value
+            assertEquals(3, liked.likesCount)
+            assertTrue(liked.likedByMe)
+
+            val unliked = (repository.unlike("e1") as com.dev.lbsuhack.core.domain.DomainResult.Success).value
+            assertEquals(2, unliked.likesCount)
+            assertTrue(!unliked.likedByMe)
+            assertEquals(1, repository.observeActivities().first().single().votesCount)
+        }
+        assertTrue("DELETE /api/v1/events/e1/vote" in calls)
+        assertTrue("PUT /api/v1/events/e1/like" in calls)
+        assertTrue("DELETE /api/v1/events/e1/like" in calls)
     }
 }

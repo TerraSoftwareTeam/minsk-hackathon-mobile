@@ -67,7 +67,7 @@ class EventReviewRequestRepositoryTest {
           },
           "createdAt": "2026-11-06T00:00:00.000Z",
           "updatedAt": "2026-11-06T00:00:00.000Z",
-          "likesCount": 0
+          "voters": [{"name": "Пётр", "surname": "Петров"}], "votesCount": 1, "likesCount": 0
         }
     """.trimIndent()
 
@@ -107,7 +107,8 @@ class EventReviewRequestRepositoryTest {
         assertEquals("Экскурсия в музей", request.title)
         assertEquals("Описание", request.description)
         assertEquals("Иван Иванов", request.author.name)
-        assertEquals("10A", request.author.pupilClass)
+        assertEquals(listOf("Пётр Петров"), request.voters)
+        assertEquals(1, request.votesCount)
         assertEquals(RequestAudience.TEACHER, request.audience)
         assertEquals(ReviewStatus.PENDING_TEACHER, request.status)
         assertFalse(request.proposedDate?.contains('T') == true)

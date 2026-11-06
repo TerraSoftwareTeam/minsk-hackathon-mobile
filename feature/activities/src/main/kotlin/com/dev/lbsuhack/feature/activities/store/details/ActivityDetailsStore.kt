@@ -11,6 +11,9 @@ interface ActivityDetailsStore :
     sealed interface Intent {
         data class Load(val activityId: String) : Intent
         data object Vote : Intent
+        data object Unvote : Intent
+        data object Like : Intent
+        data object Unlike : Intent
         data object StartPolling : Intent
         data object StopPolling : Intent
         data object Back : Intent

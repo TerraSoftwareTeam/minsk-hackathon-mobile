@@ -60,6 +60,11 @@ class LoginStoreTest {
             }
         }
 
+        override suspend fun registerOrganizer(schoolsById: String): DomainResult<SessionUser> {
+            loginId = schoolsById
+            return DomainResult.Success(SessionUser(id = schoolsById, name = "Админ", role = UserRole.ORGANIZATOR))
+        }
+
         override suspend fun registerTeacher(
             schoolsById: String,
             name: String,
@@ -167,7 +172,7 @@ class LoginStoreTest {
         }
 
     @Test
-    fun `organizer submit logs in with a generated numeric id`() =
+    fun `organizer submit registers with a generated numeric schools id`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val store = createStore()
 

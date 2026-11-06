@@ -27,6 +27,10 @@ data class ActivityProposal(
     val preferenceNotes: String = "",
     val confirmedTime: String? = null,
     val confirmedLocation: String? = null,
+    val voters: List<String> = emptyList(),
+    val likesCount: Int = 0,
+    val likedByMe: Boolean = false,
+    val isMine: Boolean = false,
 ) {
     val currentParticipantsCount: Int get() = votesCount
     val isFull: Boolean get() = maxParticipants > 0 && currentParticipantsCount >= maxParticipants
@@ -39,5 +43,11 @@ data class ActivityProposal(
         !schoolsById.isNullOrBlank() && schoolsById == authorSchoolsById
 
     fun isCreatedBy(userId: String?, schoolsById: String?): Boolean =
-        (!userId.isNullOrBlank() && userId == authorId) || isCreatedBy(schoolsById)
+        isMine || (!userId.isNullOrBlank() && userId == authorId) || isCreatedBy(schoolsById)
+
+    val canChangeVote: Boolean get() = status == ActivityStatus.ON_VOTE
+
+    val canLike: Boolean
+        get() = status == ActivityStatus.ON_VOTE || status == ActivityStatus.ON_ADMIN_MODERATION ||
+            status == ActivityStatus.FINALIZED || status == ActivityStatus.DECLINED_BY_ADMIN
 }

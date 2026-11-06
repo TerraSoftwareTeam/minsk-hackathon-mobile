@@ -33,6 +33,13 @@
     <string name="activities_vote_action">Я иду!</string>
     <string name="activities_join_action">Я иду!</string>
     <string name="activities_leave_action">Вы идёте</string>
+    <string name="activities_unvote_action">Отменить</string>
+    <string name="activities_rating_up">Повысить рейтинг</string>
+    <string name="activities_rating_down">Понизить рейтинг</string>
+    <string name="activities_voters_empty">Пока никто не идёт</string>
+    <string name="activities_voters_one">%1$s идёт</string>
+    <string name="activities_voters_two">%1$s и %2$s идут</string>
+    <string name="activities_voters_many">%1$s, %2$s и ещё %3$d</string>
     <string name="activities_joined_badge">Вы проголосовали</string>
     <string name="activities_full_badge">Порог набран</string>
     <string name="activities_empty_title">Мероприятий пока нет</string>
