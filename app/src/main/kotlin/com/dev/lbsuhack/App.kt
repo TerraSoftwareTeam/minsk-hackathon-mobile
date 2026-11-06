@@ -14,6 +14,7 @@ import com.dev.lbsuhack.feature.events.di.eventsModule
 import com.dev.lbsuhack.feature.profile.di.profileModule
 import com.dev.lbsuhack.feature.requests.di.requestsModule
 import com.dev.lbsuhack.layers.di.layersModule
+import com.dev.lbsuhack.notification.KolaNotificationManager
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import org.koin.core.module.dsl.singleOf
@@ -27,6 +28,9 @@ val appModule = module {
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
+        KolaNotificationManager.createNotificationChannels(this)
+        KolaNotificationManager.fetchPushToken()
+
         startKoin {
             androidContext(this@App)
             modules(

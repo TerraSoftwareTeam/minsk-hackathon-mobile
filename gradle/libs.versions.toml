@@ -27,6 +27,8 @@ coil = "2.7.0"
 mvikotlin = "4.4.0"
 openapi-generator = "7.12.0"
 kover = "0.9.11"
+google-services = "4.5.0"
+firebase-bom = "35.1.0"
 
 [libraries]
 android-gradle-plugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
@@ -35,6 +37,10 @@ kotlin-compose-gradle-plugin = { group = "org.jetbrains.kotlin", name = "compose
 kotlin-serialization-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-serialization", version.ref = "kotlin" }
 ksp-gradle-plugin = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
 kover-gradle-plugin = { group = "org.jetbrains.kotlinx", name = "kover-gradle-plugin", version.ref = "kover" }
+google-services-gradle-plugin = { group = "com.google.gms", name = "google-services", version.ref = "google-services" }
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebase-bom" }
+firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
+firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity-compose" }
@@ -93,7 +99,7 @@ mvikotlin-logging = { group = "com.arkivanov.mvikotlin", name = "mvikotlin-loggi
 
 [bundles]
 unit-test = ["junit", "coroutines-test", "turbine"]
-build-logic-classpath = ["android-gradle-plugin", "kotlin-gradle-plugin", "kotlin-compose-gradle-plugin", "ksp-gradle-plugin", "kotlin-serialization-plugin", "kover-gradle-plugin"]
+build-logic-classpath = ["android-gradle-plugin", "kotlin-gradle-plugin", "kotlin-compose-gradle-plugin", "ksp-gradle-plugin", "kotlin-serialization-plugin", "kover-gradle-plugin", "google-services-gradle-plugin"]
 android-test = ["androidx-test-ext-junit", "androidx-espresso-core"]
 navigation3 = ["navigation3-runtime", "navigation3-ui"]
 mvikotlin = ["mvikotlin-core", "mvikotlin-main", "mvikotlin-coroutines"]
@@ -116,3 +122,4 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 openapi-generator = { id = "org.openapi.generator", version.ref = "openapi-generator" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+google-services = { id = "com.google.gms.google-services", version.ref = "google-services" }

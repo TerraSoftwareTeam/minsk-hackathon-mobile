@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "81492190366",
+    "project_id": "kola-34581",
+    "storage_bucket": "kola-34581.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:81492190366:android:7bfa9c4516477807c2478f",
+        "android_client_info": {
+          "package_name": "com.dev.lbsuhack"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB4UZHHG379f2ITgowmxqoIbRI3YqYJzZU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

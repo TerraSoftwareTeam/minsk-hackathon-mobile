@@ -13,6 +13,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("org.jetbrains.kotlinx.kover")
+    id("com.google.gms.google-services")
 }
 
 configureKotlinAndroid(extensions.getByType<ApplicationExtension>()) 

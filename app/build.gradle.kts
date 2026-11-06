@@ -101,6 +101,10 @@ dependencies {
     implementation(libs.androidx.compose.icons.extended)
     implementation(libs.androidx.appcompat)
 
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
+    implementation(libs.firebase.analytics)
+
     // Koin
     implementation(libs.koin.android)
     implementation(libs.koin.compose)
