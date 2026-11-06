@@ -18,6 +18,7 @@ import com.dev.lbsuhack.feature.requests.domain.isPending
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 
 class RequestsStoreFactory(
     private val storeFactory: StoreFactory,
@@ -219,7 +220,8 @@ class RequestsStoreFactory(
 }
 
 internal fun defaultStartsAt(now: OffsetDateTime = OffsetDateTime.now()): String =
-    now.plusDays(DEFAULT_START_OFFSET_DAYS).withHour(DEFAULT_START_HOUR).withMinute(0).withSecond(0).withNano(0).toString()
+    now.plusDays(DEFAULT_START_OFFSET_DAYS).withHour(DEFAULT_START_HOUR).withMinute(0).withSecond(0).withNano(0)
+        .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 
 internal fun isFutureDate(startsAt: String?, now: OffsetDateTime = OffsetDateTime.now()): Boolean =
     startsAt?.let { runCatching { OffsetDateTime.parse(it).isAfter(now) }.getOrNull() } == true

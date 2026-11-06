@@ -8,10 +8,14 @@ import com.dev.lbsuhack.core.domain.DomainError
 import com.dev.lbsuhack.core.domain.DomainResult
 import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.domain.session.SaveSessionUseCase
+import com.dev.lbsuhack.core.domain.session.SessionUser
 import com.dev.lbsuhack.core.localization.text.UiText
+import com.dev.lbsuhack.feature.auth.R
 import com.dev.lbsuhack.feature.auth.domain.AuthRepository
+import com.dev.lbsuhack.feature.auth.parseSchoolClass
 import com.dev.lbsuhack.feature.auth.toUiText
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 class LoginStoreFactory(
     private val storeFactory: StoreFactory,
@@ -31,6 +35,9 @@ class LoginStoreFactory(
     private sealed interface Message {
         data class UsernameChanged(val username: String) : Message
         data class PasswordChanged(val password: String) : Message
+        data class SurnameChanged(val surname: String) : Message
+        data class NameChanged(val name: String) : Message
+        data class ClassNameChanged(val className: String) : Message
         data class RoleChanged(val role: UserRole) : Message
         data object Loading : Message
         data object Loaded : Message
@@ -44,8 +51,10 @@ class LoginStoreFactory(
             when (intent) {
                 is LoginStore.Intent.UsernameChanged -> dispatch(Message.UsernameChanged(intent.username))
                 is LoginStore.Intent.PasswordChanged -> dispatch(Message.PasswordChanged(intent.password))
+                is LoginStore.Intent.SurnameChanged -> dispatch(Message.SurnameChanged(intent.surname))
+                is LoginStore.Intent.NameChanged -> dispatch(Message.NameChanged(intent.name))
+                is LoginStore.Intent.ClassNameChanged -> dispatch(Message.ClassNameChanged(intent.className))
                 is LoginStore.Intent.RoleChanged -> dispatch(Message.RoleChanged(intent.role))
-                LoginStore.Intent.OpenRegister -> publish(LoginStore.Label.OpenRegister)
                 LoginStore.Intent.Submit -> submit()
             }
         }
@@ -53,20 +62,57 @@ class LoginStoreFactory(
         private fun submit() {
             if (state().isLoading) return
 
+            when (state().role) {
+                UserRole.ORGANIZATOR -> authenticate {
+                    authRepository.login(randomSchoolsById(), password = "", role = UserRole.ORGANIZATOR)
+                }
+
+                UserRole.TEACHER -> submitTeacher()
+
+                UserRole.PUPIL -> submitPupil()
+            }
+        }
+
+        private fun submitTeacher() {
+            val surname = state().surname.trim()
+            val name = state().name.trim()
+
+            if (surname.isBlank() || name.isBlank()) {
+                dispatch(Message.Failed(UiText.Resource(R.string.auth_error_teacher_validation)))
+                return
+            }
+            val className = parseSchoolClass(state().className) ?: run {
+                dispatch(Message.Failed(UiText.Resource(R.string.auth_error_class_format)))
+                return
+            }
+
+            authenticate {
+                authRepository.registerTeacher(
+                    schoolsById = randomSchoolsById(),
+                    name = name,
+                    surname = surname,
+                    className = className,
+                )
+            }
+        }
+
+        private fun submitPupil() {
             val username = state().username.trim()
             val password = state().password
-            val role = state().role
 
-            val isPasswordRequired = role != UserRole.ORGANIZATOR
-            if (username.isBlank() || (isPasswordRequired && password.isBlank())) {
+            if (username.isBlank() || password.isBlank()) {
                 dispatch(Message.Failed(DomainError.Validation.toUiText()))
                 return
             }
 
+            authenticate { authRepository.login(username, password, UserRole.PUPIL) }
+        }
+
+        private fun authenticate(block: suspend () -> DomainResult<SessionUser>) {
             scope.launch {
                 dispatch(Message.Loading)
 
-                when (val result = authRepository.login(username, password, role)) {
+                when (val result = block()) {
                     is DomainResult.Success -> {
                         saveSession(result.value)
                         dispatch(Message.Loaded)
@@ -82,10 +128,17 @@ class LoginStoreFactory(
         override fun LoginStore.State.reduce(msg: Message): LoginStore.State = when (msg) {
             is Message.UsernameChanged -> copy(username = msg.username, error = null)
             is Message.PasswordChanged -> copy(password = msg.password, error = null)
+            is Message.SurnameChanged -> copy(surname = msg.surname, error = null)
+            is Message.NameChanged -> copy(name = msg.name, error = null)
+            is Message.ClassNameChanged -> copy(className = msg.className, error = null)
             is Message.RoleChanged -> copy(role = msg.role, error = null)
             Message.Loading -> copy(isLoading = true, error = null)
             Message.Loaded -> copy(isLoading = false)
             is Message.Failed -> copy(isLoading = false, error = msg.error)
         }
+    }
+
+    private companion object {
+        fun randomSchoolsById(): String = Random.nextInt(1_000_000, 10_000_000).toString()
     }
 }

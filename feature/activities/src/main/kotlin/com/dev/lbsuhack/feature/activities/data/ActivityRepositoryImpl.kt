@@ -31,11 +31,14 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
+import java.time.Instant
 
 class ActivityRepositoryImpl(
     private val httpClient: HttpClient,
@@ -47,6 +50,9 @@ class ActivityRepositoryImpl(
     private val activitiesFlow = MutableStateFlow<List<ActivityProposal>>(emptyList())
 
     private var owner: String? = sessionId()
+
+    @Volatile
+    private var mutations = 0
 
     private fun sessionId(): String? =
         (observeSession?.state?.value as? SessionState.Authenticated)?.user?.id
@@ -69,31 +75,59 @@ class ActivityRepositoryImpl(
     override suspend fun refresh(): DomainResult<Unit> = withContext(ioDispatcher) {
         prepareCache()
         val requestOwner = sessionId()
+        val startedAtMutation = mutations
         val role = (observeSession?.state?.value as? SessionState.Authenticated)?.user?.role
         if (role == UserRole.ORGANIZATOR) {
             val path = "api/v1/events/admin-moderation"
             return@withContext when (val result = safeCall { httpClient.get(path).body<List<EventResponseDto>>() }) {
                 is NetworkResult.Success -> {
                     if (sessionId() != requestOwner) return@withContext DomainResult.Failure(DomainError.Unauthorized)
-                    activitiesFlow.value = result.data.map { it.toDomain() }
+                    if (mutations != startedAtMutation) return@withContext DomainResult.Success(Unit)
+                    activitiesFlow.value = result.data.map { it.toDomain() }.newestFirst()
                     DomainResult.Success(Unit)
                 }
                 is NetworkResult.Error -> DomainResult.Failure(result.error.toDomain())
             }
         }
-        val votingResult = safeCall {
-            httpClient.get("api/v1/events/voting").body<List<VotingEventResponseDto>>()
+        val (votingResult, myResult) = coroutineScope {
+            val voting = async {
+                safeCall { httpClient.get("api/v1/events/voting").body<List<VotingEventResponseDto>>() }
+            }
+            val mine = async {
+                if (role == UserRole.PUPIL) {
+                    safeCall { httpClient.get("api/v1/events/my").body<List<VotingEventResponseDto>>() }
+                } else {
+                    NetworkResult.Success(emptyList())
+                }
+            }
+            voting.await() to mine.await()
         }
 
-        when (votingResult) {
-            is NetworkResult.Success -> {
-                if (sessionId() != requestOwner) return@withContext DomainResult.Failure(DomainError.Unauthorized)
-                activitiesFlow.value = votingResult.data.map { it.toDomain() }
-                DomainResult.Success(Unit)
-            }
-            is NetworkResult.Error -> DomainResult.Failure(votingResult.error.toDomain())
+        if (sessionId() != requestOwner) return@withContext DomainResult.Failure(DomainError.Unauthorized)
+        if (mutations != startedAtMutation) return@withContext DomainResult.Success(Unit)
+        val loaded = listOf(votingResult, myResult)
+            .filterIsInstance<NetworkResult.Success<List<VotingEventResponseDto>>>()
+            .flatMap { it.data }
+            .distinctBy { it.id }
+            .map { it.toDomain() }
+        val failure = listOf(votingResult, myResult).filterIsInstance<NetworkResult.Error>().firstOrNull()
+        if (failure != null && loaded.isEmpty()) {
+            return@withContext DomainResult.Failure(failure.error.toDomain())
         }
+        val keptFromFailedSource = if (failure != null) {
+            val loadedIds = loaded.mapTo(HashSet()) { it.id }
+            activitiesFlow.value.filterNot { it.id in loadedIds }
+        } else {
+            emptyList()
+        }
+        activitiesFlow.value = (loaded + keptFromFailedSource).newestFirst()
+        if (failure != null) DomainResult.Failure(failure.error.toDomain()) else DomainResult.Success(Unit)
     }
+
+    private fun List<ActivityProposal>.newestFirst(): List<ActivityProposal> =
+        sortedByDescending { proposal ->
+            runCatching { Instant.parse(proposal.createdAt) }.getOrDefault(Instant.EPOCH)
+        }
 
     override suspend fun getEventById(id: String): DomainResult<ActivityProposal> = withContext(ioDispatcher) {
         prepareCache()
@@ -109,7 +143,7 @@ class ActivityRepositoryImpl(
             is NetworkResult.Success -> {
                 if (sessionId() != requestOwner) return@withContext DomainResult.Failure(com.dev.lbsuhack.core.domain.DomainError.Unauthorized)
                 val domain = result.data.toDomain()
-                activitiesFlow.update { current -> current.filterNot { it.id == id } + domain }
+                activitiesFlow.update { current -> (current.filterNot { it.id == id } + domain).newestFirst() }
                 DomainResult.Success(domain)
             }
 
@@ -139,6 +173,7 @@ class ActivityRepositoryImpl(
                     }
                 }
 
+                mutations++
                 val finalProposal = updatedProposal ?: existing.withVoteResult(voteResponse)
                 if (updatedProposal == null) activitiesFlow.update { it + finalProposal }
                 DomainResult.Success(finalProposal)
@@ -172,7 +207,8 @@ class ActivityRepositoryImpl(
                 if (sessionId() != requestOwner) return@withContext DomainResult.Failure(com.dev.lbsuhack.core.domain.DomainError.Unauthorized)
                 val previous = activitiesFlow.value.find { it.id == eventId }
                 val activity = result.data.toDomain(previous?.votesCount ?: 0, previous?.hasVoted ?: false)
-                activitiesFlow.update { items -> items.filterNot { it.id == eventId } + activity }
+                mutations++
+                activitiesFlow.update { items -> (items.filterNot { it.id == eventId } + activity).newestFirst() }
                 DomainResult.Success(activity)
             }
             is NetworkResult.Error -> DomainResult.Failure(result.error.toDomain())
@@ -207,7 +243,8 @@ class ActivityRepositoryImpl(
             is NetworkResult.Success -> {
                 if (sessionId() != requestOwner) return@withContext DomainResult.Failure(com.dev.lbsuhack.core.domain.DomainError.Unauthorized)
                 val domain = result.data.toDomain()
-                activitiesFlow.update { current -> listOf(domain) + current }
+                mutations++
+                activitiesFlow.update { current -> (listOf(domain) + current.filterNot { it.id == domain.id }).newestFirst() }
                 DomainResult.Success(domain)
             }
 

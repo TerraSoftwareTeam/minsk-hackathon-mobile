@@ -9,20 +9,23 @@ interface LoginStore : Store<LoginStore.Intent, LoginStore.State, LoginStore.Lab
     sealed interface Intent {
         data class UsernameChanged(val username: String) : Intent
         data class PasswordChanged(val password: String) : Intent
+        data class SurnameChanged(val surname: String) : Intent
+        data class NameChanged(val name: String) : Intent
+        data class ClassNameChanged(val className: String) : Intent
         data class RoleChanged(val role: UserRole) : Intent
         data object Submit : Intent
-        data object OpenRegister : Intent
     }
 
     data class State(
         val username: String = "",
         val password: String = "",
+        val surname: String = "",
+        val name: String = "",
+        val className: String = "",
         val role: UserRole = UserRole.PUPIL,
         val isLoading: Boolean = false,
         val error: UiText? = null,
     )
 
-    sealed interface Label {
-        data object OpenRegister : Label
-    }
+    sealed interface Label
 }

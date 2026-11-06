@@ -27,7 +27,8 @@ internal fun RequestDateTimeField(startsAt: String, enabled: Boolean, onChange: 
                 TimePickerDialog(context, { _, hour, minute ->
                     onChange(
                         LocalDate.of(year, month + 1, day).atTime(hour, minute)
-                            .atZone(ZoneId.systemDefault()).toOffsetDateTime().toString(),
+                            .atZone(ZoneId.systemDefault()).toOffsetDateTime()
+                            .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
                     )
                 }, date.hour, date.minute, true).show()
             }, date.year, date.monthValue - 1, date.dayOfMonth).apply {

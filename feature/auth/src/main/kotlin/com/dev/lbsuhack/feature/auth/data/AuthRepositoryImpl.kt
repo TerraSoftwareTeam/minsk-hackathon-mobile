@@ -16,6 +16,7 @@ import com.dev.lbsuhack.core.network.generated.model.AuthResponseDto
 import com.dev.lbsuhack.core.network.generated.model.LoginDto
 import com.dev.lbsuhack.core.network.generated.model.RegisterDto
 import com.dev.lbsuhack.feature.auth.domain.AuthRepository
+import com.dev.lbsuhack.feature.auth.parseSchoolClass
 import com.dev.lbsuhack.feature.auth.domain.repository.SchoolsByAuthRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -51,14 +52,40 @@ class AuthRepositoryImpl(
             is DomainResult.Failure -> result
             is DomainResult.Success -> {
                 val user = result.value
-                val response = if (role == UserRole.TEACHER) loginTeacher(user) else registerUser(user, role).toDomainResult()
-                response.toSessionResult(expectedRole = role, schoolName = user.schoolName)
+                registerPupil(user)
+                    .toDomainResult()
+                    .toSessionResult(expectedRole = role, schoolName = user.schoolName)
             }
         }
     }
 
-    override suspend fun register(name: String, email: String, password: String): DomainResult<SessionUser> =
-        DomainResult.Failure(DomainError.BusinessRule("UNSUPPORTED", "Registration is handled via Schools.by or administrator invite"))
+    override suspend fun registerTeacher(
+        schoolsById: String,
+        name: String,
+        surname: String,
+        className: String,
+    ): DomainResult<SessionUser> = withContext(ioDispatcher) {
+        if (schoolsById.isBlank() || name.isBlank() || surname.isBlank() || className.isBlank()) {
+            return@withContext DomainResult.Failure(DomainError.Validation)
+        }
+        safeCall {
+            httpClient.post("api/v1/auth/register") {
+                expectSuccess = true
+                contentType(ContentType.Application.Json)
+                setBody(
+                    RegisterDto(
+                        schoolsById = schoolsById,
+                        name = name,
+                        surname = surname,
+                        role = RegisterDto.Role.TEACHER,
+                        propertyClass = className,
+                    ),
+                )
+            }.body<AuthResponseDto>()
+        }
+            .toDomainResult()
+            .toSessionResult(expectedRole = UserRole.TEACHER)
+    }
 
     private suspend fun authenticate(dto: LoginDto): NetworkResult<AuthResponseDto> = safeCall {
         httpClient.post("api/v1/auth/login") {
@@ -68,18 +95,8 @@ class AuthRepositoryImpl(
         }.body<AuthResponseDto>()
     }
 
-    private suspend fun loginTeacher(user: User): DomainResult<AuthResponseDto> =
-        when (val result = authenticate(LoginDto(role = LoginDto.Role.TEACHER, schoolsById = user.schoolsById ?: user.id))) {
-            is NetworkResult.Success -> DomainResult.Success(result.data)
-            is NetworkResult.Error -> if (result.error == NetworkError.Unauthorized) {
-                DomainResult.Failure(DomainError.BusinessRule(TEACHER_NOT_REGISTERED))
-            } else {
-                DomainResult.Failure(result.error.toDomain())
-            }
-        }
-
-    private suspend fun registerUser(user: User, role: UserRole): NetworkResult<AuthResponseDto> {
-        val schoolClass = (user as? User.Pupil)?.pupilClass?.trim()
+    private suspend fun registerPupil(user: User): NetworkResult<AuthResponseDto> {
+        val schoolClass = (user as? User.Pupil)?.pupilClass?.let(::parseSchoolClass)
         val missingFields = buildList {
             if (user.name.isBlank()) add("name")
             if (user.surname.isNullOrBlank()) add("surname")
@@ -98,7 +115,7 @@ class AuthRepositoryImpl(
                     schoolsById = user.schoolsById ?: user.id,
                     name = user.name,
                     surname = requireNotNull(user.surname),
-                    role = if (role == UserRole.TEACHER) RegisterDto.Role.TEACHER else RegisterDto.Role.PUPIL,
+                    role = RegisterDto.Role.PUPIL,
                     propertyClass = requireNotNull(schoolClass),
                 ))
             }.body<AuthResponseDto>()
@@ -140,7 +157,6 @@ class AuthRepositoryImpl(
     }
 
     internal companion object {
-        const val TEACHER_NOT_REGISTERED = "TEACHER_NOT_REGISTERED"
         const val ROLE_MISMATCH = "ROLE_MISMATCH"
     }
 }

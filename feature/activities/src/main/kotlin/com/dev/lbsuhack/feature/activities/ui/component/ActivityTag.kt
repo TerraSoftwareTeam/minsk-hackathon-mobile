@@ -19,16 +19,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
-internal fun ActivityTag(text: String, modifier: Modifier = Modifier, icon: ImageVector? = null, onPhoto: Boolean = false) {
+internal fun ActivityTag(text: String, modifier: Modifier = Modifier, icon: ImageVector? = null) {
     val shape = MaterialTheme.shapes.medium
-    val foreground = if (onPhoto) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+    val foreground = MaterialTheme.colorScheme.onSurface
     Row(
         modifier = modifier
-            .background(
-                if (onPhoto) MaterialTheme.colorScheme.scrim.copy(alpha = 0.72f)
-                else MaterialTheme.colorScheme.surfaceContainerHigh,
-                shape,
-            )
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh, shape)
             .border(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f), shape)
             .padding(horizontal = 12.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,

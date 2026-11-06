@@ -472,7 +472,9 @@ private fun EditTextField(
                 unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
                 unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                focusedBorderColor = MaterialTheme.colorScheme.onSurface,
+                focusedLabelColor = MaterialTheme.colorScheme.onSurface,
+                cursorColor = MaterialTheme.colorScheme.onSurface,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
             ),
         )

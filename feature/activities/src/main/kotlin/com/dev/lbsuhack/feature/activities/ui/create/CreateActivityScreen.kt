@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import com.dev.lbsuhack.feature.activities.domain.ActivityScope
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -170,6 +171,18 @@ fun CreateActivityScreen(
                         ActivityScope.entries.forEach { scope ->
                             FilterChip(
                                 selected = state.scope == scope,
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onSurface,
+                                    selectedLeadingIconColor = MaterialTheme.colorScheme.onSurface,
+                                ),
+                                border = FilterChipDefaults.filterChipBorder(
+                                    enabled = !state.isSubmitting,
+                                    selected = state.scope == scope,
+                                    borderColor = MaterialTheme.colorScheme.outlineVariant,
+                                    selectedBorderColor = MaterialTheme.colorScheme.onSurface,
+                                    selectedBorderWidth = 1.dp,
+                                ),
                                 enabled = !state.isSubmitting,
                                 onClick = { viewModel.accept(CreateActivityStore.Intent.ChangeScope(scope)) },
                                 label = { Text(stringResource(when (scope) {
@@ -257,7 +270,9 @@ private fun FormTextField(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                focusedBorderColor = MaterialTheme.colorScheme.onSurface,
+                focusedLabelColor = MaterialTheme.colorScheme.onSurface,
+                cursorColor = MaterialTheme.colorScheme.onSurface,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
             ),
             singleLine = singleLine,
@@ -283,12 +298,12 @@ private fun CategorySelector(
                             .weight(1f)
                             .clip(MaterialTheme.shapes.large)
                             .background(
-                                if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                                if (isSelected) MaterialTheme.colorScheme.surfaceContainerHigh
                                 else MaterialTheme.colorScheme.surfaceContainerLow,
                             )
                             .border(
                                 width = if (isSelected) 1.5.dp else 1.dp,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary
+                                color = if (isSelected) MaterialTheme.colorScheme.onSurface
                                 else MaterialTheme.colorScheme.outlineVariant,
                                 shape = MaterialTheme.shapes.large,
                             )
@@ -300,7 +315,7 @@ private fun CategorySelector(
                             imageVector = category.icon(),
                             contentDescription = null,
                             modifier = Modifier.size(22.dp),
-                            tint = if (isSelected) MaterialTheme.colorScheme.primary
+                            tint = if (isSelected) MaterialTheme.colorScheme.onSurface
                             else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Spacer(modifier = Modifier.width(9.dp))
@@ -309,8 +324,7 @@ private fun CategorySelector(
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             ),
-                            color = if (isSelected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurface,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 }

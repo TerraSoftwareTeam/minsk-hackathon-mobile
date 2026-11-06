@@ -22,7 +22,12 @@ class FakeActivityRepository(
 
     override fun observeActivities(): Flow<List<ActivityProposal>> = activities.asStateFlow()
 
-    override suspend fun refresh(): DomainResult<Unit> = refreshResult
+    var refreshCalls = 0
+
+    override suspend fun refresh(): DomainResult<Unit> {
+        refreshCalls++
+        return refreshResult
+    }
 
     override suspend fun getEventById(id: String): DomainResult<ActivityProposal> {
         val found = activities.value.find { it.id == id }

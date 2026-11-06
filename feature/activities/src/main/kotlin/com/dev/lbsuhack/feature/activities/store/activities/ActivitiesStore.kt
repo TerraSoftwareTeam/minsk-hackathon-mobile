@@ -21,6 +21,8 @@ interface ActivitiesStore : Store<ActivitiesStore.Intent, ActivitiesStore.State,
     sealed interface Intent {
         data object Load : Intent
         data object Refresh : Intent
+        data object StartPolling : Intent
+        data object StopPolling : Intent
         data class SelectCategory(val category: ActivityCategory?) : Intent
         data class SelectTab(val tab: ActivityTab) : Intent
         data class Vote(val activityId: String) : Intent
@@ -45,14 +47,14 @@ interface ActivitiesStore : Store<ActivitiesStore.Intent, ActivitiesStore.State,
                     ActivityTab.ON_VOTE -> proposal.status == ActivityStatus.ON_VOTE
                     ActivityTab.ON_ADMIN_MODERATION -> proposal.status == ActivityStatus.ON_ADMIN_MODERATION
                     ActivityTab.FINALIZED -> proposal.status == ActivityStatus.FINALIZED
-                    ActivityTab.MY_PROPOSALS -> proposal.isCreatedBy(currentUser?.schoolsById)
+                    ActivityTab.MY_PROPOSALS -> proposal.isCreatedBy(currentUser?.id, currentUser?.schoolsById)
                     ActivityTab.MY_VOTES -> proposal.hasVoted
                 }
                 matchesCategory && matchesTab
             }
 
         val myProposalsCount: Int
-            get() = if (currentUser == null) 0 else activities.count { it.isCreatedBy(currentUser.schoolsById) }
+            get() = if (currentUser == null) 0 else activities.count { it.isCreatedBy(currentUser.id, currentUser.schoolsById) }
 
         val myVotesCount: Int
             get() = activities.count { it.hasVoted }

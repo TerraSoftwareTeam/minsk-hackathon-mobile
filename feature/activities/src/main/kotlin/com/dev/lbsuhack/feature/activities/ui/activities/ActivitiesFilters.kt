@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -87,7 +88,7 @@ private fun <T> ActivitiesFilterMenu(
             shape = MaterialTheme.shapes.large,
             border = BorderStroke(
                 1.dp,
-                if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                if (isActive) MaterialTheme.colorScheme.onSurface
                 else MaterialTheme.colorScheme.outlineVariant,
             ),
             colors = ButtonDefaults.outlinedButtonColors(
@@ -108,7 +109,8 @@ private fun <T> ActivitiesFilterMenu(
                         style = MaterialTheme.typography.labelLarge,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
                     )
                 }
                 Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, modifier = Modifier.size(20.dp))
@@ -120,7 +122,7 @@ private fun <T> ActivitiesFilterMenu(
                     text = { Text(optionText(option)) },
                     trailingIcon = {
                         if (option == selection) {
-                            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
                         }
                     },
                     onClick = {

@@ -1,6 +1,11 @@
 package com.dev.lbsuhack.core.data.di
 
+import com.dev.lbsuhack.core.data.push.DefaultPushTokenRepository
 import com.dev.lbsuhack.core.data.session.DefaultSessionRepository
+import com.dev.lbsuhack.core.domain.push.PushTokenRepository
+import com.dev.lbsuhack.core.domain.push.RegisterPushTokenUseCase
+import com.dev.lbsuhack.core.domain.push.UnregisterPushTokenUseCase
+import com.dev.lbsuhack.core.domain.session.SessionClearHook
 import com.dev.lbsuhack.core.data.user.DefaultUserRepository
 import com.dev.lbsuhack.core.domain.session.ClearSessionUseCase
 import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
@@ -14,6 +19,7 @@ import com.dev.lbsuhack.core.domain.user.UserRepository
 import com.dev.lbsuhack.core.network.auth.TokenStorage
 import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.koin.androidContext
+import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
@@ -23,8 +29,21 @@ val dataModule = module {
             context = androidContext(),
             tokenStorage = get<TokenStorage>(),
             ioDispatcher = Dispatchers.IO,
+            clearHooks = { getAll<SessionClearHook>() },
         )
     } bind SessionRepository::class
+
+    single {
+        DefaultPushTokenRepository(
+            context = androidContext(),
+            httpClient = get(named("unauthenticatedHttpClient")),
+            tokenStorage = get(),
+            ioDispatcher = Dispatchers.IO,
+        )
+    } bind PushTokenRepository::class
+
+    single { RegisterPushTokenUseCase(repository = get()) }
+    single { UnregisterPushTokenUseCase(repository = get()) }
 
     single {
         DefaultUserRepository(

@@ -3,13 +3,15 @@ package com.dev.lbsuhack.notification
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import org.koin.core.context.GlobalContext
 
 class KolaFirebaseMessagingService : FirebaseMessagingService() {
 
     @Suppress("DEPRECATION")
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Log.d(TAG, "Refreshed FCM Token: $token")
+        Log.d(TAG, "Refreshed FCM Token")
+        GlobalContext.getOrNull()?.getOrNull<PushTokenSync>()?.onNewToken(token)
     }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {

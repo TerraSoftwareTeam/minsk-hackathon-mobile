@@ -14,7 +14,12 @@ import com.dev.lbsuhack.feature.events.di.eventsModule
 import com.dev.lbsuhack.feature.profile.di.profileModule
 import com.dev.lbsuhack.feature.requests.di.requestsModule
 import com.dev.lbsuhack.layers.di.layersModule
+import com.dev.lbsuhack.core.domain.session.SessionClearHook
 import com.dev.lbsuhack.notification.KolaNotificationManager
+import com.dev.lbsuhack.notification.PushTokenSync
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import org.koin.core.module.dsl.singleOf
@@ -23,15 +28,22 @@ import org.koin.dsl.module
 
 val appModule = module {
     singleOf(::DefaultStoreFactory) bind StoreFactory::class
+    single {
+        PushTokenSync(
+            registerPushToken = get(),
+            unregisterPushToken = get(),
+            observeSession = get(),
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+        )
+    } bind SessionClearHook::class
 }
 
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
         KolaNotificationManager.createNotificationChannels(this)
-        KolaNotificationManager.fetchPushToken()
 
-        startKoin {
+        val koin = startKoin {
             androidContext(this@App)
             modules(
                 appModule,
@@ -47,6 +59,7 @@ class App : Application() {
                 profileModule,
                 requestsModule,
             )
-        }
+        }.koin
+        koin.get<PushTokenSync>().start()
     }
 }

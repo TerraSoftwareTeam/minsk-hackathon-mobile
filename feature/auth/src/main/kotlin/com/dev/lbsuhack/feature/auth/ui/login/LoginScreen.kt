@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Badge
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -57,6 +58,8 @@ import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.feature.auth.R
 import com.dev.lbsuhack.feature.auth.presentation.login.LoginViewModel
 import com.dev.lbsuhack.feature.auth.store.login.LoginStore
+import com.dev.lbsuhack.feature.auth.ui.AuthClassPicker
+import com.dev.lbsuhack.feature.auth.ui.AuthDemoBanner
 import com.dev.lbsuhack.feature.auth.ui.AuthError
 import com.dev.lbsuhack.feature.auth.ui.AuthPasswordField
 import com.dev.lbsuhack.feature.auth.ui.AuthPrimaryButton
@@ -71,19 +74,10 @@ private enum class LoginStep {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    onOpenRegister: () -> Unit,
     viewModel: LoginViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var step by rememberSaveable { mutableStateOf(LoginStep.WELCOME) }
-
-    LaunchedEffect(viewModel) {
-        viewModel.labels.collect { label ->
-            when (label) {
-                LoginStore.Label.OpenRegister -> onOpenRegister()
-            }
-        }
-    }
 
     if (step == LoginStep.CREDENTIALS) {
         BackHandler {
@@ -163,6 +157,9 @@ fun LoginScreen(
                         state = state,
                         onUsernameChange = { viewModel.accept(LoginStore.Intent.UsernameChanged(it)) },
                         onPasswordChange = { viewModel.accept(LoginStore.Intent.PasswordChanged(it)) },
+                        onSurnameChange = { viewModel.accept(LoginStore.Intent.SurnameChanged(it)) },
+                        onNameChange = { viewModel.accept(LoginStore.Intent.NameChanged(it)) },
+                        onClassNameChange = { viewModel.accept(LoginStore.Intent.ClassNameChanged(it)) },
                         onSubmit = { viewModel.accept(LoginStore.Intent.Submit) },
                     )
                 }
@@ -299,11 +296,12 @@ private fun LoginCredentialsContent(
     state: LoginStore.State,
     onUsernameChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
+    onSurnameChange: (String) -> Unit,
+    onNameChange: (String) -> Unit,
+    onClassNameChange: (String) -> Unit,
     onSubmit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isOrganizer = state.role == UserRole.ORGANIZATOR
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -312,24 +310,56 @@ private fun LoginCredentialsContent(
             .padding(horizontal = 24.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        AuthTextField(
-            value = state.username,
-            onValueChange = onUsernameChange,
-            label = if (isOrganizer) stringResource(R.string.auth_username_organizer) else stringResource(R.string.auth_username),
-            placeholder = if (isOrganizer) stringResource(R.string.auth_username_organizer_placeholder) else stringResource(R.string.auth_username_placeholder),
-            leadingIcon = Icons.Rounded.Person,
-            keyboardType = KeyboardType.Text,
-            imeAction = if (isOrganizer) ImeAction.Done else ImeAction.Next,
-            onImeAction = { if (isOrganizer) onSubmit() },
-        )
-
-        if (!isOrganizer) {
-            AuthPasswordField(
-                value = state.password,
-                onValueChange = onPasswordChange,
-                imeAction = ImeAction.Done,
-                onImeAction = onSubmit,
+        when (state.role) {
+            UserRole.ORGANIZATOR -> Text(
+                text = stringResource(R.string.auth_login_organizer_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+
+            UserRole.TEACHER -> {
+                AuthTextField(
+                    value = state.surname,
+                    onValueChange = onSurnameChange,
+                    label = stringResource(R.string.auth_surname),
+                    placeholder = stringResource(R.string.auth_surname_placeholder),
+                    leadingIcon = Icons.Rounded.Badge,
+                    imeAction = ImeAction.Next,
+                )
+
+                AuthTextField(
+                    value = state.name,
+                    onValueChange = onNameChange,
+                    label = stringResource(R.string.auth_name),
+                    placeholder = stringResource(R.string.auth_name_placeholder),
+                    leadingIcon = Icons.Rounded.Person,
+                    imeAction = ImeAction.Done,
+                )
+
+                AuthClassPicker(
+                    value = state.className,
+                    onValueChange = onClassNameChange,
+                )
+            }
+
+            UserRole.PUPIL -> {
+                AuthTextField(
+                    value = state.username,
+                    onValueChange = onUsernameChange,
+                    label = stringResource(R.string.auth_username),
+                    placeholder = stringResource(R.string.auth_username_placeholder),
+                    leadingIcon = Icons.Rounded.Person,
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next,
+                )
+
+                AuthPasswordField(
+                    value = state.password,
+                    onValueChange = onPasswordChange,
+                    imeAction = ImeAction.Done,
+                    onImeAction = onSubmit,
+                )
+            }
         }
 
         AuthError(error = state.error)
@@ -337,9 +367,17 @@ private fun LoginCredentialsContent(
         Spacer(modifier = Modifier.height(4.dp))
 
         AuthPrimaryButton(
-            text = if (isOrganizer) stringResource(R.string.auth_login_action_organizer) else stringResource(R.string.auth_login_action),
+            text = when (state.role) {
+                UserRole.ORGANIZATOR -> stringResource(R.string.auth_login_action_organizer)
+                UserRole.TEACHER -> stringResource(R.string.auth_login_action_teacher)
+                UserRole.PUPIL -> stringResource(R.string.auth_login_action)
+            },
             isLoading = state.isLoading,
             onClick = onSubmit,
         )
+
+        if (state.role == UserRole.PUPIL) {
+            AuthDemoBanner()
+        }
     }
 }

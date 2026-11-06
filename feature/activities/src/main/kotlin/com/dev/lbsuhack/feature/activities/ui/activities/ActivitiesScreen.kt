@@ -104,8 +104,8 @@ fun ActivitiesScreen(
     }
 
     LifecycleResumeEffect(viewModel) {
-        viewModel.accept(ActivitiesStore.Intent.Load)
-        onPauseOrDispose {}
+        viewModel.accept(ActivitiesStore.Intent.StartPolling)
+        onPauseOrDispose { viewModel.accept(ActivitiesStore.Intent.StopPolling) }
     }
 
     Scaffold(
@@ -152,7 +152,7 @@ fun ActivitiesScreen(
                         ) { proposal ->
                             ActivityCard(
                                 proposal = proposal,
-                                isAuthor = proposal.isCreatedBy(state.currentUser?.schoolsById),
+                                isAuthor = proposal.isCreatedBy(state.currentUser?.id, state.currentUser?.schoolsById),
                                 onClick = {
                                     viewModel.accept(ActivitiesStore.Intent.ClickActivity(proposal.id))
                                 },
@@ -292,7 +292,7 @@ private fun ActivityCard(
     onClick: () -> Unit,
     onToggleJoin: () -> Unit,
 ) {
-    val isJoined = proposal.hasVoted || isAuthor
+    val isJoined = proposal.hasVoted
     val progress = proposal.progress
 
     Column(
@@ -414,7 +414,8 @@ private fun ActivityCard(
             when {
                 isJoined -> {
                     OutlinedButton(
-                        onClick = onToggleJoin,
+                        onClick = {},
+                        enabled = false,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
@@ -529,7 +530,7 @@ private fun ActivitiesEmpty(modifier: Modifier = Modifier) {
                 imageVector = Icons.Outlined.CalendarMonth,
                 contentDescription = null,
                 modifier = Modifier.size(34.dp),
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MaterialTheme.colorScheme.onSurface,
             )
         }
         Spacer(modifier = Modifier.height(18.dp))

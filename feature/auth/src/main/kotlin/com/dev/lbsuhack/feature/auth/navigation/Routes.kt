@@ -5,6 +5,3 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data object AuthLoginRoute : NavKey
-
-@Serializable
-data object AuthRegisterRoute : NavKey

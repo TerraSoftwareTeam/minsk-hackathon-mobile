@@ -29,11 +29,10 @@ import com.dev.lbsuhack.feature.activities.ui.component.ActivityTag
 internal fun ActivityMetadata(
     proposal: ActivityProposal,
     modifier: Modifier = Modifier,
-    onPhoto: Boolean = false,
     isAuthor: Boolean = false,
 ) {
-    val foreground = if (onPhoto) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-    val secondary = if (onPhoto) foreground.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
+    val foreground = MaterialTheme.colorScheme.onSurface
+    val secondary = MaterialTheme.colorScheme.onSurfaceVariant
     val shape = MaterialTheme.shapes.medium
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
@@ -46,18 +45,13 @@ internal fun ActivityMetadata(
                     modifier = Modifier.fillMaxSize(),
                     text = stringResource(proposal.category.labelRes()),
                     icon = proposal.category.icon(),
-                    onPhoto = onPhoto,
                 )
             }
             Box(modifier = Modifier.weight(1.3f).fillMaxHeight(), contentAlignment = Alignment.Center) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(
-                            if (onPhoto) MaterialTheme.colorScheme.scrim.copy(alpha = 0.72f)
-                            else MaterialTheme.colorScheme.surfaceContainerHigh,
-                            shape,
-                        )
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh, shape)
                         .border(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f), shape)
                         .padding(horizontal = 12.dp, vertical = 9.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -80,7 +74,7 @@ internal fun ActivityMetadata(
             }
         }
         if (isAuthor) {
-            ActivityTag(text = stringResource(R.string.activity_created_by_me), onPhoto = onPhoto)
+            ActivityTag(text = stringResource(R.string.activity_created_by_me))
         }
     }
 }

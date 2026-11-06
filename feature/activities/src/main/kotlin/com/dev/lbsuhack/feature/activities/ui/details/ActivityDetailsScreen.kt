@@ -63,6 +63,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dev.lbsuhack.core.designsystem.theme.hack
 import com.dev.lbsuhack.feature.activities.R
@@ -97,6 +98,11 @@ fun ActivityDetailsScreen(
 
     LaunchedEffect(activityId) {
         viewModel.accept(ActivityDetailsStore.Intent.Load(activityId))
+    }
+
+    LifecycleResumeEffect(viewModel) {
+        viewModel.accept(ActivityDetailsStore.Intent.StartPolling)
+        onPauseOrDispose { viewModel.accept(ActivityDetailsStore.Intent.StopPolling) }
     }
 
     LaunchedEffect(viewModel) {
@@ -606,7 +612,7 @@ private fun VotingStatusCard(proposal: ActivityProposal) {
                     proposal.voteThreshold,
                 ),
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
 
@@ -667,7 +673,7 @@ private fun DetailsFloatingActions(
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.width(7.dp))
                     Text(
@@ -681,7 +687,8 @@ private fun DetailsFloatingActions(
             when {
                 hasVoted -> {
                     OutlinedButton(
-                        onClick = onVote,
+                        onClick = {},
+                        enabled = false,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(72.dp),

@@ -29,12 +29,11 @@ internal fun ActivityCardCover(proposal: ActivityProposal, photoUri: String, isA
         )
         Box(
             modifier = Modifier.matchParentSize().background(
-                Brush.verticalGradient(0f to scrim.copy(alpha = 0.45f), 1f to scrim.copy(alpha = 0f)),
+                Brush.verticalGradient(0f to scrim.copy(alpha = 0.18f), 0.45f to scrim.copy(alpha = 0f)),
             ),
         )
         ActivityMetadata(
             proposal = proposal,
-            onPhoto = true,
             isAuthor = isAuthor,
             modifier = Modifier.align(Alignment.TopStart).padding(12.dp),
         )

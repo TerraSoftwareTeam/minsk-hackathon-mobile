@@ -13,7 +13,6 @@ internal fun DomainError.toUiText(): UiText = when (this) {
     DomainError.NotFound -> UiText.Resource(R.string.auth_error_unknown)
     DomainError.Unknown -> UiText.Resource(R.string.auth_error_unknown)
     is DomainError.BusinessRule -> when (code) {
-        AuthRepositoryImpl.TEACHER_NOT_REGISTERED -> UiText.Resource(R.string.auth_error_teacher_not_registered)
         AuthRepositoryImpl.ROLE_MISMATCH -> UiText.Resource(roleMismatchText(message))
         else -> message?.let { UiText.Raw(it) } ?: UiText.Resource(R.string.auth_error_unknown)
     }

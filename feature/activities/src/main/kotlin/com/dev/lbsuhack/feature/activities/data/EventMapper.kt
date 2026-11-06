@@ -8,6 +8,10 @@ import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.domain.ActivityScope
 import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 fun VotingEventResponseDto.toDomain(): ActivityProposal {
     val author = initiator
@@ -34,6 +38,7 @@ fun VotingEventResponseDto.toDomain(): ActivityProposal {
         hasVoted = hasVoted,
         startsAt = startsAt.orEmpty(),
         votingClosesAt = votingClosesAt,
+        createdAt = createdAt,
         authorId = author.id,
         authorSchoolsById = author.schoolsById,
         authorName = authorFullName,
@@ -41,6 +46,7 @@ fun VotingEventResponseDto.toDomain(): ActivityProposal {
         teacherName = teacherFullName,
         declineReason = declineReason,
         photoUri = imageUrl,
+        confirmedTime = startsAt?.toDisplayDateTime(),
     )
 }
 
@@ -69,6 +75,7 @@ fun EventResponseDto.toDomain(votesCount: Int = 0, hasVoted: Boolean = false): A
         hasVoted = hasVoted,
         startsAt = startsAt.orEmpty(),
         votingClosesAt = votingClosesAt,
+        createdAt = createdAt,
         authorId = author.id,
         authorSchoolsById = author.schoolsById,
         authorName = authorFullName,
@@ -76,6 +83,7 @@ fun EventResponseDto.toDomain(votesCount: Int = 0, hasVoted: Boolean = false): A
         teacherName = teacherFullName,
         declineReason = declineReason,
         photoUri = imageUrl,
+        confirmedTime = startsAt?.toDisplayDateTime(),
     )
 }
 
@@ -174,3 +182,10 @@ fun EventVoteResponseDto.Status.toDomain(): ActivityStatus = when (this) {
     EventVoteResponseDto.Status.FINALIZED -> ActivityStatus.FINALIZED
     EventVoteResponseDto.Status.DECLINED_BY_ADMIN -> ActivityStatus.DECLINED_BY_ADMIN
 }
+
+internal fun String.toDisplayDateTime(zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String =
+    runCatching {
+        OffsetDateTime.parse(this)
+            .atZoneSameInstant(zone)
+            .format(DateTimeFormatter.ofPattern("d MMMM yyyy, HH:mm", locale))
+    }.getOrDefault(this)

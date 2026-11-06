@@ -12,6 +12,7 @@ data class ActivityProposal(
     val hasVoted: Boolean,
     val startsAt: String = "",
     val votingClosesAt: String = "",
+    val createdAt: String = "",
     val authorId: String,
     val authorName: String,
     val authorClass: String,
@@ -36,4 +37,7 @@ data class ActivityProposal(
 
     fun isCreatedBy(schoolsById: String?): Boolean =
         !schoolsById.isNullOrBlank() && schoolsById == authorSchoolsById
+
+    fun isCreatedBy(userId: String?, schoolsById: String?): Boolean =
+        (!userId.isNullOrBlank() && userId == authorId) || isCreatedBy(schoolsById)
 }

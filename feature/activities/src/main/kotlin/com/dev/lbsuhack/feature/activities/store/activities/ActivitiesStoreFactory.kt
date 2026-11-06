@@ -15,7 +15,10 @@ import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.domain.ActivityRepository
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 
 class ActivitiesStoreFactory(
     private val storeFactory: StoreFactory,
@@ -48,11 +51,16 @@ class ActivitiesStoreFactory(
 
         private var observing = false
         private var refreshJob: Job? = null
+        private var pollingJob: Job? = null
+        private val refreshMutex = Mutex()
         private val voting = mutableSetOf<String>()
 
         override fun executeIntent(intent: ActivitiesStore.Intent) {
             when (intent) {
-                ActivitiesStore.Intent.Load, ActivitiesStore.Intent.Refresh -> load()
+                ActivitiesStore.Intent.Load -> load(silent = state().activities.isNotEmpty())
+                ActivitiesStore.Intent.Refresh -> load(silent = false)
+                ActivitiesStore.Intent.StartPolling -> startPolling()
+                ActivitiesStore.Intent.StopPolling -> stopPolling()
                 is ActivitiesStore.Intent.SelectCategory -> dispatch(Message.CategorySelected(intent.category))
                 is ActivitiesStore.Intent.SelectTab -> dispatch(Message.TabSelected(intent.tab))
                 is ActivitiesStore.Intent.ClickActivity -> publish(ActivitiesStore.Label.OpenDetails(intent.activityId))
@@ -62,30 +70,57 @@ class ActivitiesStoreFactory(
             }
         }
 
-        private fun load() {
-            if (!observing) {
-                observing = true
-                scope.launch {
-                    observeSessionUseCase.state.collectLatest { sessionState ->
-                        val user = (sessionState as? SessionState.Authenticated)?.user
-                        dispatch(Message.UserUpdated(user))
-                    }
+        private fun observe() {
+            if (observing) return
+            observing = true
+            scope.launch {
+                observeSessionUseCase.state.collectLatest { sessionState ->
+                    val user = (sessionState as? SessionState.Authenticated)?.user
+                    dispatch(Message.UserUpdated(user))
                 }
-
-                scope.launch {
-                    activityRepository.observeActivities().collectLatest { activitiesList ->
-                        dispatch(Message.ActivitiesLoaded(activitiesList))
-                    }
-                }
-
             }
+            scope.launch {
+                activityRepository.observeActivities().collectLatest { activitiesList ->
+                    dispatch(Message.ActivitiesLoaded(activitiesList))
+                }
+            }
+        }
+
+        private fun load(silent: Boolean) {
+            observe()
             if (refreshJob?.isActive == true) return
-            refreshJob = scope.launch {
-                dispatch(Message.Loading)
+            refreshJob = scope.launch { refresh(silent) }
+        }
+
+        private fun startPolling() {
+            observe()
+            if (pollingJob?.isActive == true) return
+            pollingJob = scope.launch {
+                refresh(silent = state().activities.isNotEmpty())
+                while (isActive) {
+                    delay(POLLING_INTERVAL_MS)
+                    refresh(silent = true)
+                }
+            }
+        }
+
+        private fun stopPolling() {
+            pollingJob?.cancel()
+            pollingJob = null
+        }
+
+        private suspend fun refresh(silent: Boolean) {
+            if (!refreshMutex.tryLock()) return
+            try {
+                if (!silent) dispatch(Message.Loading)
                 when (val result = activityRepository.refresh()) {
                     is DomainResult.Success -> dispatch(Message.Loaded)
-                    is DomainResult.Failure -> dispatch(Message.Failed(result.error.toUiText()))
+                    is DomainResult.Failure -> if (!silent || state().activities.isEmpty()) {
+                        dispatch(Message.Failed(result.error.toUiText()))
+                    }
                 }
+            } finally {
+                refreshMutex.unlock()
             }
         }
 
@@ -119,3 +154,5 @@ class ActivitiesStoreFactory(
             }
     }
 }
+
+private const val POLLING_INTERVAL_MS = 2_000L

@@ -1,7 +1,5 @@
 package com.dev.lbsuhack.feature.auth.store
 
-import app.cash.turbine.test
-import com.arkivanov.mvikotlin.extensions.coroutines.labels
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
 import com.dev.lbsuhack.core.domain.DomainError
 import com.dev.lbsuhack.core.domain.DomainResult
@@ -19,6 +17,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -33,14 +32,19 @@ class LoginStoreTest {
     private val sessionRepository = FakeSessionRepository()
 
     private val fakeAuthRepository = object : AuthRepository {
-        var failure: DomainError? = null
+        var loginId: String? = null
+        var registeredSchoolsById: String? = null
+        var registeredClassName: String? = null
 
         override suspend fun login(
             username: String,
             password: String,
             role: UserRole,
         ): DomainResult<SessionUser> {
-            failure?.let { return DomainResult.Failure(it) }
+            loginId = username
+            if (role == UserRole.ORGANIZATOR) {
+                return DomainResult.Success(SessionUser(id = username, name = "Админ", role = role))
+            }
             return if (username == "002" && password == "secret") {
                 DomainResult.Success(
                     SessionUser(
@@ -48,7 +52,7 @@ class LoginStoreTest {
                         name = "Владислав Смирнов",
                         schoolsById = "3575208",
                         role = role,
-                        pupilClass = if (role == UserRole.PUPIL) "11 \"М\"" else null,
+                        pupilClass = "11 \"М\"",
                     )
                 )
             } else {
@@ -56,11 +60,25 @@ class LoginStoreTest {
             }
         }
 
-        override suspend fun register(
+        override suspend fun registerTeacher(
+            schoolsById: String,
             name: String,
-            email: String,
-            password: String,
-        ): DomainResult<SessionUser> = DomainResult.Failure(DomainError.Unknown)
+            surname: String,
+            className: String,
+        ): DomainResult<SessionUser> {
+            registeredSchoolsById = schoolsById
+            registeredClassName = className
+            return DomainResult.Success(
+                SessionUser(
+                    id = schoolsById,
+                    name = name,
+                    surname = surname,
+                    schoolsById = schoolsById,
+                    role = UserRole.TEACHER,
+                    pupilClass = className,
+                ),
+            )
+        }
     }
 
     private fun createStore(): LoginStore = LoginStoreFactory(
@@ -81,15 +99,7 @@ class LoginStoreTest {
     }
 
     @Test
-    fun `changing role updates state`() {
-        val store = createStore()
-
-        store.accept(LoginStore.Intent.RoleChanged(UserRole.TEACHER))
-        assertEquals(UserRole.TEACHER, store.state.role)
-    }
-
-    @Test
-    fun `submit with blank data shows validation error and does not save session`() =
+    fun `pupil submit with blank data shows validation error and does not save session`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val store = createStore()
 
@@ -104,13 +114,12 @@ class LoginStoreTest {
         }
 
     @Test
-    fun `submit with valid pupil data saves session with pupil role and class`() =
+    fun `pupil submit with valid data saves session with class`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val store = createStore()
 
             store.accept(LoginStore.Intent.UsernameChanged("002"))
             store.accept(LoginStore.Intent.PasswordChanged("secret"))
-            store.accept(LoginStore.Intent.RoleChanged(UserRole.PUPIL))
             store.accept(LoginStore.Intent.Submit)
             runCurrent()
 
@@ -122,32 +131,53 @@ class LoginStoreTest {
         }
 
     @Test
-    fun `submit with valid teacher data saves session with teacher role and null class`() =
+    fun `teacher submit registers with a generated numeric id and normalized class`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val store = createStore()
 
-            store.accept(LoginStore.Intent.UsernameChanged("002"))
-            store.accept(LoginStore.Intent.PasswordChanged("secret"))
             store.accept(LoginStore.Intent.RoleChanged(UserRole.TEACHER))
+            store.accept(LoginStore.Intent.SurnameChanged("Иванов"))
+            store.accept(LoginStore.Intent.NameChanged("Иван"))
+            store.accept(LoginStore.Intent.ClassNameChanged("10 а"))
             store.accept(LoginStore.Intent.Submit)
             runCurrent()
 
-            assertFalse(store.state.isLoading)
             assertNull(store.state.error)
+            assertEquals("10А", fakeAuthRepository.registeredClassName)
+            assertNotNull(fakeAuthRepository.registeredSchoolsById)
+            assertTrue(fakeAuthRepository.registeredSchoolsById!!.all { it.isDigit() })
             assertEquals(UserRole.TEACHER, sessionRepository.savedUser?.role)
-            assertNull(sessionRepository.savedUser?.pupilClass)
         }
 
     @Test
-    fun `open register publishes navigation label`() =
+    fun `teacher submit with invalid class shows an error`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val store = createStore()
 
-            store.labels.test {
-                store.accept(LoginStore.Intent.OpenRegister)
+            store.accept(LoginStore.Intent.RoleChanged(UserRole.TEACHER))
+            store.accept(LoginStore.Intent.SurnameChanged("Иванов"))
+            store.accept(LoginStore.Intent.NameChanged("Иван"))
+            store.accept(LoginStore.Intent.ClassNameChanged("десятый"))
+            store.accept(LoginStore.Intent.Submit)
+            runCurrent()
 
-                assertEquals(LoginStore.Label.OpenRegister, awaitItem())
-                cancelAndIgnoreRemainingEvents()
-            }
+            assertNotNull(store.state.error)
+            assertNull(fakeAuthRepository.registeredClassName)
+            assertNull(sessionRepository.savedUser)
+        }
+
+    @Test
+    fun `organizer submit logs in with a generated numeric id`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val store = createStore()
+
+            store.accept(LoginStore.Intent.RoleChanged(UserRole.ORGANIZATOR))
+            store.accept(LoginStore.Intent.Submit)
+            runCurrent()
+
+            assertNull(store.state.error)
+            assertNotNull(fakeAuthRepository.loginId)
+            assertTrue(fakeAuthRepository.loginId!!.all { it.isDigit() })
+            assertEquals(UserRole.ORGANIZATOR, sessionRepository.savedUser?.role)
         }
 }

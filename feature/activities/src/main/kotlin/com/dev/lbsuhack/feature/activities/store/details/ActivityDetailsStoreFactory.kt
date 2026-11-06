@@ -14,6 +14,8 @@ import com.dev.lbsuhack.core.domain.session.SessionUser
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.domain.ActivityRepository
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class ActivityDetailsStoreFactory(
@@ -45,11 +47,17 @@ class ActivityDetailsStoreFactory(
         private var loadJob: Job? = null
         private var sessionJob: Job? = null
         private var voting = false
+        private var pollingJob: Job? = null
 
         override fun executeIntent(intent: ActivityDetailsStore.Intent) {
             when (intent) {
                 is ActivityDetailsStore.Intent.Load -> load(intent.activityId)
                 ActivityDetailsStore.Intent.Vote -> vote()
+                ActivityDetailsStore.Intent.StartPolling -> startPolling()
+                ActivityDetailsStore.Intent.StopPolling -> {
+                    pollingJob?.cancel()
+                    pollingJob = null
+                }
                 ActivityDetailsStore.Intent.Back -> publish(ActivityDetailsStore.Label.Back)
             }
         }
@@ -65,7 +73,7 @@ class ActivityDetailsStoreFactory(
 
             loadJob?.cancel()
             loadJob = scope.launch {
-                dispatch(Message.Loading)
+                if (state().activity?.id != activityId) dispatch(Message.Loading)
                 when (val result = activityRepository.getEventById(activityId)) {
                     is DomainResult.Success -> dispatch(Message.Loaded(result.value))
                     is DomainResult.Failure -> dispatch(Message.Failed(result.error.toUiText()))
@@ -76,6 +84,16 @@ class ActivityDetailsStoreFactory(
                     if (found != null) {
                         dispatch(Message.Loaded(found))
                     }
+                }
+            }
+        }
+
+        private fun startPolling() {
+            if (pollingJob?.isActive == true) return
+            pollingJob = scope.launch {
+                while (isActive) {
+                    delay(POLLING_INTERVAL_MS)
+                    activityRepository.refresh()
                 }
             }
         }
@@ -109,3 +127,5 @@ class ActivityDetailsStoreFactory(
             }
     }
 }
+
+private const val POLLING_INTERVAL_MS = 2_000L

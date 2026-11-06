@@ -11,6 +11,8 @@ interface ActivityDetailsStore :
     sealed interface Intent {
         data class Load(val activityId: String) : Intent
         data object Vote : Intent
+        data object StartPolling : Intent
+        data object StopPolling : Intent
         data object Back : Intent
     }
 
@@ -21,7 +23,7 @@ interface ActivityDetailsStore :
         val error: UiText? = null,
     ) {
         val isAuthor: Boolean
-            get() = activity?.isCreatedBy(currentUser?.schoolsById) == true
+            get() = activity?.isCreatedBy(currentUser?.id, currentUser?.schoolsById) == true
 
         val hasVoted: Boolean
             get() = activity?.hasVoted == true

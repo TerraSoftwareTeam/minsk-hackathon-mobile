@@ -17,6 +17,7 @@ import com.dev.lbsuhack.feature.activities.util.FakeActivityRepository
 import com.dev.lbsuhack.feature.activities.util.FakeSessionRepository
 import com.dev.lbsuhack.feature.activities.util.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -197,5 +198,51 @@ class ActivitiesStoreTest {
         assertFalse(proposal.isCreatedBy(""))
         assertFalse(proposal.isCreatedBy("other-school-user"))
         assertFalse(proposal.copy(authorSchoolsById = null).isCreatedBy(null))
+    }
+
+    @Test
+    fun pollingRefreshesEveryTwoSecondsUntilStopped() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore()
+
+        store.accept(ActivitiesStore.Intent.StartPolling)
+        runCurrent()
+        assertEquals(1, activityRepository.refreshCalls)
+
+        advanceTimeBy(2_001)
+        assertEquals(2, activityRepository.refreshCalls)
+        advanceTimeBy(2_000)
+        assertEquals(3, activityRepository.refreshCalls)
+
+        store.accept(ActivitiesStore.Intent.StopPolling)
+        advanceTimeBy(10_000)
+        assertEquals(3, activityRepository.refreshCalls)
+        store.dispose()
+    }
+
+    @Test
+    fun pollingWithLoadedDataStaysSilentOnFailure() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore()
+        store.accept(ActivitiesStore.Intent.Load)
+        runCurrent()
+        assertEquals(2, store.state.activities.size)
+
+        activityRepository.refreshResult =
+            com.dev.lbsuhack.core.domain.DomainResult.Failure(com.dev.lbsuhack.core.domain.DomainError.Network)
+        store.accept(ActivitiesStore.Intent.StartPolling)
+        runCurrent()
+        advanceTimeBy(4_001)
+
+        assertFalse(store.state.isLoading)
+        assertEquals(null, store.state.error)
+        assertEquals(2, store.state.activities.size)
+        store.accept(ActivitiesStore.Intent.StopPolling)
+        store.dispose()
+    }
+
+    @Test
+    fun ownProposalIsRecognisedByUserIdEvenWithoutSchoolsById() {
+        val own = initialProposals.first().copy(authorSchoolsById = null)
+        assertTrue(own.isCreatedBy(sessionUser.id, null))
+        assertFalse(own.isCreatedBy("other", null))
     }
 }

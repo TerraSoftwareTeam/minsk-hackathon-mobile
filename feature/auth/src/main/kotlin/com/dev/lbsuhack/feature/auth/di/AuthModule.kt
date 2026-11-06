@@ -10,9 +10,7 @@ import com.dev.lbsuhack.feature.auth.domain.AuthRepository
 import com.dev.lbsuhack.feature.auth.domain.repository.SchoolsByAuthRepository
 import com.dev.lbsuhack.feature.auth.navigation.AuthNavigationInstaller
 import com.dev.lbsuhack.feature.auth.presentation.login.LoginViewModel
-import com.dev.lbsuhack.feature.auth.presentation.register.RegisterViewModel
 import com.dev.lbsuhack.feature.auth.store.login.LoginStoreFactory
-import com.dev.lbsuhack.feature.auth.store.register.RegisterStoreFactory
 import io.ktor.client.HttpClient
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.core.qualifier.named
@@ -44,16 +42,8 @@ val authModule = module {
             saveSession = get(),
         )
     }
-    single {
-        RegisterStoreFactory(
-            storeFactory = get(),
-            authRepository = get(),
-            saveSession = get(),
-        )
-    }
 
     viewModelOf(::LoginViewModel)
-    viewModelOf(::RegisterViewModel)
 
     single { AuthNavigationInstaller() } bind NavigationInstaller::class
 }

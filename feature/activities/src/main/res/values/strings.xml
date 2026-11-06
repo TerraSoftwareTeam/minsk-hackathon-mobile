@@ -20,7 +20,7 @@
     <string name="activities_tab_pending_admin">Согласование</string>
     <string name="activities_tab_approved">Утверждённые</string>
     <string name="activities_tab_my_proposals">Мои заявки</string>
-    <string name="activities_tab_my_participations">Я поддержал</string>
+    <string name="activities_tab_my_participations">Я иду</string>
 
     <string name="activities_status_moderating">На модерации</string>
     <string name="activities_status_recruiting">Идёт голосование</string>
@@ -30,9 +30,9 @@
 
     <string name="activities_organizer_prefix">Организатор:</string>
     <string name="activities_participants_format">%1$d из %2$d голосов</string>
-    <string name="activities_vote_action">Поддержать</string>
-    <string name="activities_join_action">Поддержать</string>
-    <string name="activities_leave_action">Вы поддержали</string>
+    <string name="activities_vote_action">Я иду!</string>
+    <string name="activities_join_action">Я иду!</string>
+    <string name="activities_leave_action">Вы идёте</string>
     <string name="activities_joined_badge">Вы проголосовали</string>
     <string name="activities_full_badge">Порог набран</string>
     <string name="activities_empty_title">Мероприятий пока нет</string>

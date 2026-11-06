@@ -2,6 +2,7 @@ package com.dev.lbsuhack.core.data.session
 
 import android.content.Context
 import com.dev.lbsuhack.core.domain.model.UserRole
+import com.dev.lbsuhack.core.domain.session.SessionClearHook
 import com.dev.lbsuhack.core.domain.session.SessionRepository
 import com.dev.lbsuhack.core.domain.session.SessionState
 import com.dev.lbsuhack.core.domain.session.SessionUser
@@ -14,11 +15,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 class DefaultSessionRepository(
     context: Context,
     private val tokenStorage: TokenStorage,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val clearHooks: () -> List<SessionClearHook> = { emptyList() },
 ) : SessionRepository {
 
     private val preferences = context.applicationContext.getSharedPreferences(
@@ -90,6 +93,11 @@ class DefaultSessionRepository(
 
     override suspend fun clear() {
         withContext(ioDispatcher) {
+            if (_state.value is SessionState.Authenticated) {
+                clearHooks().forEach { hook ->
+                    withTimeoutOrNull(CLEAR_HOOK_TIMEOUT_MS) { hook.beforeClear() }
+                }
+            }
             mutex.withLock {
                 preferences.edit().clear().apply()
                 tokenStorage.clear()
@@ -100,6 +108,7 @@ class DefaultSessionRepository(
     }
 
     private companion object {
+        const val CLEAR_HOOK_TIMEOUT_MS = 3_000L
         const val PREFERENCES_NAME = "user_session"
         const val KEY_ID = "id"
         const val KEY_NAME = "name"

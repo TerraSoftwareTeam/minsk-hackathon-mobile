@@ -11,6 +11,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import com.dev.lbsuhack.core.network.client.AppHttpClientFactory
 import org.junit.Assert.assertEquals
@@ -293,9 +294,9 @@ class ActivityRepositoryImplTest {
     @Test
     fun mainFeedUsesRoleAppropriateEndpoint() = runTest {
         val roles = mapOf(
-            com.dev.lbsuhack.core.domain.model.UserRole.PUPIL to "/api/v1/events/voting",
-            com.dev.lbsuhack.core.domain.model.UserRole.TEACHER to "/api/v1/events/voting",
-            com.dev.lbsuhack.core.domain.model.UserRole.ORGANIZATOR to "/api/v1/events/admin-moderation",
+            com.dev.lbsuhack.core.domain.model.UserRole.PUPIL to listOf("/api/v1/events/my", "/api/v1/events/voting"),
+            com.dev.lbsuhack.core.domain.model.UserRole.TEACHER to listOf("/api/v1/events/voting"),
+            com.dev.lbsuhack.core.domain.model.UserRole.ORGANIZATOR to listOf("/api/v1/events/admin-moderation"),
         )
         for ((role, path) in roles) {
             val requests = mutableListOf<String>()
@@ -313,9 +314,65 @@ class ActivityRepositoryImplTest {
                 val repository = ActivityRepositoryImpl(client,
                     observeSession = com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase(session))
                 assertTrue(repository.refresh() is com.dev.lbsuhack.core.domain.DomainResult.Success)
-                assertEquals(listOf(path), requests)
+                assertEquals(path, requests.sorted())
             }
         }
     }
 
+    @Test
+    fun pupilFeedMergesVotingAndOwnEventsWithoutDuplicates() = runTest {
+        fun event(id: String, status: String, votes: Int) = """
+            {
+              "id": "$id", "name": "Event $id", "description": null, "scope": "CLASS", "category": "SPORTS",
+              "status": "$status", "declineReason": null, "voteThreshold": 10, "startsAt": null,
+              "votingClosesAt": "2026-12-06T10:00:00.000Z", "successProbability": 0.5, "imageUrl": null,
+              "likesCount": 0,
+              "initiator": {"id": "me", "schoolsById": "s-me", "name": "Иван", "surname": "Иванов", "class": "10A", "role": "PUPIL"},
+              "teacher": null,
+              "createdAt": "2026-11-06T10:00:00.000Z", "updatedAt": "2026-11-06T10:00:00.000Z",
+              "votesCount": $votes, "hasVoted": false, "likedByMe": false
+            }
+        """.trimIndent()
+        val session = com.dev.lbsuhack.feature.activities.util.FakeSessionRepository(
+            com.dev.lbsuhack.core.domain.session.SessionState.Authenticated(
+                com.dev.lbsuhack.core.domain.session.SessionUser(
+                    "me", "Иван", role = com.dev.lbsuhack.core.domain.model.UserRole.PUPIL,
+                ),
+            ),
+        )
+        HttpClient(MockEngine { request ->
+            val body = when (request.url.encodedPath) {
+                "/api/v1/events/voting" -> "[${event("shared", "ON_VOTE", 3)}]"
+                "/api/v1/events/my" -> "[${event("shared", "ON_VOTE", 3)}, ${event("mine", "ON_MODERATION", 0)}]"
+                else -> error("unexpected ${request.url.encodedPath}")
+            }
+            respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+        }) {
+            install(ContentNegotiation) { json(json) }
+        }.use { client ->
+            val repository = ActivityRepositoryImpl(
+                client,
+                observeSession = com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase(session),
+            )
+            assertTrue(repository.refresh() is com.dev.lbsuhack.core.domain.DomainResult.Success)
+            val items = repository.observeActivities().first()
+            assertEquals(listOf("shared", "mine"), items.map { it.id })
+            assertEquals(
+                com.dev.lbsuhack.feature.activities.domain.ActivityStatus.ON_MODERATION,
+                items.last().status,
+            )
+        }
+    }
+
+    @Test
+    fun startsAtIsFormattedAsConfirmedTime() {
+        assertEquals(
+            "5 декабря 2026, 12:00",
+            "2026-12-05T09:00:00.000Z".toDisplayDateTime(
+                zone = java.time.ZoneId.of("Europe/Minsk"),
+                locale = java.util.Locale.forLanguageTag("ru"),
+            ),
+        )
+        assertEquals("not-a-date", "not-a-date".toDisplayDateTime())
+    }
 }

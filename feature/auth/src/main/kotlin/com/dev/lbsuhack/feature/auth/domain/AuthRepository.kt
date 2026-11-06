@@ -12,9 +12,10 @@ interface AuthRepository {
         role: UserRole = UserRole.PUPIL,
     ): DomainResult<SessionUser>
 
-    suspend fun register(
+    suspend fun registerTeacher(
+        schoolsById: String,
         name: String,
-        email: String,
-        password: String,
+        surname: String,
+        className: String,
     ): DomainResult<SessionUser>
 }

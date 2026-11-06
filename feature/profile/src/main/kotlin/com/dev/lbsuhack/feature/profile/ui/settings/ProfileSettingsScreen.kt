@@ -32,6 +32,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -135,12 +136,24 @@ private fun SettingsDivider() {
 private fun SettingsOption(selected: Boolean, label: String, icon: ImageVector, onClick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth()
-            .selectable(selected = selected, onClick = onClick, role = Role.RadioButton)
+            .padding(horizontal = 6.dp, vertical = 4.dp)
+            .clip(MaterialTheme.shapes.large)
             .background(if (selected) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer)
-            .padding(horizontal = 20.dp, vertical = 20.dp),
+            .border(
+                width = 1.dp,
+                color = if (selected) MaterialTheme.colorScheme.onSurface else Color.Transparent,
+                shape = MaterialTheme.shapes.large,
+            )
+            .selectable(selected = selected, onClick = onClick, role = Role.RadioButton)
+            .padding(horizontal = 14.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(
+            icon,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = label,

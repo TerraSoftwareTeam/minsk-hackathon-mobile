@@ -281,12 +281,12 @@ private fun RequestsTabs(
                 modifier = Modifier
                     .clip(shape)
                     .background(
-                        if (selected) MaterialTheme.colorScheme.primary
+                        if (selected) MaterialTheme.colorScheme.surfaceContainerHigh
                         else MaterialTheme.colorScheme.surfaceContainer,
                     )
                     .border(
                         width = 1.dp,
-                        color = if (selected) MaterialTheme.colorScheme.primary
+                        color = if (selected) MaterialTheme.colorScheme.onSurface
                         else MaterialTheme.colorScheme.outlineVariant,
                         shape = shape,
                     )
@@ -295,7 +295,7 @@ private fun RequestsTabs(
                 style = MaterialTheme.typography.labelLarge.copy(
                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                 ),
-                color = if (selected) MaterialTheme.colorScheme.onPrimary
+                color = if (selected) MaterialTheme.colorScheme.onSurface
                 else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -832,7 +832,9 @@ private fun DialogTextField(
                 unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
                 unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                focusedBorderColor = MaterialTheme.colorScheme.onSurface,
+                focusedLabelColor = MaterialTheme.colorScheme.onSurface,
+                cursorColor = MaterialTheme.colorScheme.onSurface,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
             ),
         )
