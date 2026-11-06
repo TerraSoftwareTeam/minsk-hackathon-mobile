@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.navigation.ActivityLink
@@ -34,7 +35,6 @@ import kotlinx.coroutines.withContext
 fun ActivityQrCard(activityId: String, title: String) {
     val context = LocalContext.current
     val link = remember(activityId) { ActivityLink.create(activityId) }
-    val chooserTitle = stringResource(R.string.activity_qr_share)
     val bitmap by produceState<ImageBitmap?>(null, link) {
         value = withContext(Dispatchers.Default) {
             val matrix = ActivityQrCode.encode(link)
@@ -56,7 +56,7 @@ fun ActivityQrCard(activityId: String, title: String) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(stringResource(R.string.activity_qr_title), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.activity_qr_hint), style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.activity_qr_hint), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
             bitmap?.let {
                 Image(
                     bitmap = it,
@@ -64,14 +64,6 @@ fun ActivityQrCard(activityId: String, title: String) {
                     modifier = Modifier.sizeIn(maxWidth = 280.dp, maxHeight = 280.dp).fillMaxWidth(),
                     filterQuality = FilterQuality.None,
                 )
-            }
-            OutlinedButton(onClick = {
-                context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, "$title\n$link")
-                }, chooserTitle))
-            }) {
-                Text(chooserTitle)
             }
         }
     }

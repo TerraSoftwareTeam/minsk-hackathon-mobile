@@ -28,4 +28,5 @@
         <item quantity="one">%1$d saved item</item>
         <item quantity="other">%1$d saved items</item>
     </plurals>
+    <string name="profile_school_not_specified">School not specified</string>
 </resources>

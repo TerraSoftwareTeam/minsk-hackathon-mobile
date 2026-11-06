@@ -4,6 +4,8 @@ import com.arkivanov.mvikotlin.core.store.Reducer
 import com.arkivanov.mvikotlin.core.store.Store
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
+import com.dev.lbsuhack.core.domain.model.UserRole
+import com.dev.lbsuhack.feature.activities.domain.ActivityInitiative
 import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionState
 import com.dev.lbsuhack.core.localization.text.UiText
@@ -35,6 +37,7 @@ class CreateActivityStoreFactory(
         data class MinParticipantsChanged(val min: Int) : Message
         data class MaxParticipantsChanged(val max: Int) : Message
         data class PreferencesChanged(val preferences: String) : Message
+        data class PhotoChanged(val photoUri: String?) : Message
         data object Submitting : Message
         data class ErrorOccurred(val error: UiText) : Message
         data object ErrorDismissed : Message
@@ -53,6 +56,7 @@ class CreateActivityStoreFactory(
                 is CreateActivityStore.Intent.ChangeMinParticipants -> dispatch(Message.MinParticipantsChanged(intent.min))
                 is CreateActivityStore.Intent.ChangeMaxParticipants -> dispatch(Message.MaxParticipantsChanged(intent.max))
                 is CreateActivityStore.Intent.ChangePreferences -> dispatch(Message.PreferencesChanged(intent.preferences))
+                is CreateActivityStore.Intent.ChangePhoto -> dispatch(Message.PhotoChanged(intent.photoUri))
                 CreateActivityStore.Intent.DismissError -> dispatch(Message.ErrorDismissed)
                 CreateActivityStore.Intent.Submit -> submit()
             }
@@ -93,6 +97,11 @@ class CreateActivityStoreFactory(
                     authorId = authorId,
                     authorName = authorName,
                     authorClass = authorClass,
+                    photoUri = currentState.photoUri,
+                    initiative = when (sessionUser?.role) {
+                        UserRole.TEACHER, UserRole.ORGANIZATOR -> ActivityInitiative.SCHOOL
+                        UserRole.PUPIL, null -> ActivityInitiative.STUDENT
+                    },
                 )
 
                 dispatch(Message.Submitted)
@@ -111,6 +120,7 @@ class CreateActivityStoreFactory(
                 is Message.MinParticipantsChanged -> copy(minParticipants = msg.min, error = null)
                 is Message.MaxParticipantsChanged -> copy(maxParticipants = msg.max, error = null)
                 is Message.PreferencesChanged -> copy(preferenceNotes = msg.preferences)
+                is Message.PhotoChanged -> copy(photoUri = msg.photoUri)
                 Message.Submitting -> copy(isSubmitting = true, error = null)
                 is Message.ErrorOccurred -> copy(isSubmitting = false, error = msg.error)
                 Message.ErrorDismissed -> copy(error = null)

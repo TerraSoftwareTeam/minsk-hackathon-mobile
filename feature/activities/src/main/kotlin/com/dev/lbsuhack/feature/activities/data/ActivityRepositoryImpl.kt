@@ -1,5 +1,6 @@
 package com.dev.lbsuhack.feature.activities.data
 
+import com.dev.lbsuhack.feature.activities.domain.ActivityInitiative
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
 import com.dev.lbsuhack.feature.activities.domain.ActivityParticipant
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
@@ -33,6 +34,8 @@ class ActivityRepositoryImpl : ActivityRepository {
         authorId: String,
         authorName: String,
         authorClass: String,
+        photoUri: String?,
+        initiative: ActivityInitiative,
     ): ActivityProposal {
         val newProposal = ActivityProposal(
             id = UUID.randomUUID().toString(),
@@ -54,6 +57,8 @@ class ActivityRepositoryImpl : ActivityRepository {
                 )
             ),
             preferenceNotes = preferenceNotes.trim(),
+            photoUri = photoUri,
+            initiative = initiative,
         )
 
         activities.update { current -> listOf(newProposal) + current }

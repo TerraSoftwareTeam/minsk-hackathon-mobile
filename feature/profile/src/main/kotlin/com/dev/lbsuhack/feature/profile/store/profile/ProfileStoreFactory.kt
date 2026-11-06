@@ -58,7 +58,7 @@ class ProfileStoreFactory(
                 dispatch(
                     Message.Loaded(
                         name = user?.name.orEmpty(),
-                        schoolName = user?.schoolName ?: user?.schoolsById.orEmpty(),
+                        schoolName = user?.schoolName.orEmpty(),
                         pupilClass = user?.pupilClass.orEmpty(),
                         role = user?.role ?: UserRole.PUPIL,
                         notificationsEnabled = profileRepository.isNotificationsEnabled(),

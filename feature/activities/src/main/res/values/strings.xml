@@ -13,14 +13,14 @@
     <string name="activities_filter_other">Другое</string>
 
     <string name="activities_tab_all">Все заявки</string>
-    <string name="activities_tab_recruiting">Идёт набор</string>
+    <string name="activities_tab_recruiting">Открыта запись</string>
     <string name="activities_tab_pending_admin">На согласовании</string>
     <string name="activities_tab_approved">Подтверждённые</string>
     <string name="activities_tab_my_proposals">Мои заявки</string>
     <string name="activities_tab_my_participations">Я иду</string>
 
     <string name="activities_status_moderating">На модерации</string>
-    <string name="activities_status_recruiting">Идёт набор</string>
+    <string name="activities_status_recruiting">Открыта запись</string>
     <string name="activities_status_pending_admin">На согласовании</string>
     <string name="activities_status_approved">Подтверждено</string>
     <string name="activities_status_rejected">Отклонено</string>
@@ -47,7 +47,7 @@
     <string name="create_activity_target_class_hint">Например: 8–11 классы или Все классы</string>
     <string name="create_activity_preferences_label">Пожелания по месту и времени</string>
     <string name="create_activity_preferences_hint">Например: Кабинет с проектором или большой спортзал, 11:30</string>
-    <string name="create_activity_submit_action">Отправить на модерацию</string>
+    <string name="create_activity_submit_action">Отправить заявку</string>
     <string name="create_activity_error_title_empty">Укажите название мероприятия</string>
     <string name="create_activity_error_desc_empty">Добавьте описание мероприятия</string>
     <string name="create_activity_error_limits_invalid">Минимум участников не может превышать максимум</string>
@@ -73,12 +73,12 @@
     <string name="details_simulate_approve">Смоделировать: утвердить администрацией</string>
     <string name="details_author_badge">Вы создатель этой заявки</string>
 
-    <string name="activities_greeting_format">Привет, %1$s · %2$s</string>
+    <string name="activities_greeting_format">Привет, %1$s, %2$s</string>
     <string name="activities_quorum_reached">Кворум набран</string>
     <string name="activities_open_details">Подробнее</string>
     <string name="activities_target_class_format">Для кого: %1$s</string>
     <string name="activities_capacity_format">%1$d из %2$d мест</string>
-    <string name="activities_min_max_format">Минимум %1$d · максимум %2$d</string>
+    <string name="activities_min_max_format">От %1$d до %2$d участников</string>
 
     <string name="create_activity_main_section">О мероприятии</string>
     <string name="create_activity_participants_section">Участники</string>
@@ -101,14 +101,35 @@
     <string name="details_simulated_location">Кабинет информатики (№204)</string>
     <string name="details_rejected_title">Заявка отклонена</string>
     <string name="details_rejected_desc">Инициатива не прошла проверку. Организатор может создать новую заявку с учётом замечаний.</string>
-    <string name="details_recruiting_title">Идёт набор участников</string>
+    <string name="details_recruiting_title">Открыта запись участников</string>
     <string name="details_recruiting_desc">Когда наберётся минимальное число участников, заявку можно будет передать администрации.</string>
     <string name="activity_qr_title">Пригласить на мероприятие</string>
-    <string name="activity_qr_hint">Откройте список мероприятий в Кола на другом телефоне и нажмите «Сканировать QR-код». После сканирования можно записаться на мероприятие.</string>
+    <string name="activity_qr_hint">Откройте список мероприятий в Кола на другом телефоне и нажмите «Сканировать код». После сканирования можно записаться на мероприятие.</string>
     <string name="activity_qr_description">QR-код мероприятия «%1$s»</string>
     <string name="activity_qr_share">Поделиться ссылкой</string>
-    <string name="activity_qr_scan">Сканировать QR-код</string>
+    <string name="activity_qr_scan">Сканировать код</string>
     <string name="activity_qr_invalid">Это не QR-код мероприятия Кола.</string>
-    <string name="activity_qr_scan_error">Не удалось открыть сканер. Проверьте сервисы Google Play и подключение к интернету, затем повторите.</string>
+    <string name="activity_qr_scan_error">Не удалось завершить сканирование. Попробуйте ещё раз.</string>
     <string name="activity_qr_not_found">Мероприятие не найдено. Возможно, оно удалено или недоступно на этом устройстве.</string>
+    <string name="activities_filter_status_label">Статус</string>
+    <string name="activities_filter_category_label">Тема</string>
+    <string name="activities_filter_all_categories">Все темы</string>
+    <string name="activity_photo_section">Фото мероприятия</string>
+    <string name="activity_photo_optional">Необязательно</string>
+    <string name="activity_photo_add">Добавить фото</string>
+    <string name="activity_photo_replace">Заменить</string>
+    <string name="activity_photo_remove">Удалить</string>
+    <string name="activity_photo_description">Фото мероприятия «%1$s»</string>
+    <string name="activity_photo_error">Не удалось загрузить фото</string>
+    <string name="create_activity_classes_all">Все классы</string>
+    <string name="create_activity_classes_junior">1–4 классы</string>
+    <string name="create_activity_classes_middle">5–7 классы</string>
+    <string name="create_activity_classes_senior">8–11 классы</string>
+    <string name="create_activity_class_number">%1$d класс</string>
+    <string name="create_activity_decrease_count">%1$s: уменьшить</string>
+    <string name="create_activity_increase_count">%1$s: увеличить</string>
+    <string name="create_activity_submission_info">Как проходит подача заявки</string>
+    <string name="create_activity_info_dismiss">Понятно</string>
+    <string name="activity_initiative_student">Инициатива ученика</string>
+    <string name="activity_initiative_school">Инициатива школы</string>
 </resources>

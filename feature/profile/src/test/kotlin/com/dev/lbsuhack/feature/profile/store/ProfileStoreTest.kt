@@ -103,4 +103,16 @@ class ProfileStoreTest {
 
             assertTrue(sessionRepository.cleared)
         }
+    @Test
+    fun `school identifier is not displayed when school name is missing`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            sessionRepository.save(sessionUser.copy(schoolName = null, schoolsById = "3575208"))
+            val store = createStore()
+            store.accept(ProfileStore.Intent.Load)
+            runCurrent()
+
+            assertEquals("", store.state.schoolName)
+            store.dispose()
+        }
+
 }

@@ -3,6 +3,8 @@ package com.dev.lbsuhack.feature.activities.store
 import app.cash.turbine.test
 import com.arkivanov.mvikotlin.extensions.coroutines.labels
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
+import com.dev.lbsuhack.core.domain.model.UserRole
+import com.dev.lbsuhack.feature.activities.domain.ActivityInitiative
 import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionState
 import com.dev.lbsuhack.core.domain.session.SessionUser
@@ -100,4 +102,87 @@ class CreateActivityStoreTest {
             cancelAndIgnoreRemainingEvents()
         }
     }
+    @Test
+    fun selectedPhotoIsIncludedInTheCreatedActivity() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore()
+        val photo = "content://media/external/images/media/42"
+
+        store.labels.test {
+            store.accept(CreateActivityStore.Intent.ChangeTitle("Фотопрогулка"))
+            store.accept(CreateActivityStore.Intent.ChangeDescription("Снимаем город"))
+            store.accept(CreateActivityStore.Intent.ChangePhoto(photo))
+            store.accept(CreateActivityStore.Intent.Submit)
+
+            val label = awaitItem() as CreateActivityStore.Label.Created
+            assertEquals(photo, activityRepository.getActivityById(label.activityId)?.photoUri)
+            assertNull(store.state.error)
+            cancelAndIgnoreRemainingEvents()
+        }
+        store.dispose()
+    }
+
+    @Test
+    fun activityCanBeCreatedWithoutAPhoto() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore()
+
+        store.labels.test {
+            store.accept(CreateActivityStore.Intent.ChangeTitle("Встреча"))
+            store.accept(CreateActivityStore.Intent.ChangeDescription("Обсуждаем планы"))
+            store.accept(CreateActivityStore.Intent.Submit)
+
+            val label = awaitItem() as CreateActivityStore.Label.Created
+            assertNotNull(activityRepository.getActivityById(label.activityId))
+            assertNull(activityRepository.getActivityById(label.activityId)?.photoUri)
+            assertNull(store.state.error)
+            cancelAndIgnoreRemainingEvents()
+        }
+        store.dispose()
+    }
+
+    @Test
+    fun photoCanBeReplacedAndRemovedBeforeSubmitting() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore()
+        store.accept(CreateActivityStore.Intent.ChangePhoto("content://photos/first"))
+        store.accept(CreateActivityStore.Intent.ChangePhoto("content://photos/second"))
+        assertEquals("content://photos/second", store.state.photoUri)
+        store.accept(CreateActivityStore.Intent.ChangePhoto(null))
+        assertNull(store.state.photoUri)
+
+        store.labels.test {
+            store.accept(CreateActivityStore.Intent.ChangeTitle("Встреча"))
+            store.accept(CreateActivityStore.Intent.ChangeDescription("Обсуждаем планы"))
+            store.accept(CreateActivityStore.Intent.Submit)
+
+            val label = awaitItem() as CreateActivityStore.Label.Created
+            assertNull(activityRepository.getActivityById(label.activityId)?.photoUri)
+            cancelAndIgnoreRemainingEvents()
+        }
+        store.dispose()
+    }
+
+    @Test
+    fun initiativeIsRecordedFromTheAuthorRole() = runTest(mainDispatcherRule.testDispatcher) {
+        val roles = mapOf(
+            UserRole.PUPIL to ActivityInitiative.STUDENT,
+            UserRole.TEACHER to ActivityInitiative.SCHOOL,
+            UserRole.ORGANIZATOR to ActivityInitiative.SCHOOL,
+        )
+        roles.forEach { (role, expected) ->
+            sessionRepository.save(sessionUser.copy(role = role))
+            val store = createStore()
+            store.labels.test {
+                store.accept(CreateActivityStore.Intent.ChangeTitle("Мероприятие"))
+                store.accept(CreateActivityStore.Intent.ChangeDescription("Описание"))
+                store.accept(CreateActivityStore.Intent.Submit)
+                val created = awaitItem() as CreateActivityStore.Label.Created
+                val proposal = activityRepository.getActivityById(created.activityId)!!
+                assertEquals(expected, proposal.initiative)
+                val approved = activityRepository.approveActivity(proposal.id, "12:00", "Школа")
+                assertEquals(expected, approved.initiative)
+                cancelAndIgnoreRemainingEvents()
+            }
+            store.dispose()
+        }
+    }
+
 }

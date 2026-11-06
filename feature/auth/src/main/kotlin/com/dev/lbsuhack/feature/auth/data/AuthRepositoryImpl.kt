@@ -11,7 +11,6 @@ import com.dev.lbsuhack.core.network.auth.TokenStorage
 import com.dev.lbsuhack.core.network.generated.model.AuthResponseDto
 import com.dev.lbsuhack.core.network.generated.model.LoginDto
 import com.dev.lbsuhack.core.network.generated.model.RegisterDto
-import com.dev.lbsuhack.core.network.generated.model.UserResponseDto
 import com.dev.lbsuhack.feature.auth.domain.AuthRepository
 import com.dev.lbsuhack.feature.auth.domain.repository.SchoolsByAuthRepository
 import io.ktor.client.HttpClient
@@ -123,10 +122,10 @@ class AuthRepositoryImpl(
             if (loginResponse.status == HttpStatusCode.OK || loginResponse.status == HttpStatusCode.Created) {
                 val authResponse = loginResponse.body<AuthResponseDto>()
                 tokenStorage.saveTokens(accessToken = authResponse.accessToken, refreshToken = null)
-                val domainUser = authResponse.user.toDomain()
+                val domainUser = authResponse.user.toDomain(parsedUser.schoolName)
                 userRepository.updateCache(domainUser)
                 Log.d(TAG, "Backend login succeeded for ${domainUser.name}")
-                return DomainResult.Success(authResponse.user.toSessionUser())
+                return DomainResult.Success(authResponse.user.toSessionUser(parsedUser.schoolName))
             }
 
             if (loginResponse.status == HttpStatusCode.Unauthorized || loginResponse.status == HttpStatusCode.NotFound) {
@@ -171,10 +170,10 @@ class AuthRepositoryImpl(
             if (registerResponse.status == HttpStatusCode.OK || registerResponse.status == HttpStatusCode.Created) {
                 val authResponse = registerResponse.body<AuthResponseDto>()
                 tokenStorage.saveTokens(accessToken = authResponse.accessToken, refreshToken = null)
-                val domainUser = authResponse.user.toDomain()
+                val domainUser = authResponse.user.toDomain(parsedUser.schoolName)
                 userRepository.updateCache(domainUser)
                 Log.d(TAG, "Backend registration succeeded for ${domainUser.name}")
-                DomainResult.Success(authResponse.user.toSessionUser())
+                DomainResult.Success(authResponse.user.toSessionUser(parsedUser.schoolName))
             } else {
                 val errorBody = registerResponse.bodyAsText()
                 Log.w(TAG, "Backend registration returned ${registerResponse.status.value}: $errorBody")
@@ -202,49 +201,6 @@ class AuthRepositoryImpl(
         role = role,
         pupilClass = (this as? User.Pupil)?.pupilClass,
     )
-
-    private fun UserResponseDto.toSessionUser(): SessionUser = SessionUser(
-        id = id,
-        name = name,
-        surname = surname,
-        fathersName = fathersName,
-        schoolsById = schoolsById,
-        schoolName = null,
-        role = role.toDomainRole(),
-        pupilClass = propertyClass,
-    )
-
-    private fun UserResponseDto.toDomain(): User = when (role.toDomainRole()) {
-        UserRole.PUPIL -> User.Pupil(
-            id = id,
-            name = name,
-            surname = surname,
-            fathersName = fathersName,
-            schoolsById = schoolsById,
-            schoolName = null,
-            pupilClass = propertyClass.orEmpty(),
-        )
-        UserRole.TEACHER -> User.Teacher(
-            id = id,
-            name = name,
-            surname = surname,
-            fathersName = fathersName,
-            schoolsById = schoolsById,
-            schoolName = null,
-        )
-        UserRole.ORGANIZATOR -> User.Organizator(
-            id = id,
-            name = name,
-            surname = surname,
-            fathersName = fathersName,
-        )
-    }
-
-    private fun UserResponseDto.Role.toDomainRole(): UserRole = when (this) {
-        UserResponseDto.Role.PUPIL -> UserRole.PUPIL
-        UserResponseDto.Role.TEACHER -> UserRole.TEACHER
-        UserResponseDto.Role.ADMIN -> UserRole.ORGANIZATOR
-    }
 
     private companion object {
         private const val TAG = "AuthRepository"

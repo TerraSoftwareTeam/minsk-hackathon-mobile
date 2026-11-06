@@ -1,5 +1,6 @@
 package com.dev.lbsuhack.feature.activities.ui.details
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -10,7 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -38,7 +38,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -47,6 +46,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -61,8 +67,9 @@ import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
 import com.dev.lbsuhack.feature.activities.presentation.details.ActivityDetailsViewModel
 import com.dev.lbsuhack.feature.activities.store.details.ActivityDetailsStore
-import com.dev.lbsuhack.feature.activities.ui.activities.CategoryBadge
-import com.dev.lbsuhack.feature.activities.ui.activities.StatusBadge
+import com.dev.lbsuhack.feature.activities.ui.activities.FloatingActionsBackdrop
+import com.dev.lbsuhack.feature.activities.ui.activities.ActivityCardCover
+import com.dev.lbsuhack.feature.activities.ui.activities.ActivityMetadata
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -113,16 +120,6 @@ fun ActivityDetailsScreen(
                 ),
             )
         },
-        bottomBar = {
-            state.activity?.let { proposal ->
-                DetailsBottomBar(
-                    proposal = proposal,
-                    isJoined = state.isJoined,
-                    isAuthor = state.isAuthor,
-                    onToggleJoin = { viewModel.accept(ActivityDetailsStore.Intent.ToggleJoin) },
-                )
-            }
-        },
     ) { padding ->
         val proposal = state.activity
         if (state.isLoading && proposal == null) {
@@ -142,34 +139,44 @@ fun ActivityDetailsScreen(
                 Text(stringResource(R.string.activity_qr_not_found))
             }
         } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                ActivityHeroCard(proposal = proposal)
-                ActivityQrCard(activityId = proposal.id, title = proposal.title)
-                ActivityStatusNotice(proposal = proposal)
-                StatusTimelineCard(status = proposal.status)
-                ParticipantsCard(proposal = proposal)
-                InteractiveSimulationSection(
-                    status = proposal.status,
-                    onSimulateToAdmin = {
-                        viewModel.accept(ActivityDetailsStore.Intent.SimulateTransitionToAdmin)
-                    },
-                    onSimulateApprove = {
-                        viewModel.accept(
-                            ActivityDetailsStore.Intent.SimulateApprove(
-                                time = simulatedTime,
-                                location = simulatedLocation,
-                            ),
-                        )
-                    },
+            Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    ActivityHeroCard(proposal = proposal)
+                    ActivityQrCard(activityId = proposal.id, title = proposal.title)
+                    if (proposal.status != ActivityStatus.RECRUITING) {
+                        ActivityStatusNotice(proposal = proposal)
+                    }
+                    StatusTimelineCard(status = proposal.status)
+                    ParticipantsCard(proposal = proposal)
+                    InteractiveSimulationSection(
+                        status = proposal.status,
+                        onSimulateToAdmin = {
+                            viewModel.accept(ActivityDetailsStore.Intent.SimulateTransitionToAdmin)
+                        },
+                        onSimulateApprove = {
+                            viewModel.accept(
+                                ActivityDetailsStore.Intent.SimulateApprove(
+                                    time = simulatedTime,
+                                    location = simulatedLocation,
+                                ),
+                            )
+                        },
+                    )
+                    Spacer(modifier = Modifier.height(144.dp))
+                }
+                DetailsFloatingActions(
+                    proposal = proposal,
+                    isJoined = state.isJoined,
+                    isAuthor = state.isAuthor,
+                    onToggleJoin = { viewModel.accept(ActivityDetailsStore.Intent.ToggleJoin) },
+                    modifier = Modifier.align(Alignment.BottomCenter),
                 )
-                Spacer(modifier = Modifier.height(12.dp))
             }
         }
     }
@@ -186,96 +193,89 @@ private fun ActivityHeroCard(proposal: ActivityProposal) {
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outlineVariant,
                 shape = MaterialTheme.shapes.extraLarge,
-            )
-            .padding(20.dp),
+            ),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            CategoryBadge(
-                category = proposal.category,
-                modifier = Modifier.weight(1f),
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            StatusBadge(status = proposal.status)
+        proposal.photoUri?.let { photoUri ->
+            ActivityCardCover(proposal = proposal, photoUri = photoUri)
         }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Text(
-            text = proposal.title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Outlined.Person,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(modifier = Modifier.width(8.dp))
+        Column(modifier = Modifier.padding(20.dp)) {
+            if (proposal.photoUri == null) {
+                ActivityMetadata(proposal = proposal)
+                Spacer(modifier = Modifier.height(16.dp))
+            }
             Text(
-                text = "${proposal.authorName} · ${proposal.authorClass}",
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = proposal.title,
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
+                color = MaterialTheme.colorScheme.onSurface,
             )
-        }
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Outlined.Groups,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = stringResource(R.string.activities_target_class_format, proposal.targetClass),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        Spacer(modifier = Modifier.height(18.dp))
-        HorizontalDivider(color = MaterialTheme.hack.gridLine)
-        Spacer(modifier = Modifier.height(18.dp))
-
-        Text(
-            text = proposal.description,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-
-        if (proposal.preferenceNotes.isNotBlank()) {
-            Spacer(modifier = Modifier.height(18.dp))
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        MaterialTheme.colorScheme.surfaceContainerLow,
-                        MaterialTheme.shapes.large,
-                    )
-                    .padding(14.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.details_preferences_title),
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.primary,
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Outlined.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = proposal.preferenceNotes,
+                    text = "${proposal.authorName}, ${proposal.authorClass}",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Outlined.Groups,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.activities_target_class_format, proposal.targetClass),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+            HorizontalDivider(color = MaterialTheme.hack.gridLine)
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Text(
+                text = proposal.description,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+
+            if (proposal.preferenceNotes.isNotBlank()) {
+                Spacer(modifier = Modifier.height(18.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            MaterialTheme.colorScheme.surfaceContainerLow,
+                            MaterialTheme.shapes.large,
+                        )
+                        .padding(14.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.details_preferences_title),
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = proposal.preferenceNotes,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
@@ -436,6 +436,9 @@ private fun StatusTimelineCard(status: ActivityStatus) {
         R.string.details_step_approved_short,
     )
 
+    val completedConnection = MaterialTheme.colorScheme.onSurface
+    val pendingConnection = MaterialTheme.colorScheme.outline
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -455,8 +458,26 @@ private fun StatusTimelineCard(status: ActivityStatus) {
         )
         Spacer(modifier = Modifier.height(18.dp))
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .drawBehind {
+                    val stepWidth = size.width / steps.size
+                    val radius = 15.dp.toPx()
+                    val centerY = radius
+                    for (index in 0 until steps.lastIndex) {
+                        val start = stepWidth * (index + 0.5f) + radius
+                        val end = stepWidth * (index + 1.5f) - radius
+                        val isRtl = layoutDirection == LayoutDirection.Rtl
+                        drawLine(
+                            color = if (index < activeStep) completedConnection else pendingConnection,
+                            start = Offset(if (isRtl) size.width - start else start, centerY),
+                            end = Offset(if (isRtl) size.width - end else end, centerY),
+                            strokeWidth = 1.dp.toPx(),
+                            cap = StrokeCap.Round,
+                        )
+                    }
+                },
+            verticalAlignment = Alignment.Top,
         ) {
             steps.forEachIndexed { index, stepTitle ->
                 val isCompleted = index <= activeStep
@@ -470,27 +491,36 @@ private fun StatusTimelineCard(status: ActivityStatus) {
                         modifier = Modifier
                             .size(30.dp)
                             .clip(CircleShape)
-                            .background(
-                                when {
-                                    isCurrent -> MaterialTheme.colorScheme.primary
-                                    isCompleted -> MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                                    else -> MaterialTheme.colorScheme.surfaceVariant
+                            .background(MaterialTheme.colorScheme.surfaceContainer)
+                            .border(
+                                width = 1.dp,
+                                color = when {
+                                    isCurrent -> MaterialTheme.colorScheme.onSurface
+                                    isCompleted -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    else -> MaterialTheme.colorScheme.outline
                                 },
+                                shape = CircleShape,
                             ),
                         contentAlignment = Alignment.Center,
                     ) {
                         if (isCompleted && !isCurrent) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
+                            Canvas(modifier = Modifier.size(20.dp)) {
+                                val check = Path().apply {
+                                    moveTo(size.width * 0.2f, size.height * 0.52f)
+                                    lineTo(size.width * 0.42f, size.height * 0.74f)
+                                    lineTo(size.width * 0.82f, size.height * 0.28f)
+                                }
+                                drawPath(
+                                    path = check,
+                                    color = completedConnection,
+                                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
+                                )
+                            }
                         } else {
                             Text(
                                 text = (index + 1).toString(),
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                color = if (isCurrent) MaterialTheme.colorScheme.onPrimary
+                                color = if (isCurrent) MaterialTheme.colorScheme.onSurface
                                 else MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -499,7 +529,7 @@ private fun StatusTimelineCard(status: ActivityStatus) {
                     Text(
                         text = stringResource(stepTitle),
                         style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                            fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
                         ),
                         color = if (isCurrent) MaterialTheme.colorScheme.onSurface
                         else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -734,100 +764,100 @@ private fun InteractiveSimulationSection(
 }
 
 @Composable
-private fun DetailsBottomBar(
+private fun DetailsFloatingActions(
     proposal: ActivityProposal,
     isJoined: Boolean,
     isAuthor: Boolean,
     onToggleJoin: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val canJoin = proposal.status == ActivityStatus.RECRUITING && !proposal.isFull
     if (!isAuthor && !isJoined && !canJoin && !proposal.isFull) return
 
-    Surface(
-        color = MaterialTheme.colorScheme.background,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    Box(modifier = modifier.fillMaxWidth().height(180.dp)) {
+        FloatingActionsBackdrop(modifier = Modifier.matchParentSize())
         Column(
             modifier = Modifier
+                .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .navigationBarsPadding(),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
-            HorizontalDivider(color = MaterialTheme.hack.gridLine)
-            Column(
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
-            ) {
-                if (isAuthor) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(bottom = 10.dp),
+            if (isAuthor) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 10.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(modifier = Modifier.width(7.dp))
+                    Text(
+                        text = stringResource(R.string.details_author_badge),
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                }
+            }
+
+            when {
+                isJoined -> {
+                    OutlinedButton(
+                        onClick = onToggleJoin,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(72.dp),
+                        shape = MaterialTheme.shapes.large,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                        ),
                     ) {
                         Icon(
-                            imageVector = Icons.Default.CheckCircle,
+                            imageVector = Icons.Default.Check,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp),
                         )
-                        Spacer(modifier = Modifier.width(7.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = stringResource(R.string.details_author_badge),
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = stringResource(R.string.activities_leave_action),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         )
                     }
                 }
-
-                when {
-                    isJoined -> {
-                        OutlinedButton(
-                            onClick = onToggleJoin,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(54.dp),
-                            shape = MaterialTheme.shapes.medium,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = stringResource(R.string.activities_leave_action),
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            )
-                        }
+                canJoin -> {
+                    Button(
+                        onClick = onToggleJoin,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(72.dp),
+                        shape = MaterialTheme.shapes.large,
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                        ),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.activities_join_action),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        )
                     }
-                    canJoin -> {
-                        Button(
-                            onClick = onToggleJoin,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(54.dp),
-                            shape = MaterialTheme.shapes.medium,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                            ),
-                        ) {
-                            Text(
-                                text = stringResource(R.string.activities_join_action),
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            )
-                        }
-                    }
-                    proposal.isFull -> {
-                        Button(
-                            onClick = {},
-                            enabled = false,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(54.dp),
-                            shape = MaterialTheme.shapes.medium,
-                        ) {
-                            Text(
-                                text = stringResource(R.string.activities_full_badge),
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            )
-                        }
+                }
+                proposal.isFull -> {
+                    Button(
+                        onClick = {},
+                        enabled = false,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(72.dp),
+                        shape = MaterialTheme.shapes.large,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.activities_full_badge),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        )
                     }
                 }
             }

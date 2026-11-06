@@ -17,6 +17,8 @@ interface ActivityRepository {
         authorId: String,
         authorName: String,
         authorClass: String,
+        photoUri: String? = null,
+        initiative: ActivityInitiative = ActivityInitiative.STUDENT,
     ): ActivityProposal
     suspend fun joinActivity(activityId: String, participant: ActivityParticipant): ActivityProposal
     suspend fun leaveActivity(activityId: String, pupilId: String): ActivityProposal

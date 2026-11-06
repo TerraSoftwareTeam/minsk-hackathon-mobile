@@ -16,6 +16,8 @@ data class ActivityProposal(
     val preferenceNotes: String = "",
     val confirmedTime: String? = null,
     val confirmedLocation: String? = null,
+    val photoUri: String? = null,
+    val initiative: ActivityInitiative = ActivityInitiative.STUDENT,
 ) {
     val currentParticipantsCount: Int get() = participants.size
     val isFull: Boolean get() = currentParticipantsCount >= maxParticipants

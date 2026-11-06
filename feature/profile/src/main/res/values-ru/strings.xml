@@ -30,4 +30,5 @@
         <item quantity="many">%1$d сохранённых элементов</item>
         <item quantity="other">%1$d сохранённых элементов</item>
     </plurals>
+    <string name="profile_school_not_specified">Школа не указана</string>
 </resources>

@@ -1,45 +1,54 @@
 package com.dev.lbsuhack.feature.profile.ui.settings
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.LightMode
+import androidx.compose.material.icons.outlined.SettingsBrightness
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dev.lbsuhack.core.designsystem.mode.AppThemeMode
 import com.dev.lbsuhack.core.designsystem.mode.ThemeController
 import com.dev.lbsuhack.core.localization.language.LanguageController
+import com.dev.lbsuhack.core.ui.component.HackSectionLabel
+import com.dev.lbsuhack.core.ui.component.HackTopBar
 import com.dev.lbsuhack.feature.profile.R
 import com.dev.lbsuhack.feature.profile.presentation.settings.SettingsViewModel
 import com.dev.lbsuhack.feature.profile.store.settings.SettingsStore
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileSettingsScreen(
     onBack: () -> Unit,
@@ -50,54 +59,49 @@ fun ProfileSettingsScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.profile_settings_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.profile_back),
-                        )
-                    }
-                },
+            HackTopBar(
+                title = stringResource(R.string.profile_settings_title),
+                onBack = onBack,
+                backContentDescription = stringResource(R.string.profile_back),
             )
         },
     ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxSize().padding(padding)
+                .verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(28.dp),
         ) {
-            SettingsCard(
-                title = stringResource(R.string.profile_language),
-                description = stringResource(R.string.profile_language_description),
-            ) {
-                languageController.availableLanguages.forEach { language ->
-                    SettingsOption(
-                        selected = state.language == language,
-                        label = stringResource(language.labelRes),
-                        onClick = {
-                            viewModel.accept(SettingsStore.Intent.SetLanguage(language))
-                        },
-                    )
-                }
-            }
-
-            SettingsCard(
+            SettingsSection(
                 title = stringResource(R.string.profile_theme),
                 description = stringResource(R.string.profile_theme_description),
             ) {
-                themeController.availableModes.forEach { mode ->
+                themeController.availableModes.forEachIndexed { index, mode ->
+                    if (index > 0) SettingsDivider()
                     SettingsOption(
                         selected = state.theme == mode,
                         label = stringResource(mode.labelRes()),
-                        onClick = {
-                            viewModel.accept(SettingsStore.Intent.SetTheme(mode))
+                        icon = when (mode) {
+                            AppThemeMode.SYSTEM -> Icons.Outlined.SettingsBrightness
+                            AppThemeMode.LIGHT -> Icons.Outlined.LightMode
+                            AppThemeMode.DARK -> Icons.Outlined.DarkMode
                         },
+                        onClick = { viewModel.accept(SettingsStore.Intent.SetTheme(mode)) },
+                    )
+                }
+            }
+            SettingsSection(
+                title = stringResource(R.string.profile_language),
+                description = stringResource(R.string.profile_language_description),
+            ) {
+                languageController.availableLanguages.forEachIndexed { index, language ->
+                    if (index > 0) SettingsDivider()
+                    SettingsOption(
+                        selected = state.language == language,
+                        label = stringResource(language.labelRes),
+                        icon = Icons.Outlined.Language,
+                        onClick = { viewModel.accept(SettingsStore.Intent.SetLanguage(language)) },
                     )
                 }
             }
@@ -106,54 +110,48 @@ fun ProfileSettingsScreen(
 }
 
 @Composable
-private fun SettingsCard(
-    title: String,
-    description: String,
-    content: @Composable () -> Unit,
-) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(modifier = Modifier.size(8.dp))
-            content()
+private fun SettingsSection(title: String, description: String, content: @Composable ColumnScope.() -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            HackSectionLabel(text = title)
+            Text(text = description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        Column(
+            modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.extraLarge)
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.extraLarge)
+                .selectableGroup(),
+            content = content,
+        )
     }
 }
 
 @Composable
-private fun SettingsOption(
-    selected: Boolean,
-    label: String,
-    onClick: () -> Unit,
-) {
+private fun SettingsDivider() {
+    HorizontalDivider(modifier = Modifier.padding(start = 56.dp), color = MaterialTheme.colorScheme.outlineVariant)
+}
+
+@Composable
+private fun SettingsOption(selected: Boolean, label: String, icon: ImageVector, onClick: () -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .selectable(
-                selected = selected,
-                onClick = onClick,
-                role = Role.RadioButton,
-            )
-            .padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth()
+            .selectable(selected = selected, onClick = onClick, role = Role.RadioButton)
+            .background(if (selected) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer)
+            .padding(horizontal = 20.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RadioButton(
-            selected = selected,
-            onClick = null,
-        )
-        Spacer(modifier = Modifier.size(8.dp))
+        Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = label,
+            modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodyLarge,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            color = MaterialTheme.colorScheme.onSurface,
         )
+        if (selected) {
+            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurface)
+        }
     }
 }
 

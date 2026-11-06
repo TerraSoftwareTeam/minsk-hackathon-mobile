@@ -15,6 +15,7 @@ interface CreateActivityStore :
         data class ChangeMinParticipants(val min: Int) : Intent
         data class ChangeMaxParticipants(val max: Int) : Intent
         data class ChangePreferences(val preferences: String) : Intent
+        data class ChangePhoto(val photoUri: String?) : Intent
         data object Submit : Intent
         data object DismissError : Intent
     }
@@ -27,6 +28,7 @@ interface CreateActivityStore :
         val minParticipants: Int = 4,
         val maxParticipants: Int = 12,
         val preferenceNotes: String = "",
+        val photoUri: String? = null,
         val isSubmitting: Boolean = false,
         val error: UiText? = null,
     )
