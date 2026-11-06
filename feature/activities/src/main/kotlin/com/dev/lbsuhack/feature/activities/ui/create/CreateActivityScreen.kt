@@ -105,12 +105,13 @@ fun CreateActivityScreen(
             )
         },
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .padding(padding)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 FormSection(title = stringResource(R.string.create_activity_main_section)) {
@@ -123,31 +124,33 @@ fun CreateActivityScreen(
 
                     Spacer(modifier = Modifier.height(20.dp))
 
+                    FieldLabel(text = stringResource(R.string.create_activity_photo_label))
+                    Spacer(modifier = Modifier.height(10.dp))
+                    ActivityPhotoField(
+                        photoUri = state.photoUri,
+                        title = state.title,
+                        enabled = !state.isSubmitting,
+                        onChange = { viewModel.accept(CreateActivityStore.Intent.ChangePhoto(it)) },
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
                     FormTextField(
-                        label = stringResource(R.string.create_activity_title_label),
-                        hint = stringResource(R.string.create_activity_title_hint),
+                        label = stringResource(R.string.create_activity_name_label),
+                        hint = stringResource(R.string.create_activity_name_hint),
                         value = state.title,
                         onValueChange = { viewModel.accept(CreateActivityStore.Intent.ChangeTitle(it)) },
                         singleLine = true,
                     )
 
-                    Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     FormTextField(
                         label = stringResource(R.string.create_activity_desc_label),
                         hint = stringResource(R.string.create_activity_desc_hint),
                         value = state.description,
                         onValueChange = { viewModel.accept(CreateActivityStore.Intent.ChangeDescription(it)) },
-                        modifier = Modifier.height(132.dp),
-                    )
-                }
-
-                FormSection(title = stringResource(R.string.activity_photo_section)) {
-                    ActivityPhotoField(
-                        photoUri = state.photoUri,
-                        title = state.title,
-                        enabled = !state.isSubmitting,
-                        onChange = { viewModel.accept(CreateActivityStore.Intent.ChangePhoto(it)) },
+                        modifier = Modifier.height(120.dp),
                     )
                 }
 

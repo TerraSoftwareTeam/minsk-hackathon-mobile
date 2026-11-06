@@ -1,11 +1,14 @@
 package com.dev.lbsuhack.feature.activities.domain
 
 enum class ActivityCategory {
-    CINEMA,
-    BOARD_GAMES,
     SPORTS,
-    CREATIVITY,
-    EXCURSION,
-    SCIENCE,
+    INTELLECTUAL,
+    CULTURAL,
+    CREATIVE,
+    EDUCATIONAL,
+    VOLUNTEER,
+    ENVIRONMENTAL,
+    TOURISM,
+    ENTERTAINMENT,
     OTHER,
 }

@@ -1,5 +1,6 @@
 package com.dev.lbsuhack.core.network.client
 
+import android.util.Log
 import com.dev.lbsuhack.core.domain.localization.LocaleProvider
 import com.dev.lbsuhack.core.network.BuildConfig
 import com.dev.lbsuhack.core.network.auth.TokenStorage
@@ -8,6 +9,7 @@ import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.header
 import io.ktor.http.ContentType
@@ -15,24 +17,38 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.contextual
+import com.dev.lbsuhack.core.network.serialization.BigDecimalSerializer
 
 object AppHttpClientFactory {
 
     private val BASE_URL = BuildConfig.BASE_URL
 
-    private val json = Json {
+    val defaultJson = Json {
         ignoreUnknownKeys = true
         isLenient = true
         encodeDefaults = true
         explicitNulls = false
+        serializersModule = SerializersModule {
+            contextual(BigDecimalSerializer)
+        }
     }
 
-    private val logLevel = if (BuildConfig.DEBUG) LogLevel.INFO else LogLevel.NONE
+    private val logLevel = if (BuildConfig.DEBUG) LogLevel.ALL else LogLevel.NONE
+    private val httpLogger = object : Logger {
+        override fun log(message: String) {
+            Log.d("HttpClient", message)
+        }
+    }
 
     fun createUnauthenticated(localeProvider: LocaleProvider): HttpClient = HttpClient(CIO) {
         expectSuccess = false
-        install(ContentNegotiation) { json(json) }
-        install(Logging) { level = logLevel }
+        install(ContentNegotiation) { json(defaultJson) }
+        install(Logging) {
+            logger = httpLogger
+            level = logLevel
+        }
         defaultRequest {
             url(BASE_URL)
             contentType(ContentType.Application.Json)
@@ -46,8 +62,11 @@ object AppHttpClientFactory {
         refreshTokens: suspend () -> Boolean,
     ): HttpClient = HttpClient(CIO) {
         expectSuccess = true
-        install(ContentNegotiation) { json(json) }
-        install(Logging) { level = logLevel }
+        install(ContentNegotiation) { json(defaultJson) }
+        install(Logging) {
+            logger = httpLogger
+            level = logLevel
+        }
         install(AuthPlugin) {
             this.tokenStorage = tokenStorage
             this.refreshTokens = refreshTokens

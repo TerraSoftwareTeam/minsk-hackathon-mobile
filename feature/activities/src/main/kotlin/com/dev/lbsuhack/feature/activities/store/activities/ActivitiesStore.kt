@@ -9,11 +9,11 @@ import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
 
 enum class ActivityTab {
     ALL,
-    RECRUITING,
-    PENDING_ADMIN,
-    APPROVED,
+    ON_VOTE,
+    ON_ADMIN_MODERATION,
+    FINALIZED,
     MY_PROPOSALS,
-    MY_PARTICIPATIONS,
+    MY_VOTES,
 }
 
 interface ActivitiesStore : Store<ActivitiesStore.Intent, ActivitiesStore.State, ActivitiesStore.Label> {
@@ -23,7 +23,7 @@ interface ActivitiesStore : Store<ActivitiesStore.Intent, ActivitiesStore.State,
         data object Refresh : Intent
         data class SelectCategory(val category: ActivityCategory?) : Intent
         data class SelectTab(val tab: ActivityTab) : Intent
-        data class ToggleJoin(val activityId: String) : Intent
+        data class Vote(val activityId: String) : Intent
         data class ClickActivity(val activityId: String) : Intent
         data object ClickCreate : Intent
         data object ClickProfile : Intent
@@ -42,11 +42,11 @@ interface ActivitiesStore : Store<ActivitiesStore.Intent, ActivitiesStore.State,
                 val matchesCategory = selectedCategory == null || proposal.category == selectedCategory
                 val matchesTab = when (selectedTab) {
                     ActivityTab.ALL -> true
-                    ActivityTab.RECRUITING -> proposal.status == ActivityStatus.RECRUITING
-                    ActivityTab.PENDING_ADMIN -> proposal.status == ActivityStatus.PENDING_ADMIN
-                    ActivityTab.APPROVED -> proposal.status == ActivityStatus.APPROVED
+                    ActivityTab.ON_VOTE -> proposal.status == ActivityStatus.ON_VOTE
+                    ActivityTab.ON_ADMIN_MODERATION -> proposal.status == ActivityStatus.ON_ADMIN_MODERATION
+                    ActivityTab.FINALIZED -> proposal.status == ActivityStatus.FINALIZED
                     ActivityTab.MY_PROPOSALS -> currentUser != null && proposal.authorId == currentUser.id
-                    ActivityTab.MY_PARTICIPATIONS -> currentUser != null && proposal.isJoined(currentUser.id)
+                    ActivityTab.MY_VOTES -> proposal.hasVoted
                 }
                 matchesCategory && matchesTab
             }
@@ -54,8 +54,8 @@ interface ActivitiesStore : Store<ActivitiesStore.Intent, ActivitiesStore.State,
         val myProposalsCount: Int
             get() = if (currentUser == null) 0 else activities.count { it.authorId == currentUser.id }
 
-        val myParticipationsCount: Int
-            get() = if (currentUser == null) 0 else activities.count { it.isJoined(currentUser.id) }
+        val myVotesCount: Int
+            get() = activities.count { it.hasVoted }
     }
 
     sealed interface Label {

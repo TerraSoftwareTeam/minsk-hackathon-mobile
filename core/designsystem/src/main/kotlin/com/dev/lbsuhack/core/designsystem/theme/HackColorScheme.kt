@@ -25,7 +25,7 @@ data class HackExtras(
 )
 
 val DarkHackColorScheme = darkColorScheme(
-    primary = Color(0xFF2970EE),
+    primary = Color(0xFF2E5BFF),
     onPrimary = Color(0xFFFFFFFF),
     primaryContainer = Color(0xFF193259),
     onPrimaryContainer = Color(0xFFDCE8FF),

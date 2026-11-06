@@ -334,6 +334,83 @@ paths:
       summary: Teacher's moderation list
       tags:
         - Events
+  /api/v1/events/my:
+    get:
+      description: >-
+        Pupil only. All events created by the caller, in any status, newest
+        first, with the vote count.
+      operationId: EventsController_findMine
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VotingEventResponseDto'
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: Caller is not a pupil
+      security:
+        - bearer: []
+      summary: Author's own events
+      tags:
+        - Events
+  /api/v1/events/voting:
+    get:
+      description: >-
+        Pupil only. ON_VOTE events whose scope includes the caller (relative to
+        the initiator's class: CLASS - same class, GRADE - same grade, SCHOOL -
+        any pupil), newest first, with the vote count and whether the caller has
+        voted.
+      operationId: EventsController_findForVoting
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VotingEventResponseDto'
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: Caller is not a pupil
+      security:
+        - bearer: []
+      summary: Pupil's voting list
+      tags:
+        - Events
+  /api/v1/events/admin-moderation:
+    get:
+      description: >-
+        Admin only. Events with status ON_ADMIN_MODERATION (passed the vote),
+        oldest first.
+      operationId: EventsController_findForAdminModeration
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventResponseDto'
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: Caller is not an admin
+      security:
+        - bearer: []
+      summary: Admin's moderation list
+      tags:
+        - Events
   /api/v1/events/{id}:
     get:
       description: Initiator, assigned teacher or admin.
@@ -386,7 +463,9 @@ paths:
         '404':
           description: Event not found
         '409':
-          description: Event is not on moderation anymore
+          description: >-
+            Event is not on moderation anymore, or voting for it has closed (2
+            days before the start)
       security:
         - bearer: []
       summary: Approve an event
@@ -424,10 +503,80 @@ paths:
         '404':
           description: Event not found
         '409':
-          description: Event is not on moderation anymore
+          description: >-
+            Event is not on moderation anymore, or voting for it has closed (2
+            days before the start)
       security:
         - bearer: []
       summary: Decline an event
+      tags:
+        - Events
+  /api/v1/events/{id}/admin/approve:
+    post:
+      description: Admin only. ON_ADMIN_MODERATION -> FINALIZED.
+      operationId: EventsController_adminApprove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponseDto'
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: Caller is not an admin
+        '404':
+          description: Event not found
+        '409':
+          description: Event is not on admin moderation, or has already started
+      security:
+        - bearer: []
+      summary: Admin approves an event
+      tags:
+        - Events
+  /api/v1/events/{id}/admin/decline:
+    post:
+      description: >-
+        Admin only. ON_ADMIN_MODERATION -> DECLINED_BY_ADMIN, with an optional
+        reason.
+      operationId: EventsController_adminDecline
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeclineEventDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponseDto'
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: Caller is not an admin
+        '404':
+          description: Event not found
+        '409':
+          description: Event is not on admin moderation, or has already started
+      security:
+        - bearer: []
+      summary: Admin declines an event
       tags:
         - Events
   /api/v1/events/{id}/vote:
@@ -458,7 +607,9 @@ paths:
         '404':
           description: Event not found
         '409':
-          description: Event is not on vote, or the pupil has already voted
+          description: >-
+            Event is not on vote, voting has closed (2 days before the start),
+            or the pupil has already voted
       security:
         - bearer: []
       summary: Vote for an event
@@ -681,15 +832,46 @@ components:
             - SCHOOL
           default: CLASS
           description: Who the event is for
+        category:
+          type: string
+          enum:
+            - SPORTS
+            - INTELLECTUAL
+            - CULTURAL
+            - CREATIVE
+            - EDUCATIONAL
+            - VOLUNTEER
+            - ENVIRONMENTAL
+            - TOURISM
+            - ENTERTAINMENT
+            - OTHER
+          example: SPORTS
+          description: >-
+            Kind of event: SPORTS - competitions, tournaments; INTELLECTUAL -
+            olympiads, quizzes, debates; CULTURAL - theatre, museum, cinema;
+            CREATIVE - concerts, contests, exhibitions; EDUCATIONAL - lectures,
+            workshops; VOLUNTEER - charity, social help; ENVIRONMENTAL -
+            clean-ups, tree planting; TOURISM - hikes, excursions, trips;
+            ENTERTAINMENT - celebrations, discos, quests; OTHER - anything else
         voteThreshold:
           type: number
           example: 15
           minimum: 1
           maximum: 10000
           description: Votes needed during ON_VOTE to send the event to admin moderation
+        startsAt:
+          type: string
+          example: '2026-12-01T10:00:00+03:00'
+          description: >-
+            When the event starts: ISO 8601 date-time with a timezone (Z or
+            ±hh:mm), more than 2 days ahead. Voting closes 2 days before it: an
+            event not approved and voted by then becomes EXPIRED. The admin may
+            decide on a voted event until it starts
       required:
         - name
+        - category
         - voteThreshold
+        - startsAt
     EventResponseDto:
       type: object
       properties:
@@ -710,6 +892,20 @@ components:
             - GRADE
             - SCHOOL
           example: CLASS
+        category:
+          type: string
+          enum:
+            - SPORTS
+            - INTELLECTUAL
+            - CULTURAL
+            - CREATIVE
+            - EDUCATIONAL
+            - VOLUNTEER
+            - ENVIRONMENTAL
+            - TOURISM
+            - ENTERTAINMENT
+            - OTHER
+          example: SPORTS
         status:
           type: string
           enum:
@@ -725,11 +921,23 @@ components:
           type: string
           example: null
           nullable: true
-          description: Set when declined with a reason
+          description: Set when declined (by the teacher or an admin) with a reason
         voteThreshold:
           type: number
           example: 15
           description: Votes needed to move from ON_VOTE to ON_ADMIN_MODERATION
+        startsAt:
+          format: date-time
+          type: string
+          example: '2026-12-01T07:00:00.000Z'
+          description: When the event starts (UTC)
+        votingClosesAt:
+          format: date-time
+          type: string
+          example: '2026-11-29T07:00:00.000Z'
+          description: >-
+            Computed: 2 days before startsAt. Voting and teacher moderation must
+            finish by then, otherwise the event becomes EXPIRED
         initiator:
           description: Pupil who created the event
           allOf:
@@ -749,13 +957,121 @@ components:
         - name
         - description
         - scope
+        - category
         - status
         - declineReason
         - voteThreshold
+        - startsAt
+        - votingClosesAt
         - initiator
         - teacher
         - createdAt
         - updatedAt
+    VotingEventResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 3f2c9a4e-1b7d-4e8a-9c0f-2a6b5d7e8f90
+        name:
+          type: string
+          example: Class trip to the museum
+        description:
+          type: string
+          example: Saturday, 10:00, meeting at school
+          nullable: true
+        scope:
+          type: string
+          enum:
+            - CLASS
+            - GRADE
+            - SCHOOL
+          example: CLASS
+        category:
+          type: string
+          enum:
+            - SPORTS
+            - INTELLECTUAL
+            - CULTURAL
+            - CREATIVE
+            - EDUCATIONAL
+            - VOLUNTEER
+            - ENVIRONMENTAL
+            - TOURISM
+            - ENTERTAINMENT
+            - OTHER
+          example: SPORTS
+        status:
+          type: string
+          enum:
+            - ON_MODERATION
+            - DECLINED
+            - ON_VOTE
+            - EXPIRED
+            - ON_ADMIN_MODERATION
+            - FINALIZED
+            - DECLINED_BY_ADMIN
+          example: ON_MODERATION
+        declineReason:
+          type: string
+          example: null
+          nullable: true
+          description: Set when declined (by the teacher or an admin) with a reason
+        voteThreshold:
+          type: number
+          example: 15
+          description: Votes needed to move from ON_VOTE to ON_ADMIN_MODERATION
+        startsAt:
+          format: date-time
+          type: string
+          example: '2026-12-01T07:00:00.000Z'
+          description: When the event starts (UTC)
+        votingClosesAt:
+          format: date-time
+          type: string
+          example: '2026-11-29T07:00:00.000Z'
+          description: >-
+            Computed: 2 days before startsAt. Voting and teacher moderation must
+            finish by then, otherwise the event becomes EXPIRED
+        initiator:
+          description: Pupil who created the event
+          allOf:
+            - $ref: '#/components/schemas/UserResponseDto'
+        teacher:
+          description: Teacher who moderates the event
+          allOf:
+            - $ref: '#/components/schemas/UserResponseDto'
+        createdAt:
+          format: date-time
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+        votesCount:
+          type: number
+          example: 4
+          description: Votes cast so far
+        hasVoted:
+          type: boolean
+          example: false
+          description: Whether the caller has already voted
+      required:
+        - id
+        - name
+        - description
+        - scope
+        - category
+        - status
+        - declineReason
+        - voteThreshold
+        - startsAt
+        - votingClosesAt
+        - initiator
+        - teacher
+        - createdAt
+        - updatedAt
+        - votesCount
+        - hasVoted
     DeclineEventDto:
       type: object
       properties:

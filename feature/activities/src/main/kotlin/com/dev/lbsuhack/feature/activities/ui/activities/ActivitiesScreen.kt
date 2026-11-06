@@ -51,8 +51,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -107,7 +107,10 @@ fun ActivitiesScreen(
         ) {
             when {
                 state.isLoading && state.activities.isEmpty() -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 }
 
                 state.filteredActivities.isEmpty() -> {
@@ -131,7 +134,7 @@ fun ActivitiesScreen(
                                     viewModel.accept(ActivitiesStore.Intent.ClickActivity(proposal.id))
                                 },
                                 onToggleJoin = {
-                                    viewModel.accept(ActivitiesStore.Intent.ToggleJoin(proposal.id))
+                                    viewModel.accept(ActivitiesStore.Intent.Vote(proposal.id))
                                 },
                             )
                         }
@@ -266,12 +269,8 @@ private fun ActivityCard(
     onClick: () -> Unit,
     onToggleJoin: () -> Unit,
 ) {
-    val isJoined = currentUserId != null && proposal.isJoined(currentUserId)
-    val progress = if (proposal.maxParticipants > 0) {
-        (proposal.currentParticipantsCount.toFloat() / proposal.maxParticipants.toFloat()).coerceIn(0f, 1f)
-    } else {
-        0f
-    }
+    val isJoined = proposal.hasVoted || (currentUserId != null && proposal.isJoined(currentUserId))
+    val progress = proposal.progress
 
     Column(
         modifier = Modifier
@@ -329,7 +328,7 @@ private fun ActivityCard(
                 overflow = TextOverflow.Ellipsis,
             )
 
-            if (proposal.status == ActivityStatus.APPROVED &&
+            if (proposal.status == ActivityStatus.FINALIZED &&
                 (proposal.confirmedTime != null || proposal.confirmedLocation != null)
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
@@ -355,20 +354,18 @@ private fun ActivityCard(
                     Text(
                         text = stringResource(
                             R.string.activities_capacity_format,
-                            proposal.currentParticipantsCount,
-                            proposal.maxParticipants,
+                            proposal.votesCount,
+                            proposal.voteThreshold,
                         ),
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
                         text = when {
-                            proposal.isFull -> stringResource(R.string.activities_full_badge)
-                            proposal.hasQuorum -> stringResource(R.string.activities_quorum_reached)
+                            proposal.isQuorumReached -> stringResource(R.string.activities_quorum_reached)
                             else -> stringResource(
                                 R.string.activities_min_max_format,
-                                proposal.minParticipants,
-                                proposal.maxParticipants,
+                                proposal.voteThreshold,
                             )
                         },
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
@@ -413,7 +410,7 @@ private fun ActivityCard(
                     }
                 }
 
-                proposal.status == ActivityStatus.RECRUITING && !proposal.isFull -> {
+                proposal.status == ActivityStatus.ON_VOTE -> {
                     Button(
                         onClick = onToggleJoin,
                         modifier = Modifier
@@ -528,29 +525,37 @@ private fun ActivitiesEmpty(modifier: Modifier = Modifier) {
 }
 
 internal fun ActivityCategory.icon(): ImageVector = when (this) {
-    ActivityCategory.CINEMA -> Icons.Outlined.Movie
-    ActivityCategory.BOARD_GAMES -> Icons.Outlined.Casino
     ActivityCategory.SPORTS -> Icons.Outlined.SportsBasketball
-    ActivityCategory.CREATIVITY -> Icons.Outlined.Palette
-    ActivityCategory.EXCURSION -> Icons.Outlined.Museum
-    ActivityCategory.SCIENCE -> Icons.Outlined.Computer
+    ActivityCategory.INTELLECTUAL -> Icons.Outlined.Casino
+    ActivityCategory.CULTURAL -> Icons.Outlined.Museum
+    ActivityCategory.CREATIVE -> Icons.Outlined.Palette
+    ActivityCategory.EDUCATIONAL -> Icons.Outlined.Computer
+    ActivityCategory.VOLUNTEER -> Icons.Outlined.AutoAwesome
+    ActivityCategory.ENVIRONMENTAL -> Icons.Outlined.CalendarMonth
+    ActivityCategory.TOURISM -> Icons.Outlined.LocationOn
+    ActivityCategory.ENTERTAINMENT -> Icons.Outlined.Movie
     ActivityCategory.OTHER -> Icons.Outlined.AutoAwesome
 }
 
 internal fun ActivityCategory.labelRes(): Int = when (this) {
-    ActivityCategory.CINEMA -> R.string.activities_filter_cinema
-    ActivityCategory.BOARD_GAMES -> R.string.activities_filter_board_games
     ActivityCategory.SPORTS -> R.string.activities_filter_sports
-    ActivityCategory.CREATIVITY -> R.string.activities_filter_creativity
-    ActivityCategory.EXCURSION -> R.string.activities_filter_excursion
-    ActivityCategory.SCIENCE -> R.string.activities_filter_science
+    ActivityCategory.INTELLECTUAL -> R.string.activities_filter_intellectual
+    ActivityCategory.CULTURAL -> R.string.activities_filter_cultural
+    ActivityCategory.CREATIVE -> R.string.activities_filter_creative
+    ActivityCategory.EDUCATIONAL -> R.string.activities_filter_educational
+    ActivityCategory.VOLUNTEER -> R.string.activities_filter_volunteer
+    ActivityCategory.ENVIRONMENTAL -> R.string.activities_filter_environmental
+    ActivityCategory.TOURISM -> R.string.activities_filter_tourism
+    ActivityCategory.ENTERTAINMENT -> R.string.activities_filter_entertainment
     ActivityCategory.OTHER -> R.string.activities_filter_other
 }
 
 internal fun ActivityStatus.labelRes(): Int = when (this) {
-    ActivityStatus.MODERATING -> R.string.activities_status_moderating
-    ActivityStatus.RECRUITING -> R.string.activities_status_recruiting
-    ActivityStatus.PENDING_ADMIN -> R.string.activities_status_pending_admin
-    ActivityStatus.APPROVED -> R.string.activities_status_approved
-    ActivityStatus.REJECTED -> R.string.activities_status_rejected
+    ActivityStatus.ON_MODERATION -> R.string.activities_status_moderating
+    ActivityStatus.ON_VOTE -> R.string.activities_status_recruiting
+    ActivityStatus.ON_ADMIN_MODERATION -> R.string.activities_status_pending_admin
+    ActivityStatus.FINALIZED -> R.string.activities_status_approved
+    ActivityStatus.DECLINED,
+    ActivityStatus.DECLINED_BY_ADMIN,
+    ActivityStatus.EXPIRED -> R.string.activities_status_rejected
 }

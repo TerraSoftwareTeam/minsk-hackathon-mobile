@@ -135,9 +135,9 @@ private fun <T> ActivitiesFilterMenu(
 
 private fun ActivityTab.labelRes(): Int = when (this) {
     ActivityTab.ALL -> R.string.activities_tab_all
-    ActivityTab.RECRUITING -> R.string.activities_tab_recruiting
-    ActivityTab.PENDING_ADMIN -> R.string.activities_tab_pending_admin
-    ActivityTab.APPROVED -> R.string.activities_tab_approved
+    ActivityTab.ON_VOTE -> R.string.activities_tab_recruiting
+    ActivityTab.ON_ADMIN_MODERATION -> R.string.activities_tab_pending_admin
+    ActivityTab.FINALIZED -> R.string.activities_tab_approved
     ActivityTab.MY_PROPOSALS -> R.string.activities_tab_my_proposals
-    ActivityTab.MY_PARTICIPATIONS -> R.string.activities_tab_my_participations
+    ActivityTab.MY_VOTES -> R.string.activities_tab_my_participations
 }

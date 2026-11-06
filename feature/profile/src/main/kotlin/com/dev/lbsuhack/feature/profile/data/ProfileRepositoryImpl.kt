@@ -1,18 +1,46 @@
 package com.dev.lbsuhack.feature.profile.data
 
+import android.content.Context
+import com.dev.lbsuhack.core.domain.DomainResult
+import com.dev.lbsuhack.core.domain.model.User
 import com.dev.lbsuhack.feature.profile.domain.ProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 
-class ProfileRepositoryImpl : ProfileRepository {
+class ProfileRepositoryImpl(
+    context: Context,
+    private val userProfileApi: UserProfileApi,
+) : ProfileRepository {
 
-    private val notificationsEnabled = MutableStateFlow(true)
+    private val preferences = context.applicationContext.getSharedPreferences(
+        PREFS_NAME,
+        Context.MODE_PRIVATE,
+    )
+
     private val savedItems = MutableStateFlow(0)
 
-    override suspend fun isNotificationsEnabled(): Boolean = notificationsEnabled.value
+    override suspend fun isNotificationsEnabled(): Boolean =
+        preferences.getBoolean(KEY_NOTIFICATIONS_ENABLED, true)
 
     override suspend fun setNotificationsEnabled(enabled: Boolean) {
-        notificationsEnabled.value = enabled
+        preferences.edit().putBoolean(KEY_NOTIFICATIONS_ENABLED, enabled).apply()
     }
 
     override suspend fun savedCount(): Int = savedItems.value
+
+    override suspend fun updateOwnProfile(
+        userId: String,
+        name: String,
+        surname: String,
+        fathersName: String,
+    ): DomainResult<User> = userProfileApi.updateProfile(
+        userId = userId,
+        name = name,
+        surname = surname,
+        fathersName = fathersName,
+    )
+
+    private companion object {
+        const val PREFS_NAME = "profile_settings"
+        const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
+    }
 }

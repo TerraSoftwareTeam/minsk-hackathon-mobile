@@ -4,16 +4,17 @@ import com.arkivanov.mvikotlin.core.store.Reducer
 import com.arkivanov.mvikotlin.core.store.Store
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
+import com.dev.lbsuhack.core.domain.DomainResult
 import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionState
 import com.dev.lbsuhack.core.domain.session.SessionUser
 import com.dev.lbsuhack.core.localization.text.UiText
 import com.dev.lbsuhack.feature.requests.R
+import com.dev.lbsuhack.feature.requests.toUiText
 import com.dev.lbsuhack.feature.requests.domain.RequestAudience
 import com.dev.lbsuhack.feature.requests.domain.ReviewRequest
 import com.dev.lbsuhack.feature.requests.domain.ReviewRequestRepository
 import com.dev.lbsuhack.feature.requests.domain.isPending
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -37,10 +38,9 @@ class RequestsStoreFactory(
         data class AudienceResolved(val audience: RequestAudience?) : Message
         data class UserUpdated(val user: SessionUser?) : Message
         data class RequestsLoaded(val requests: List<ReviewRequest>) : Message
+        data object RequestsLoadFailed : Message
         data class TabSelected(val tab: RequestsTab) : Message
         data class DialogOpened(val dialog: RequestDialog?) : Message
-        data class ConfirmedDateChanged(val value: String) : Message
-        data class ConfirmedLocationChanged(val value: String) : Message
         data class DeclineReasonChanged(val value: String) : Message
         data object Submitting : Message
         data object ActionCompleted : Message
@@ -55,22 +55,22 @@ class RequestsStoreFactory(
         override fun executeIntent(intent: RequestsStore.Intent) {
             when (intent) {
                 is RequestsStore.Intent.Load -> {
-                    dispatch(Message.AudienceResolved(intent.role.toRequestAudience()))
-                    startObserving()
+                    val audience = intent.role.toRequestAudience()
+                    dispatch(Message.AudienceResolved(audience))
+                    startObserving(audience)
                 }
+
                 is RequestsStore.Intent.SelectTab -> dispatch(Message.TabSelected(intent.tab))
                 is RequestsStore.Intent.ClickApprove -> openApproveDialog(intent.requestId)
                 is RequestsStore.Intent.ClickDecline -> openDeclineDialog(intent.requestId)
                 RequestsStore.Intent.DismissDialog -> dispatch(Message.DialogOpened(null))
-                is RequestsStore.Intent.ChangeConfirmedDate -> dispatch(Message.ConfirmedDateChanged(intent.value))
-                is RequestsStore.Intent.ChangeConfirmedLocation -> dispatch(Message.ConfirmedLocationChanged(intent.value))
                 is RequestsStore.Intent.ChangeDeclineReason -> dispatch(Message.DeclineReasonChanged(intent.value))
                 RequestsStore.Intent.ConfirmApprove -> confirmApprove()
                 RequestsStore.Intent.ConfirmDecline -> confirmDecline()
             }
         }
 
-        private fun startObserving() {
+        private fun startObserving(audience: RequestAudience?) {
             if (observing) return
             observing = true
 
@@ -87,28 +87,32 @@ class RequestsStoreFactory(
                     dispatch(Message.RequestsLoaded(requests))
                 }
             }
+
+            if (audience == null) return
+
+            scope.launch {
+                when (val result = requestRepository.refresh(audience)) {
+                    is DomainResult.Success -> Unit
+                    is DomainResult.Failure -> {
+                        dispatch(Message.RequestsLoadFailed)
+                        publish(RequestsStore.Label.ShowMessage(result.error.toUiText()))
+                    }
+                }
+            }
         }
 
         private fun openApproveDialog(requestId: String) {
             val request = state().queueRequests.find { it.id == requestId } ?: return
             if (!request.isPending) return
 
-            val dialog = when (request) {
-                is ReviewRequest.Publication -> RequestDialog.Approve(
-                    requestId = request.id,
-                    title = request.title,
-                    requiresDetails = false,
-                )
-
-                is ReviewRequest.Visit -> RequestDialog.Approve(
-                    requestId = request.id,
-                    title = request.title,
-                    confirmedDate = request.proposedDate,
-                    confirmedLocation = request.proposedLocation,
-                    requiresDetails = true,
-                )
-            }
-            dispatch(Message.DialogOpened(dialog))
+            dispatch(
+                Message.DialogOpened(
+                    RequestDialog.Approve(
+                        requestId = request.id,
+                        title = request.title,
+                    ),
+                ),
+            )
         }
 
         private fun openDeclineDialog(requestId: String) {
@@ -128,31 +132,20 @@ class RequestsStoreFactory(
         private fun confirmApprove() {
             val dialog = state().dialog as? RequestDialog.Approve ?: return
             if (state().isSubmitting) return
-
-            val request = state().queueRequests.find { it.id == dialog.requestId } ?: return
-            if (request is ReviewRequest.Visit && (dialog.confirmedDate.isBlank() || dialog.confirmedLocation.isBlank())) {
-                publish(RequestsStore.Label.ShowMessage(UiText.Resource(R.string.requests_error_details_required)))
-                return
-            }
+            val audience = state().audience ?: return
 
             dispatch(Message.Submitting)
             scope.launch {
-                try {
-                    when (request) {
-                        is ReviewRequest.Publication -> requestRepository.approvePublication(request.id)
-                        is ReviewRequest.Visit -> requestRepository.approveVisit(
-                            requestId = request.id,
-                            confirmedDate = dialog.confirmedDate,
-                            confirmedLocation = dialog.confirmedLocation,
-                        )
+                when (val result = requestRepository.approve(dialog.requestId, audience)) {
+                    is DomainResult.Success -> {
+                        dispatch(Message.ActionCompleted)
+                        publish(RequestsStore.Label.ShowMessage(UiText.Resource(R.string.requests_success_approved)))
                     }
-                    dispatch(Message.ActionCompleted)
-                    publish(RequestsStore.Label.ShowMessage(UiText.Resource(R.string.requests_success_approved)))
-                } catch (cancellation: CancellationException) {
-                    throw cancellation
-                } catch (error: Exception) {
-                    dispatch(Message.ActionFailed)
-                    publish(RequestsStore.Label.ShowMessage(UiText.Resource(R.string.requests_error_action_failed)))
+
+                    is DomainResult.Failure -> {
+                        dispatch(Message.ActionFailed)
+                        publish(RequestsStore.Label.ShowMessage(result.error.toUiText()))
+                    }
                 }
             }
         }
@@ -160,23 +153,26 @@ class RequestsStoreFactory(
         private fun confirmDecline() {
             val dialog = state().dialog as? RequestDialog.Decline ?: return
             if (state().isSubmitting) return
-
-            val request = state().queueRequests.find { it.id == dialog.requestId } ?: return
+            val audience = state().audience ?: return
 
             dispatch(Message.Submitting)
             scope.launch {
-                try {
-                    requestRepository.decline(
-                        requestId = request.id,
+                when (
+                    val result = requestRepository.decline(
+                        requestId = dialog.requestId,
                         reason = dialog.reason,
+                        audience = audience,
                     )
-                    dispatch(Message.ActionCompleted)
-                    publish(RequestsStore.Label.ShowMessage(UiText.Resource(R.string.requests_success_declined)))
-                } catch (cancellation: CancellationException) {
-                    throw cancellation
-                } catch (error: Exception) {
-                    dispatch(Message.ActionFailed)
-                    publish(RequestsStore.Label.ShowMessage(UiText.Resource(R.string.requests_error_action_failed)))
+                ) {
+                    is DomainResult.Success -> {
+                        dispatch(Message.ActionCompleted)
+                        publish(RequestsStore.Label.ShowMessage(UiText.Resource(R.string.requests_success_declined)))
+                    }
+
+                    is DomainResult.Failure -> {
+                        dispatch(Message.ActionFailed)
+                        publish(RequestsStore.Label.ShowMessage(result.error.toUiText()))
+                    }
                 }
             }
         }
@@ -188,14 +184,9 @@ class RequestsStoreFactory(
             is Message.AudienceResolved -> copy(audience = msg.audience)
             is Message.UserUpdated -> copy(currentUser = msg.user)
             is Message.RequestsLoaded -> copy(requests = msg.requests, isLoading = false)
+            Message.RequestsLoadFailed -> copy(isLoading = false)
             is Message.TabSelected -> copy(selectedTab = msg.tab)
             is Message.DialogOpened -> copy(dialog = msg.dialog)
-            is Message.ConfirmedDateChanged -> copy(
-                dialog = (dialog as? RequestDialog.Approve)?.copy(confirmedDate = msg.value),
-            )
-            is Message.ConfirmedLocationChanged -> copy(
-                dialog = (dialog as? RequestDialog.Approve)?.copy(confirmedLocation = msg.value),
-            )
             is Message.DeclineReasonChanged -> copy(
                 dialog = (dialog as? RequestDialog.Decline)?.copy(reason = msg.value),
             )

@@ -15,6 +15,24 @@
     <string name="profile_logout_confirm_desc">Чтобы вернуться, потребуется снова войти.</string>
     <string name="profile_cancel">Отмена</string>
 
+    <string name="profile_edit">Редактировать профиль</string>
+    <string name="profile_edit_dialog_title">Редактирование профиля</string>
+    <string name="profile_edit_name_label">Имя</string>
+    <string name="profile_edit_surname_label">Фамилия</string>
+    <string name="profile_edit_fathers_name_label">Отчество</string>
+    <string name="profile_edit_name_hint">Например: Иван</string>
+    <string name="profile_edit_surname_hint">Например: Иванов</string>
+    <string name="profile_edit_fathers_name_hint">Например: Иванович</string>
+    <string name="profile_edit_save">Сохранить</string>
+    <string name="profile_edit_error_fields_required">Заполните имя и фамилию</string>
+    <string name="profile_success_updated">Профиль обновлён</string>
+
+    <string name="profile_error_network">Проблема с соединением. Проверьте интернет и попробуйте ещё раз</string>
+    <string name="profile_error_forbidden">У вас нет доступа к этому действию</string>
+    <string name="profile_error_not_found">Профиль не найден на сервере</string>
+    <string name="profile_error_validation">Проверьте введённые данные</string>
+    <string name="profile_error_unknown">Что-то пошло не так. Попробуйте ещё раз</string>
+
     <string name="profile_settings_title">Настройки</string>
     <string name="profile_language">Язык</string>
     <string name="profile_language_description">Язык интерфейса приложения</string>

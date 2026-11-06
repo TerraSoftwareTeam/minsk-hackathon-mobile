@@ -26,7 +26,6 @@ import androidx.compose.material.icons.outlined.HourglassEmpty
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -46,30 +45,29 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dev.lbsuhack.core.designsystem.theme.hack
 import com.dev.lbsuhack.feature.activities.R
-import com.dev.lbsuhack.feature.activities.domain.ActivityParticipant
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
 import com.dev.lbsuhack.feature.activities.presentation.details.ActivityDetailsViewModel
 import com.dev.lbsuhack.feature.activities.store.details.ActivityDetailsStore
-import com.dev.lbsuhack.feature.activities.ui.activities.FloatingActionsBackdrop
 import com.dev.lbsuhack.feature.activities.ui.activities.ActivityCardCover
 import com.dev.lbsuhack.feature.activities.ui.activities.ActivityMetadata
+import com.dev.lbsuhack.feature.activities.ui.activities.FloatingActionsBackdrop
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,8 +78,6 @@ fun ActivityDetailsScreen(
     viewModel: ActivityDetailsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val simulatedTime = stringResource(R.string.details_simulated_time)
-    val simulatedLocation = stringResource(R.string.details_simulated_location)
 
     LaunchedEffect(activityId) {
         viewModel.accept(ActivityDetailsStore.Intent.Load(activityId))
@@ -129,7 +125,7 @@ fun ActivityDetailsScreen(
                     .padding(padding),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else if (proposal == null) {
             Box(
@@ -149,32 +145,18 @@ fun ActivityDetailsScreen(
                 ) {
                     ActivityHeroCard(proposal = proposal)
                     ActivityQrCard(activityId = proposal.id, title = proposal.title)
-                    if (proposal.status != ActivityStatus.RECRUITING) {
+                    if (proposal.status != ActivityStatus.ON_VOTE) {
                         ActivityStatusNotice(proposal = proposal)
                     }
                     StatusTimelineCard(status = proposal.status)
-                    ParticipantsCard(proposal = proposal)
-                    InteractiveSimulationSection(
-                        status = proposal.status,
-                        onSimulateToAdmin = {
-                            viewModel.accept(ActivityDetailsStore.Intent.SimulateTransitionToAdmin)
-                        },
-                        onSimulateApprove = {
-                            viewModel.accept(
-                                ActivityDetailsStore.Intent.SimulateApprove(
-                                    time = simulatedTime,
-                                    location = simulatedLocation,
-                                ),
-                            )
-                        },
-                    )
+                    VotingStatusCard(proposal = proposal)
                     Spacer(modifier = Modifier.height(144.dp))
                 }
                 DetailsFloatingActions(
                     proposal = proposal,
-                    isJoined = state.isJoined,
+                    hasVoted = state.hasVoted,
                     isAuthor = state.isAuthor,
-                    onToggleJoin = { viewModel.accept(ActivityDetailsStore.Intent.ToggleJoin) },
+                    onVote = { viewModel.accept(ActivityDetailsStore.Intent.Vote) },
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
@@ -226,21 +208,42 @@ private fun ActivityHeroCard(proposal: ActivityProposal) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            if (proposal.targetClass.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Outlined.Groups,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.activities_target_class_format, proposal.targetClass),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Outlined.Groups,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.activities_target_class_format, proposal.targetClass),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            if (proposal.teacherName != null && proposal.teacherName.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Outlined.Person,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = proposal.teacherName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(18.dp))
@@ -267,7 +270,7 @@ private fun ActivityHeroCard(proposal: ActivityProposal) {
                     Text(
                         text = stringResource(R.string.details_preferences_title),
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onPrimary,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
@@ -290,40 +293,42 @@ private fun ActivityStatusNotice(proposal: ActivityProposal) {
     val descriptionRes: Int?
 
     when (proposal.status) {
-        ActivityStatus.MODERATING -> {
+        ActivityStatus.ON_MODERATION -> {
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
             icon = Icons.Outlined.HourglassEmpty
             titleRes = R.string.activities_status_moderating
             descriptionRes = R.string.details_moderating_desc
         }
-        ActivityStatus.RECRUITING -> {
+        ActivityStatus.ON_VOTE -> {
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
             contentColor = MaterialTheme.colorScheme.primary
             icon = Icons.Outlined.Groups
             titleRes = R.string.details_recruiting_title
             descriptionRes = R.string.details_recruiting_desc
         }
-        ActivityStatus.PENDING_ADMIN -> {
+        ActivityStatus.ON_ADMIN_MODERATION -> {
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
             icon = Icons.Outlined.HourglassEmpty
             titleRes = R.string.details_admin_pending_title
             descriptionRes = R.string.details_admin_pending_desc
         }
-        ActivityStatus.APPROVED -> {
+        ActivityStatus.FINALIZED -> {
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
             contentColor = MaterialTheme.colorScheme.primary
             icon = Icons.Default.CheckCircle
             titleRes = R.string.details_admin_approved_title
             descriptionRes = null
         }
-        ActivityStatus.REJECTED -> {
+        ActivityStatus.DECLINED,
+        ActivityStatus.DECLINED_BY_ADMIN,
+        ActivityStatus.EXPIRED -> {
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
             contentColor = MaterialTheme.colorScheme.outline
             icon = Icons.Default.CheckCircle
             titleRes = R.string.details_rejected_title
-            descriptionRes = R.string.details_rejected_desc
+            descriptionRes = if (proposal.declineReason.isNullOrBlank()) R.string.details_rejected_desc else null
         }
     }
 
@@ -361,9 +366,16 @@ private fun ActivityStatusNotice(proposal: ActivityProposal) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        } else if (proposal.declineReason != null && proposal.declineReason.isNotBlank()) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = proposal.declineReason,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
 
-        if (proposal.status == ActivityStatus.APPROVED &&
+        if (proposal.status == ActivityStatus.FINALIZED &&
             (proposal.confirmedTime != null || proposal.confirmedLocation != null)
         ) {
             Spacer(modifier = Modifier.height(16.dp))
@@ -422,11 +434,13 @@ private fun ConfirmedDetailsRow(
 @Composable
 private fun StatusTimelineCard(status: ActivityStatus) {
     val activeStep = when (status) {
-        ActivityStatus.MODERATING -> 1
-        ActivityStatus.RECRUITING -> 2
-        ActivityStatus.PENDING_ADMIN -> 3
-        ActivityStatus.APPROVED -> 4
-        ActivityStatus.REJECTED -> 0
+        ActivityStatus.ON_MODERATION -> 1
+        ActivityStatus.ON_VOTE -> 2
+        ActivityStatus.ON_ADMIN_MODERATION -> 3
+        ActivityStatus.FINALIZED -> 4
+        ActivityStatus.DECLINED,
+        ActivityStatus.DECLINED_BY_ADMIN,
+        ActivityStatus.EXPIRED -> 0
     }
     val steps = listOf(
         R.string.details_step_created_short,
@@ -542,13 +556,7 @@ private fun StatusTimelineCard(status: ActivityStatus) {
 }
 
 @Composable
-private fun ParticipantsCard(proposal: ActivityProposal) {
-    val progress = if (proposal.maxParticipants > 0) {
-        (proposal.currentParticipantsCount.toFloat() / proposal.maxParticipants.toFloat()).coerceIn(0f, 1f)
-    } else {
-        0f
-    }
-
+private fun VotingStatusCard(proposal: ActivityProposal) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -568,17 +576,17 @@ private fun ParticipantsCard(proposal: ActivityProposal) {
         ) {
             Text(
                 text = stringResource(
-                    R.string.details_participants_title,
-                    proposal.currentParticipantsCount,
+                    R.string.activities_capacity_format,
+                    proposal.votesCount,
+                    proposal.voteThreshold,
                 ),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = stringResource(
-                    R.string.activities_capacity_format,
-                    proposal.currentParticipantsCount,
-                    proposal.maxParticipants,
+                    R.string.activities_min_max_format,
+                    proposal.voteThreshold,
                 ),
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.primary,
@@ -588,7 +596,7 @@ private fun ParticipantsCard(proposal: ActivityProposal) {
         Spacer(modifier = Modifier.height(12.dp))
 
         LinearProgressIndicator(
-            progress = { progress },
+            progress = { proposal.progress },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(7.dp)
@@ -600,179 +608,30 @@ private fun ParticipantsCard(proposal: ActivityProposal) {
         Spacer(modifier = Modifier.height(10.dp))
 
         Text(
-            text = if (proposal.hasQuorum) {
+            text = if (proposal.isQuorumReached) {
                 stringResource(R.string.activities_quorum_reached)
             } else {
                 stringResource(
                     R.string.activities_min_max_format,
-                    proposal.minParticipants,
-                    proposal.maxParticipants,
+                    proposal.voteThreshold,
                 )
             },
             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (proposal.participants.isEmpty()) {
-            Text(
-                text = stringResource(R.string.details_participants_empty),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                proposal.participants.forEach { participant ->
-                    ParticipantItem(participant = participant)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ParticipantItem(participant: ActivityParticipant) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                MaterialTheme.colorScheme.surfaceContainerLow,
-                MaterialTheme.shapes.large,
-            )
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(38.dp)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f), CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = participant.name.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = participant.name,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f),
-        )
-        Text(
-            text = participant.pupilClass,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun InteractiveSimulationSection(
-    status: ActivityStatus,
-    onSimulateToAdmin: () -> Unit,
-    onSimulateApprove: () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.extraLarge)
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant,
-                shape = MaterialTheme.shapes.extraLarge,
-            )
-            .padding(18.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Outlined.Science,
-                contentDescription = null,
-                modifier = Modifier.size(22.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = stringResource(R.string.details_simulation_title),
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = stringResource(R.string.details_simulation_desc),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(modifier = Modifier.height(14.dp))
-
-        when (status) {
-            ActivityStatus.RECRUITING, ActivityStatus.MODERATING -> {
-                OutlinedButton(
-                    onClick = onSimulateToAdmin,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    shape = MaterialTheme.shapes.medium,
-                ) {
-                    Text(
-                        text = stringResource(R.string.details_simulate_send_admin),
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    )
-                }
-            }
-            ActivityStatus.PENDING_ADMIN -> {
-                Button(
-                    onClick = onSimulateApprove,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                    ),
-                ) {
-                    Text(
-                        text = stringResource(R.string.details_simulate_approve),
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    )
-                }
-            }
-            ActivityStatus.APPROVED -> {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = stringResource(R.string.details_simulation_complete),
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-            }
-            ActivityStatus.REJECTED -> Unit
-        }
     }
 }
 
 @Composable
 private fun DetailsFloatingActions(
     proposal: ActivityProposal,
-    isJoined: Boolean,
+    hasVoted: Boolean,
     isAuthor: Boolean,
-    onToggleJoin: () -> Unit,
+    onVote: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val canJoin = proposal.status == ActivityStatus.RECRUITING && !proposal.isFull
-    if (!isAuthor && !isJoined && !canJoin && !proposal.isFull) return
+    val canVote = proposal.status == ActivityStatus.ON_VOTE
+    if (!isAuthor && !hasVoted && !canVote) return
 
     Box(modifier = modifier.fillMaxWidth().height(180.dp)) {
         FloatingActionsBackdrop(modifier = Modifier.matchParentSize())
@@ -803,9 +662,9 @@ private fun DetailsFloatingActions(
             }
 
             when {
-                isJoined -> {
+                hasVoted -> {
                     OutlinedButton(
-                        onClick = onToggleJoin,
+                        onClick = onVote,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(72.dp),
@@ -827,9 +686,9 @@ private fun DetailsFloatingActions(
                         )
                     }
                 }
-                canJoin -> {
+                canVote -> {
                     Button(
-                        onClick = onToggleJoin,
+                        onClick = onVote,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(72.dp),
@@ -841,21 +700,6 @@ private fun DetailsFloatingActions(
                     ) {
                         Text(
                             text = stringResource(R.string.activities_join_action),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        )
-                    }
-                }
-                proposal.isFull -> {
-                    Button(
-                        onClick = {},
-                        enabled = false,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(72.dp),
-                        shape = MaterialTheme.shapes.large,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.activities_full_badge),
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         )
                     }
