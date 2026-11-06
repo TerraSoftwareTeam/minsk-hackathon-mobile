@@ -11,19 +11,21 @@
     <string name="requests_tab_processed">Обработанные</string>
     <string name="requests_tab_all">Все</string>
 
-    <string name="requests_status_pending_teacher">Ожидает учителя</string>
-    <string name="requests_status_pending_admin">Ожидает администрацию</string>
+    <string name="requests_status_pending_teacher">На проверке</string>
+    <string name="requests_status_pending_admin">На согласовании</string>
     <string name="requests_status_approved">Одобрено</string>
     <string name="requests_status_declined">Отклонено</string>
 
-    <string name="requests_kind_publication">ПУБЛИКАЦИЯ</string>
-    <string name="requests_kind_visit">МЕРОПРИЯТИЕ</string>
+    <string name="requests_kind_publication">Публикация</string>
+    <string name="requests_kind_visit">Мероприятие</string>
     <string name="requests_author_format">Автор: %1$s · %2$s</string>
     <string name="requests_date_format">Желаемая дата: %1$s</string>
     <string name="requests_location_format">Желаемое место: %1$s</string>
     <string name="requests_confirmed_date_format">Подтверждённая дата: %1$s</string>
     <string name="requests_confirmed_location_format">Подтверждённое место: %1$s</string>
     <string name="requests_participants_title">Участники (%1$d)</string>
+    <string name="requests_participants_show">Показать участников (%1$d)</string>
+    <string name="requests_participants_hide">Скрыть участников</string>
     <string name="requests_decline_reason_format">Причина: %1$s</string>
 
     <string name="requests_action_approve">Одобрить</string>

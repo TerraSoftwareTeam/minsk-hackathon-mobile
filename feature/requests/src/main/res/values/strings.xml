@@ -11,19 +11,21 @@
     <string name="requests_tab_processed">Processed</string>
     <string name="requests_tab_all">All</string>
 
-    <string name="requests_status_pending_teacher">Awaiting teacher</string>
-    <string name="requests_status_pending_admin">Awaiting administration</string>
+    <string name="requests_status_pending_teacher">To review</string>
+    <string name="requests_status_pending_admin">Awaiting approval</string>
     <string name="requests_status_approved">Approved</string>
     <string name="requests_status_declined">Declined</string>
 
-    <string name="requests_kind_publication">PUBLICATION</string>
-    <string name="requests_kind_visit">EVENT</string>
+    <string name="requests_kind_publication">Publication</string>
+    <string name="requests_kind_visit">Event</string>
     <string name="requests_author_format">Author: %1$s · %2$s</string>
     <string name="requests_date_format">Requested date: %1$s</string>
     <string name="requests_location_format">Requested place: %1$s</string>
     <string name="requests_confirmed_date_format">Confirmed date: %1$s</string>
     <string name="requests_confirmed_location_format">Confirmed place: %1$s</string>
     <string name="requests_participants_title">Participants (%1$d)</string>
+    <string name="requests_participants_show">Show participants (%1$d)</string>
+    <string name="requests_participants_hide">Hide participants</string>
     <string name="requests_decline_reason_format">Reason: %1$s</string>
 
     <string name="requests_action_approve">Approve</string>

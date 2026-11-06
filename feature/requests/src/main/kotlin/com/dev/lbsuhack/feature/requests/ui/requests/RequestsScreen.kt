@@ -1,6 +1,10 @@
 package com.dev.lbsuhack.feature.requests.ui.requests
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,55 +21,66 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Inbox
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.outlined.Campaign
+import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.dev.lbsuhack.core.designsystem.theme.HackMonoTextStyle
+import com.dev.lbsuhack.core.designsystem.theme.HackAccent
 import com.dev.lbsuhack.core.designsystem.theme.hack
 import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.localization.text.resolve
 import com.dev.lbsuhack.feature.requests.R
 import com.dev.lbsuhack.feature.requests.domain.RequestAudience
+import com.dev.lbsuhack.feature.requests.domain.RequestParticipant
 import com.dev.lbsuhack.feature.requests.domain.ReviewRequest
 import com.dev.lbsuhack.feature.requests.domain.ReviewStatus
 import com.dev.lbsuhack.feature.requests.domain.isPending
@@ -96,6 +111,7 @@ fun RequestsScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = {
@@ -107,6 +123,7 @@ fun RequestsScreen(
                                 null -> R.string.requests_title
                             },
                         ),
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     )
                 },
                 navigationIcon = {
@@ -117,6 +134,9 @@ fun RequestsScreen(
                         )
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
             )
         },
         snackbarHost = {
@@ -189,9 +209,9 @@ private fun RequestsContent(
                     null -> R.string.requests_subtitle_admin
                 },
             ),
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp),
+            modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 6.dp),
         )
 
         RequestsTabs(
@@ -200,7 +220,7 @@ private fun RequestsContent(
             onSelectTab = onSelectTab,
         )
 
-        HorizontalDivider(color = MaterialTheme.hack.gridLine, thickness = 1.dp)
+        HorizontalDivider(color = MaterialTheme.hack.gridLine)
 
         if (state.visibleRequests.isEmpty()) {
             RequestsEmpty(
@@ -212,8 +232,8 @@ private fun RequestsContent(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 items(
                     items = state.visibleRequests,
@@ -240,30 +260,37 @@ private fun RequestsTabs(
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 20.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         RequestsTab.entries.forEach { tab ->
-            FilterChip(
-                selected = selectedTab == tab,
-                onClick = { onSelectTab(tab) },
-                label = {
-                    Text(
-                        text = when (tab) {
-                            RequestsTab.PENDING -> stringResource(R.string.requests_tab_pending, pendingCount)
-                            RequestsTab.PROCESSED -> stringResource(R.string.requests_tab_processed)
-                            RequestsTab.ALL -> stringResource(R.string.requests_tab_all)
-                        },
-                        style = MaterialTheme.typography.labelLarge,
-                    )
+            val selected = selectedTab == tab
+            val shape = MaterialTheme.shapes.medium
+            Text(
+                text = when (tab) {
+                    RequestsTab.PENDING -> stringResource(R.string.requests_tab_pending, pendingCount)
+                    RequestsTab.PROCESSED -> stringResource(R.string.requests_tab_processed)
+                    RequestsTab.ALL -> stringResource(R.string.requests_tab_all)
                 },
-                shape = MaterialTheme.shapes.small,
-                colors = FilterChipDefaults.filterChipColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier
+                    .clip(shape)
+                    .background(
+                        if (selected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.surfaceContainer,
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = if (selected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.outlineVariant,
+                        shape = shape,
+                    )
+                    .clickable { onSelectTab(tab) }
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                 ),
+                color = if (selected) MaterialTheme.colorScheme.onPrimary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -278,42 +305,40 @@ private fun RequestCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.large)
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .padding(18.dp),
+            .clip(MaterialTheme.shapes.extraLarge)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant,
+                shape = MaterialTheme.shapes.extraLarge,
+            )
+            .padding(20.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = stringResource(
-                    when (request.audience) {
-                        RequestAudience.TEACHER -> R.string.requests_kind_publication
-                        RequestAudience.ADMIN -> R.string.requests_kind_visit
-                    },
-                ),
-                style = HackMonoTextStyle.copy(fontSize = 11.sp, fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            RequestKindBadge(
+                audience = request.audience,
+                modifier = Modifier.weight(1f),
             )
+            Spacer(modifier = Modifier.width(10.dp))
             RequestStatusBadge(status = request.status)
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         Text(
             text = request.title,
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         RequestInfoRow(
-            icon = Icons.Default.Person,
+            icon = Icons.Outlined.Person,
             text = stringResource(
                 R.string.requests_author_format,
                 request.author.name,
@@ -321,19 +346,7 @@ private fun RequestCard(
             ),
         )
 
-        RequestInfoRow(
-            icon = Icons.Default.Schedule,
-            text = stringResource(R.string.requests_date_format, request.proposedDate),
-        )
-
-        if (request is ReviewRequest.Visit) {
-            RequestInfoRow(
-                icon = Icons.Default.LocationOn,
-                text = stringResource(R.string.requests_location_format, request.proposedLocation),
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         Text(
             text = request.description,
@@ -341,42 +354,62 @@ private fun RequestCard(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        if (request is ReviewRequest.Visit) {
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = stringResource(R.string.requests_participants_title, request.participants.size),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface,
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    MaterialTheme.colorScheme.surfaceContainerLow,
+                    MaterialTheme.shapes.large,
+                )
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            RequestInfoRow(
+                icon = Icons.Outlined.Schedule,
+                text = stringResource(R.string.requests_date_format, request.proposedDate),
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = request.participants.joinToString { participant ->
-                    participant.name + " · " + participant.pupilClass
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (request is ReviewRequest.Visit) {
+                RequestInfoRow(
+                    icon = Icons.Outlined.LocationOn,
+                    text = stringResource(R.string.requests_location_format, request.proposedLocation),
+                )
+            }
         }
 
-        if (request.status == ReviewStatus.APPROVED && request is ReviewRequest.Visit && request.confirmedDate != null) {
-            Spacer(modifier = Modifier.height(12.dp))
+        if (request is ReviewRequest.Visit) {
+            ParticipantsSection(request = request)
+        }
+
+        if (request.status == ReviewStatus.APPROVED &&
+            request is ReviewRequest.Visit &&
+            request.confirmedDate != null
+        ) {
+            Spacer(modifier = Modifier.height(14.dp))
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceContainerLow, MaterialTheme.shapes.small)
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                    .background(
+                        MaterialTheme.hack.successContainer,
+                        MaterialTheme.shapes.large,
+                    )
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text(
+                RequestInfoRow(
+                    icon = Icons.Outlined.Schedule,
                     text = stringResource(R.string.requests_confirmed_date_format, request.confirmedDate),
-                    style = HackMonoTextStyle.copy(fontSize = 11.sp),
-                    color = MaterialTheme.hack.success,
+                    contentColor = MaterialTheme.hack.success,
                 )
                 if (request.confirmedLocation != null) {
-                    Text(
-                        text = stringResource(R.string.requests_confirmed_location_format, request.confirmedLocation),
-                        style = HackMonoTextStyle.copy(fontSize = 11.sp),
-                        color = MaterialTheme.hack.success,
+                    RequestInfoRow(
+                        icon = Icons.Outlined.LocationOn,
+                        text = stringResource(
+                            R.string.requests_confirmed_location_format,
+                            request.confirmedLocation,
+                        ),
+                        contentColor = MaterialTheme.hack.success,
                     )
                 }
             }
@@ -384,10 +417,17 @@ private fun RequestCard(
 
         val declineReason = request.declineReason
         if (declineReason != null) {
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
             Text(
                 text = stringResource(R.string.requests_decline_reason_format, declineReason),
-                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        MaterialTheme.hack.danger.copy(alpha = 0.12f),
+                        MaterialTheme.shapes.large,
+                    )
+                    .padding(14.dp),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                 color = MaterialTheme.hack.danger,
             )
         }
@@ -396,37 +436,53 @@ private fun RequestCard(
             Spacer(modifier = Modifier.height(16.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 OutlinedButton(
                     onClick = onDecline,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp),
                     shape = MaterialTheme.shapes.medium,
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = MaterialTheme.hack.danger,
                     ),
+                    border = BorderStroke(1.dp, MaterialTheme.hack.danger.copy(alpha = 0.5f)),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(18.dp),
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(R.string.requests_action_decline))
+                    Spacer(modifier = Modifier.width(7.dp))
+                    Text(
+                        text = stringResource(R.string.requests_action_decline),
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        maxLines = 1,
+                    )
                 }
 
                 Button(
                     onClick = onApprove,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp),
                     shape = MaterialTheme.shapes.medium,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                    ),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(18.dp),
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(R.string.requests_action_approve))
+                    Spacer(modifier = Modifier.width(7.dp))
+                    Text(
+                        text = stringResource(R.string.requests_action_approve),
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        maxLines = 1,
+                    )
                 }
             }
         }
@@ -434,25 +490,176 @@ private fun RequestCard(
 }
 
 @Composable
+private fun ParticipantsSection(request: ReviewRequest.Visit) {
+    var expanded by rememberSaveable(request.id) { mutableStateOf(false) }
+
+    Spacer(modifier = Modifier.height(14.dp))
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.large)
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant,
+                shape = MaterialTheme.shapes.large,
+            ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Groups,
+                contentDescription = null,
+                modifier = Modifier.size(21.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = if (expanded) {
+                    stringResource(R.string.requests_participants_hide)
+                } else {
+                    stringResource(R.string.requests_participants_show, request.participants.size)
+                },
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Icon(
+                imageVector = if (expanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.ExpandMore,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        AnimatedVisibility(visible = expanded) {
+            Column(
+                modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+            ) {
+                HorizontalDivider(color = MaterialTheme.hack.gridLine)
+                Spacer(modifier = Modifier.height(12.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    request.participants.forEach { participant ->
+                        ParticipantRow(participant = participant)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ParticipantRow(participant: RequestParticipant) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                MaterialTheme.colorScheme.surfaceContainer,
+                MaterialTheme.shapes.medium,
+            )
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = participant.name.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        Spacer(modifier = Modifier.width(11.dp))
+        Text(
+            text = participant.name,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = participant.pupilClass,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun RequestKindBadge(
+    audience: RequestAudience,
+    modifier: Modifier = Modifier,
+) {
+    val accent = audience.accent()
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .background(accent.container, MaterialTheme.shapes.medium),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = when (audience) {
+                    RequestAudience.TEACHER -> Icons.Outlined.Campaign
+                    RequestAudience.ADMIN -> Icons.Outlined.Event
+                },
+                contentDescription = null,
+                modifier = Modifier.size(19.dp),
+                tint = accent.accent,
+            )
+        }
+        Spacer(modifier = Modifier.width(9.dp))
+        Text(
+            text = stringResource(
+                when (audience) {
+                    RequestAudience.TEACHER -> R.string.requests_kind_publication
+                    RequestAudience.ADMIN -> R.string.requests_kind_visit
+                },
+            ),
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+            color = accent.accent,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun RequestAudience.accent(): HackAccent = when (this) {
+    RequestAudience.TEACHER -> MaterialTheme.hack.violet
+    RequestAudience.ADMIN -> MaterialTheme.hack.pink
+}
+
+@Composable
 private fun RequestInfoRow(
     icon: ImageVector,
     text: String,
+    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
-    Row(
-        modifier = Modifier.padding(top = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            modifier = Modifier.size(14.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(18.dp),
+            tint = contentColor,
         )
-        Spacer(modifier = Modifier.width(6.dp))
+        Spacer(modifier = Modifier.width(9.dp))
         Text(
             text = text,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+            color = contentColor,
         )
     }
 }
@@ -460,34 +667,34 @@ private fun RequestInfoRow(
 @Composable
 private fun RequestStatusBadge(status: ReviewStatus) {
     val containerColor = when (status) {
-        ReviewStatus.PENDING_TEACHER, ReviewStatus.PENDING_ADMIN -> MaterialTheme.colorScheme.surfaceVariant
-        ReviewStatus.APPROVED -> MaterialTheme.hack.success.copy(alpha = 0.16f)
-        ReviewStatus.DECLINED -> MaterialTheme.colorScheme.errorContainer
+        ReviewStatus.PENDING_TEACHER -> MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+        ReviewStatus.PENDING_ADMIN -> MaterialTheme.hack.amber.container
+        ReviewStatus.APPROVED -> MaterialTheme.hack.successContainer
+        ReviewStatus.DECLINED -> MaterialTheme.hack.danger.copy(alpha = 0.14f)
     }
     val contentColor = when (status) {
-        ReviewStatus.PENDING_TEACHER, ReviewStatus.PENDING_ADMIN -> MaterialTheme.colorScheme.onSurfaceVariant
+        ReviewStatus.PENDING_TEACHER -> MaterialTheme.colorScheme.primary
+        ReviewStatus.PENDING_ADMIN -> MaterialTheme.hack.amber.accent
         ReviewStatus.APPROVED -> MaterialTheme.hack.success
-        ReviewStatus.DECLINED -> MaterialTheme.colorScheme.onErrorContainer
+        ReviewStatus.DECLINED -> MaterialTheme.hack.danger
     }
 
-    Box(
+    Text(
+        text = stringResource(
+            when (status) {
+                ReviewStatus.PENDING_TEACHER -> R.string.requests_status_pending_teacher
+                ReviewStatus.PENDING_ADMIN -> R.string.requests_status_pending_admin
+                ReviewStatus.APPROVED -> R.string.requests_status_approved
+                ReviewStatus.DECLINED -> R.string.requests_status_declined
+            },
+        ),
         modifier = Modifier
-            .background(containerColor, MaterialTheme.shapes.extraSmall)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-    ) {
-        Text(
-            text = stringResource(
-                when (status) {
-                    ReviewStatus.PENDING_TEACHER -> R.string.requests_status_pending_teacher
-                    ReviewStatus.PENDING_ADMIN -> R.string.requests_status_pending_admin
-                    ReviewStatus.APPROVED -> R.string.requests_status_approved
-                    ReviewStatus.DECLINED -> R.string.requests_status_declined
-                },
-            ),
-            style = HackMonoTextStyle.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
-            color = contentColor,
-        )
-    }
+            .background(containerColor, CircleShape)
+            .padding(horizontal = 11.dp, vertical = 7.dp),
+        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+        color = contentColor,
+        maxLines = 1,
+    )
 }
 
 @Composable
@@ -500,19 +707,27 @@ private fun RequestsEmpty(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Icon(
-            imageVector = Icons.Default.Inbox,
-            contentDescription = null,
-            modifier = Modifier.size(48.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(modifier = Modifier.height(12.dp))
+        Box(
+            modifier = Modifier
+                .size(72.dp)
+                .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Inbox,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
+        Spacer(modifier = Modifier.height(18.dp))
         Text(
             text = stringResource(R.string.requests_empty_title),
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = stringResource(
                 when (state.selectedTab) {
@@ -521,13 +736,13 @@ private fun RequestsEmpty(
                         RequestAudience.ADMIN -> R.string.requests_empty_pending_admin
                         null -> R.string.requests_empty_all
                     }
-
                     RequestsTab.PROCESSED -> R.string.requests_empty_processed
                     RequestsTab.ALL -> R.string.requests_empty_all
                 },
             ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -539,23 +754,32 @@ private fun AccessDenied(modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Icon(
-            imageVector = Icons.Default.Lock,
-            contentDescription = null,
-            modifier = Modifier.size(48.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(modifier = Modifier.height(12.dp))
+        Box(
+            modifier = Modifier
+                .size(72.dp)
+                .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Lock,
+                contentDescription = null,
+                modifier = Modifier.size(30.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Spacer(modifier = Modifier.height(18.dp))
         Text(
             text = stringResource(R.string.requests_access_denied_title),
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = stringResource(R.string.requests_access_denied_desc),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -576,8 +800,12 @@ private fun RequestsDialog(
             onDismissRequest = {
                 if (!isSubmitting) onDismiss()
             },
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             title = {
-                Text(stringResource(R.string.requests_dialog_approve_title))
+                Text(
+                    text = stringResource(R.string.requests_dialog_approve_title),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                )
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -590,21 +818,15 @@ private fun RequestsDialog(
                             text = stringResource(R.string.requests_dialog_approve_visit_text),
                             style = MaterialTheme.typography.bodyMedium,
                         )
-                        OutlinedTextField(
+                        DialogTextField(
                             value = dialog.confirmedDate,
                             onValueChange = onChangeDate,
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text(stringResource(R.string.requests_confirm_date_label)) },
-                            singleLine = true,
-                            shape = MaterialTheme.shapes.medium,
+                            label = stringResource(R.string.requests_confirm_date_label),
                         )
-                        OutlinedTextField(
+                        DialogTextField(
                             value = dialog.confirmedLocation,
                             onValueChange = onChangeLocation,
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text(stringResource(R.string.requests_confirm_location_label)) },
-                            singleLine = true,
-                            shape = MaterialTheme.shapes.medium,
+                            label = stringResource(R.string.requests_confirm_location_label),
                         )
                     } else {
                         Text(
@@ -615,11 +837,22 @@ private fun RequestsDialog(
                 }
             },
             confirmButton = {
-                TextButton(
+                Button(
                     onClick = onConfirmApprove,
                     enabled = !isSubmitting,
+                    shape = MaterialTheme.shapes.medium,
                 ) {
-                    Text(stringResource(R.string.requests_action_approve))
+                    if (isSubmitting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.requests_action_approve),
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                 }
             },
             dismissButton = {
@@ -636,8 +869,12 @@ private fun RequestsDialog(
             onDismissRequest = {
                 if (!isSubmitting) onDismiss()
             },
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             title = {
-                Text(stringResource(R.string.requests_dialog_decline_title))
+                Text(
+                    text = stringResource(R.string.requests_dialog_decline_title),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                )
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -649,24 +886,36 @@ private fun RequestsDialog(
                         text = stringResource(R.string.requests_dialog_decline_text),
                         style = MaterialTheme.typography.bodyMedium,
                     )
-                    OutlinedTextField(
+                    DialogTextField(
                         value = dialog.reason,
                         onValueChange = onChangeReason,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.requests_dialog_decline_reason_label)) },
-                        placeholder = { Text(stringResource(R.string.requests_dialog_decline_reason_hint)) },
+                        label = stringResource(R.string.requests_dialog_decline_reason_label),
+                        hint = stringResource(R.string.requests_dialog_decline_reason_hint),
                         minLines = 2,
-                        shape = MaterialTheme.shapes.medium,
                     )
                 }
             },
             confirmButton = {
-                TextButton(
+                Button(
                     onClick = onConfirmDecline,
                     enabled = !isSubmitting,
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.hack.danger),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
                 ) {
-                    Text(stringResource(R.string.requests_action_decline))
+                    if (isSubmitting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            color = MaterialTheme.colorScheme.onError,
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.requests_action_decline),
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                 }
             },
             dismissButton = {
@@ -679,4 +928,38 @@ private fun RequestsDialog(
             },
         )
     }
+}
+
+@Composable
+private fun DialogTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    hint: String? = null,
+    minLines: Int = 1,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text(label) },
+        placeholder = if (hint == null) {
+            null
+        } else {
+            {
+                Text(
+                    text = hint,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                )
+            }
+        },
+        minLines = minLines,
+        shape = MaterialTheme.shapes.medium,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+        ),
+    )
 }
