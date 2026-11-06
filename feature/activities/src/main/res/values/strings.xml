@@ -21,7 +21,7 @@
 
     <string name="activities_status_moderating">На модерации</string>
     <string name="activities_status_recruiting">Идёт набор</string>
-    <string name="activities_status_pending_admin">Ожидает подтверждения администрации</string>
+    <string name="activities_status_pending_admin">На согласовании</string>
     <string name="activities_status_approved">Подтверждено</string>
     <string name="activities_status_rejected">Отклонено</string>
 
@@ -72,4 +72,35 @@
     <string name="details_simulate_send_admin">Смоделировать: передать в администрацию</string>
     <string name="details_simulate_approve">Смоделировать: утвердить администрацией</string>
     <string name="details_author_badge">Вы создатель этой заявки</string>
+
+    <string name="activities_greeting_format">Привет, %1$s · %2$s</string>
+    <string name="activities_quorum_reached">Кворум набран</string>
+    <string name="activities_open_details">Подробнее</string>
+    <string name="activities_target_class_format">Для кого: %1$s</string>
+    <string name="activities_capacity_format">%1$d из %2$d мест</string>
+    <string name="activities_min_max_format">Минимум %1$d · максимум %2$d</string>
+
+    <string name="create_activity_main_section">О мероприятии</string>
+    <string name="create_activity_participants_section">Участники</string>
+    <string name="create_activity_organization_section">Организация</string>
+    <string name="create_activity_min_title">Минимум</string>
+    <string name="create_activity_max_title">Максимум</string>
+    <string name="create_activity_moderation_note">После проверки модератором инициатива станет доступна ученикам для записи.</string>
+
+    <string name="details_stage_title">Путь заявки</string>
+    <string name="details_step_created_short">Подача</string>
+    <string name="details_step_moderated_short">Проверка</string>
+    <string name="details_step_recruiting_short">Набор</string>
+    <string name="details_step_pending_short">Школа</string>
+    <string name="details_step_approved_short">Готово</string>
+    <string name="details_preferences_title">Пожелания по организации</string>
+    <string name="details_simulation_title">Проверка сценария</string>
+    <string name="details_simulation_desc">Переключайте статусы, чтобы проверить процесс согласования.</string>
+    <string name="details_simulation_complete">Заявка прошла все этапы и утверждена школой.</string>
+    <string name="details_simulated_time">Суббота, 12:00 – 14:00</string>
+    <string name="details_simulated_location">Кабинет информатики (№204)</string>
+    <string name="details_rejected_title">Заявка отклонена</string>
+    <string name="details_rejected_desc">Инициатива не прошла проверку. Организатор может создать новую заявку с учётом замечаний.</string>
+    <string name="details_recruiting_title">Идёт набор участников</string>
+    <string name="details_recruiting_desc">Когда наберётся минимальное число участников, заявку можно будет передать администрации.</string>
 </resources>

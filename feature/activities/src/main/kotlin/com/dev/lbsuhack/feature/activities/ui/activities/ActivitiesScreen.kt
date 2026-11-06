@@ -1,6 +1,7 @@
 package com.dev.lbsuhack.feature.activities.ui.activities
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,14 +23,21 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Casino
+import androidx.compose.material.icons.outlined.Computer
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Movie
+import androidx.compose.material.icons.outlined.Museum
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.SportsBasketball
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -45,15 +53,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.dev.lbsuhack.core.designsystem.theme.HackMonoTextStyle
+import com.dev.lbsuhack.core.designsystem.theme.HackAccent
 import com.dev.lbsuhack.core.designsystem.theme.hack
 import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
@@ -101,7 +107,12 @@ fun ActivitiesScreen(
             ExtendedFloatingActionButton(
                 onClick = { viewModel.accept(ActivitiesStore.Intent.ClickCreate) },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text(stringResource(R.string.activities_create_action)) },
+                text = {
+                    Text(
+                        text = stringResource(R.string.activities_create_action),
+                        fontWeight = FontWeight.Bold,
+                    )
+                },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = MaterialTheme.shapes.large,
@@ -119,16 +130,14 @@ fun ActivitiesScreen(
                 }
 
                 state.filteredActivities.isEmpty() -> {
-                    ActivitiesEmpty(
-                        modifier = Modifier.align(Alignment.Center),
-                    )
+                    ActivitiesEmpty(modifier = Modifier.align(Alignment.Center))
                 }
 
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         items(
                             items = state.filteredActivities,
@@ -167,7 +176,7 @@ private fun ActivitiesTopBar(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
-            .padding(top = 10.dp),
+            .padding(top = 16.dp),
     ) {
         Row(
             modifier = Modifier
@@ -178,55 +187,63 @@ private fun ActivitiesTopBar(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.activities_title),
-                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.headlineLarge,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = if (userName != null) {
-                        "Привет, $userName · ${pupilClass ?: "10-А"}"
+                        stringResource(
+                            R.string.activities_greeting_format,
+                            userName,
+                            pupilClass ?: "10-А",
+                        )
                     } else {
                         stringResource(R.string.activities_subtitle)
                     },
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            ProfileAvatar(name = userName ?: "У", onOpenProfile = onOpenProfile)
+            Spacer(modifier = Modifier.width(16.dp))
+            ProfileAvatar(name = userName, onOpenProfile = onOpenProfile)
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         ActivitiesCategoryRow(
             selectedCategory = selectedCategory,
             onSelectCategory = onSelectCategory,
-            modifier = Modifier.padding(horizontal = 20.dp),
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         ActivitiesTabRow(
             selectedTab = selectedTab,
             onSelectTab = onSelectTab,
         )
 
-        HorizontalDivider(color = MaterialTheme.hack.gridLine, thickness = 1.dp)
+        HorizontalDivider(color = MaterialTheme.hack.gridLine)
     }
 }
 
 @Composable
-private fun ProfileAvatar(name: String, onOpenProfile: () -> Unit) {
-    val initial = name.firstOrNull()?.uppercaseChar()?.toString() ?: "К"
+private fun ProfileAvatar(
+    name: String?,
+    onOpenProfile: () -> Unit,
+) {
+    val initial = name?.firstOrNull()?.uppercaseChar()?.toString() ?: "?"
     Box(
         modifier = Modifier
-            .size(42.dp)
-            .background(MaterialTheme.colorScheme.primary, CircleShape)
+            .size(50.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primary)
             .clickable(onClick = onOpenProfile),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = initial,
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onPrimary,
         )
     }
@@ -236,22 +253,24 @@ private fun ProfileAvatar(name: String, onOpenProfile: () -> Unit) {
 private fun ActivitiesCategoryRow(
     selectedCategory: ActivityCategory?,
     onSelectCategory: (ActivityCategory?) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     LazyRow(
-        modifier = modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {
             CategoryChip(
-                text = "✨ ${stringResource(R.string.activities_filter_all)}",
+                text = stringResource(R.string.activities_filter_all),
+                icon = Icons.Outlined.AutoAwesome,
                 selected = selectedCategory == null,
                 onClick = { onSelectCategory(null) },
             )
         }
         items(ActivityCategory.entries) { category ->
             CategoryChip(
-                text = "${category.emoji()} ${stringResource(category.labelRes())}",
+                text = stringResource(category.labelRes()),
+                icon = category.icon(),
                 selected = selectedCategory == category,
                 onClick = { onSelectCategory(category) },
             )
@@ -262,21 +281,45 @@ private fun ActivitiesCategoryRow(
 @Composable
 private fun CategoryChip(
     text: String,
+    icon: ImageVector,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = { Text(text = text, style = MaterialTheme.typography.labelLarge) },
-        shape = MaterialTheme.shapes.small,
-        colors = FilterChipDefaults.filterChipColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            selectedContainerColor = MaterialTheme.colorScheme.primary,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-        ),
-    )
+    val shape = MaterialTheme.shapes.medium
+    Row(
+        modifier = Modifier
+            .clip(shape)
+            .background(
+                if (selected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.surfaceContainer,
+            )
+            .border(
+                width = 1.dp,
+                color = if (selected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.outlineVariant,
+                shape = shape,
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 13.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(17.dp),
+            tint = if (selected) MaterialTheme.colorScheme.onPrimary
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.width(7.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge.copy(
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            ),
+            color = if (selected) MaterialTheme.colorScheme.onPrimary
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 @Composable
@@ -301,7 +344,8 @@ private fun ActivitiesTabRow(
                         style = MaterialTheme.typography.labelLarge.copy(
                             fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal,
                         ),
-                        color = if (selectedTab == tab) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (selectedTab == tab) MaterialTheme.colorScheme.onSurface
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 },
             )
@@ -319,227 +363,314 @@ private fun ActivityCard(
     val isJoined = currentUserId != null && proposal.isJoined(currentUserId)
     val progress = if (proposal.maxParticipants > 0) {
         (proposal.currentParticipantsCount.toFloat() / proposal.maxParticipants.toFloat()).coerceIn(0f, 1f)
-    } else 0f
+    } else {
+        0f
+    }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.large)
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .clip(MaterialTheme.shapes.extraLarge)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant,
+                shape = MaterialTheme.shapes.extraLarge,
+            )
             .clickable(onClick = onClick)
-            .padding(18.dp),
+            .padding(20.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(
-                text = "${proposal.category.emoji()} ${stringResource(proposal.category.labelRes())}",
-                style = HackMonoTextStyle.copy(fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onSurface,
+            CategoryBadge(
+                category = proposal.category,
+                modifier = Modifier.weight(1f),
             )
-
+            Spacer(modifier = Modifier.width(10.dp))
             StatusBadge(status = proposal.status)
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         Text(
             text = proposal.title,
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 2,
+            maxLines = 3,
             overflow = TextOverflow.Ellipsis,
         )
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        Text(
-            text = "${stringResource(R.string.activities_organizer_prefix)} ${proposal.authorName} (${proposal.authorClass})",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Outlined.Person,
+                contentDescription = null,
+                modifier = Modifier.size(17.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.width(7.dp))
+            Text(
+                text = "${proposal.authorName} · ${proposal.authorClass}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Text(
             text = proposal.description,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2,
+            maxLines = 3,
             overflow = TextOverflow.Ellipsis,
         )
 
-        if (proposal.status == ActivityStatus.APPROVED && proposal.confirmedTime != null) {
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        MaterialTheme.colorScheme.surfaceContainerLow,
-                        MaterialTheme.shapes.small,
-                    )
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Schedule,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = proposal.confirmedTime,
-                    style = HackMonoTextStyle.copy(fontSize = 11.sp),
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                if (proposal.confirmedLocation != null) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = proposal.confirmedLocation,
-                        style = HackMonoTextStyle.copy(fontSize = 11.sp),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+        if (proposal.status == ActivityStatus.APPROVED &&
+            (proposal.confirmedTime != null || proposal.confirmedLocation != null)
         ) {
-            Text(
-                text = stringResource(
-                    R.string.activities_participants_format,
-                    proposal.currentParticipantsCount,
-                    proposal.maxParticipants,
-                    proposal.minParticipants,
-                ),
-                style = HackMonoTextStyle.copy(fontSize = 12.sp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            if (proposal.hasQuorum) {
-                Text(
-                    text = "Кворум набран",
-                    style = HackMonoTextStyle.copy(fontSize = 11.sp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            Spacer(modifier = Modifier.height(16.dp))
+            ConfirmedActivityInfo(proposal = proposal)
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
-        LinearProgressIndicator(
-            progress = { progress },
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(6.dp)
-                .clip(MaterialTheme.shapes.extraSmall),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically,
+                .background(
+                    MaterialTheme.colorScheme.surfaceContainerLow,
+                    MaterialTheme.shapes.large,
+                )
+                .padding(14.dp),
         ) {
-            if (isJoined) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(
+                        R.string.activities_capacity_format,
+                        proposal.currentParticipantsCount,
+                        proposal.maxParticipants,
+                    ),
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = when {
+                        proposal.isFull -> stringResource(R.string.activities_full_badge)
+                        proposal.hasQuorum -> stringResource(R.string.activities_quorum_reached)
+                        else -> stringResource(
+                            R.string.activities_min_max_format,
+                            proposal.minParticipants,
+                            proposal.maxParticipants,
+                        )
+                    },
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = if (proposal.hasQuorum) MaterialTheme.hack.success
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(7.dp)
+                    .clip(CircleShape),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        when {
+            isJoined -> {
                 OutlinedButton(
                     onClick = onToggleJoin,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
                     shape = MaterialTheme.shapes.medium,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(18.dp),
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(R.string.activities_leave_action),
-                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                     )
                 }
-            } else if (proposal.status == ActivityStatus.RECRUITING && !proposal.isFull) {
+            }
+
+            proposal.status == ActivityStatus.RECRUITING && !proposal.isFull -> {
                 Button(
                     onClick = onToggleJoin,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
                     shape = MaterialTheme.shapes.medium,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                     ),
                 ) {
-                    Text(stringResource(R.string.activities_join_action))
+                    Text(
+                        text = stringResource(R.string.activities_join_action),
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    )
                 }
-            } else if (proposal.isFull) {
-                Text(
-                    text = stringResource(R.string.activities_full_badge),
-                    style = HackMonoTextStyle.copy(fontSize = 12.sp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            }
+
+            else -> {
+                OutlinedButton(
+                    onClick = onClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    shape = MaterialTheme.shapes.medium,
+                ) {
+                    Text(
+                        text = stringResource(R.string.activities_open_details),
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
+private fun ConfirmedActivityInfo(proposal: ActivityProposal) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                MaterialTheme.hack.successContainer,
+                MaterialTheme.shapes.large,
+            )
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        proposal.confirmedTime?.let { time ->
+            ConfirmedInfoRow(icon = Icons.Outlined.Schedule, text = time)
+        }
+        proposal.confirmedLocation?.let { location ->
+            ConfirmedInfoRow(icon = Icons.Outlined.LocationOn, text = location)
+        }
+    }
+}
+
+@Composable
+private fun ConfirmedInfoRow(
+    icon: ImageVector,
+    text: String,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.hack.success,
+        )
+        Spacer(modifier = Modifier.width(9.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+@Composable
+internal fun CategoryBadge(
+    category: ActivityCategory,
+    modifier: Modifier = Modifier,
+) {
+    val accent = category.accent()
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .background(accent.container, MaterialTheme.shapes.medium),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = category.icon(),
+                contentDescription = null,
+                modifier = Modifier.size(19.dp),
+                tint = accent.accent,
+            )
+        }
+        Spacer(modifier = Modifier.width(9.dp))
+        Text(
+            text = stringResource(category.labelRes()),
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+            color = accent.accent,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
 internal fun StatusBadge(status: ActivityStatus) {
-    val (bgColor, textColor, textRes) = when (status) {
-        ActivityStatus.MODERATING -> Triple(
-            MaterialTheme.colorScheme.surfaceVariant,
-            Color.White,
-            R.string.activities_status_moderating,
-        )
-        ActivityStatus.RECRUITING -> Triple(
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.28f),
-            Color.White,
-            R.string.activities_status_recruiting,
-        )
-        ActivityStatus.PENDING_ADMIN -> Triple(
-            MaterialTheme.colorScheme.surfaceVariant,
-            Color.White,
-            R.string.activities_status_pending_admin,
-        )
-        ActivityStatus.APPROVED -> Triple(
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.28f),
-            Color.White,
-            R.string.activities_status_approved,
-        )
-        ActivityStatus.REJECTED -> Triple(
-            MaterialTheme.colorScheme.surfaceVariant,
-            Color.White,
-            R.string.activities_status_rejected,
-        )
+    val containerColor: androidx.compose.ui.graphics.Color
+    val contentColor: androidx.compose.ui.graphics.Color
+    when (status) {
+        ActivityStatus.MODERATING -> {
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        }
+        ActivityStatus.RECRUITING -> {
+            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+            contentColor = MaterialTheme.colorScheme.primary
+        }
+        ActivityStatus.PENDING_ADMIN -> {
+            containerColor = MaterialTheme.hack.amber.container
+            contentColor = MaterialTheme.hack.amber.accent
+        }
+        ActivityStatus.APPROVED -> {
+            containerColor = MaterialTheme.hack.successContainer
+            contentColor = MaterialTheme.hack.success
+        }
+        ActivityStatus.REJECTED -> {
+            containerColor = MaterialTheme.hack.danger.copy(alpha = 0.14f)
+            contentColor = MaterialTheme.hack.danger
+        }
     }
 
-    Box(
+    Text(
+        text = stringResource(
+            when (status) {
+                ActivityStatus.MODERATING -> R.string.activities_status_moderating
+                ActivityStatus.RECRUITING -> R.string.activities_status_recruiting
+                ActivityStatus.PENDING_ADMIN -> R.string.activities_status_pending_admin
+                ActivityStatus.APPROVED -> R.string.activities_status_approved
+                ActivityStatus.REJECTED -> R.string.activities_status_rejected
+            },
+        ),
         modifier = Modifier
-            .background(bgColor, MaterialTheme.shapes.extraSmall)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-    ) {
-        Text(
-            text = stringResource(textRes),
-            style = HackMonoTextStyle.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
-            color = textColor,
-        )
-    }
+            .background(containerColor, CircleShape)
+            .padding(horizontal = 11.dp, vertical = 7.dp),
+        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+        color = contentColor,
+        maxLines = 1,
+    )
 }
 
 @Composable
@@ -549,23 +680,56 @@ private fun ActivitiesEmpty(modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text(
-            text = "📅",
-            style = MaterialTheme.typography.displayMedium,
-        )
-        Spacer(modifier = Modifier.height(12.dp))
+        Box(
+            modifier = Modifier
+                .size(72.dp)
+                .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.CalendarMonth,
+                contentDescription = null,
+                modifier = Modifier.size(34.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
+        Spacer(modifier = Modifier.height(18.dp))
         Text(
             text = stringResource(R.string.activities_empty_title),
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = stringResource(R.string.activities_empty_desc),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+@Composable
+internal fun ActivityCategory.accent(): HackAccent {
+    val extras = MaterialTheme.hack
+    return when (this) {
+        ActivityCategory.CINEMA -> extras.pink
+        ActivityCategory.BOARD_GAMES -> extras.violet
+        ActivityCategory.SPORTS -> extras.green
+        ActivityCategory.CREATIVITY -> extras.amber
+        ActivityCategory.EXCURSION -> extras.pink
+        ActivityCategory.SCIENCE -> extras.violet
+        ActivityCategory.OTHER -> extras.green
+    }
+}
+
+internal fun ActivityCategory.icon(): ImageVector = when (this) {
+    ActivityCategory.CINEMA -> Icons.Outlined.Movie
+    ActivityCategory.BOARD_GAMES -> Icons.Outlined.Casino
+    ActivityCategory.SPORTS -> Icons.Outlined.SportsBasketball
+    ActivityCategory.CREATIVITY -> Icons.Outlined.Palette
+    ActivityCategory.EXCURSION -> Icons.Outlined.Museum
+    ActivityCategory.SCIENCE -> Icons.Outlined.Computer
+    ActivityCategory.OTHER -> Icons.Outlined.AutoAwesome
 }
 
 internal fun ActivityCategory.labelRes(): Int = when (this) {
@@ -576,16 +740,6 @@ internal fun ActivityCategory.labelRes(): Int = when (this) {
     ActivityCategory.EXCURSION -> R.string.activities_filter_excursion
     ActivityCategory.SCIENCE -> R.string.activities_filter_science
     ActivityCategory.OTHER -> R.string.activities_filter_other
-}
-
-internal fun ActivityCategory.emoji(): String = when (this) {
-    ActivityCategory.CINEMA -> "🎬"
-    ActivityCategory.BOARD_GAMES -> "🎲"
-    ActivityCategory.SPORTS -> "⚽"
-    ActivityCategory.CREATIVITY -> "🎨"
-    ActivityCategory.EXCURSION -> "🏛️"
-    ActivityCategory.SCIENCE -> "💻"
-    ActivityCategory.OTHER -> "✨"
 }
 
 private fun ActivityTab.labelRes(): Int = when (this) {
