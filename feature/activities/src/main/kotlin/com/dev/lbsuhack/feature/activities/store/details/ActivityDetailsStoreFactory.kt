@@ -4,10 +4,10 @@ import com.arkivanov.mvikotlin.core.store.Reducer
 import com.arkivanov.mvikotlin.core.store.Store
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
+import com.dev.lbsuhack.core.domain.DomainResult
 import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionState
 import com.dev.lbsuhack.core.domain.session.SessionUser
-import com.dev.lbsuhack.feature.activities.domain.ActivityParticipant
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.domain.ActivityRepository
 import kotlinx.coroutines.flow.collectLatest
@@ -40,9 +40,7 @@ class ActivityDetailsStoreFactory(
         override fun executeIntent(intent: ActivityDetailsStore.Intent) {
             when (intent) {
                 is ActivityDetailsStore.Intent.Load -> load(intent.activityId)
-                ActivityDetailsStore.Intent.ToggleJoin -> toggleJoin()
-                ActivityDetailsStore.Intent.SimulateTransitionToAdmin -> simulateAdminTransition()
-                is ActivityDetailsStore.Intent.SimulateApprove -> simulateApprove(intent.time, intent.location)
+                ActivityDetailsStore.Intent.Vote -> vote()
                 ActivityDetailsStore.Intent.Back -> publish(ActivityDetailsStore.Label.Back)
             }
         }
@@ -57,48 +55,27 @@ class ActivityDetailsStoreFactory(
 
             scope.launch {
                 dispatch(Message.Loading)
+                when (val result = activityRepository.getEventById(activityId)) {
+                    is DomainResult.Success -> dispatch(Message.Loaded(result.value))
+                    is DomainResult.Failure -> dispatch(Message.Loaded(null))
+                }
+
                 activityRepository.observeActivities().collectLatest { list ->
                     val found = list.find { it.id == activityId }
-                    dispatch(Message.Loaded(found))
+                    if (found != null) {
+                        dispatch(Message.Loaded(found))
+                    }
                 }
             }
         }
 
-        private fun toggleJoin() {
-            val user = state().currentUser ?: return
+        private fun vote() {
             val activity = state().activity ?: return
-
             scope.launch {
-                if (activity.isJoined(user.id)) {
-                    activityRepository.leaveActivity(activity.id, user.id)
-                } else {
-                    activityRepository.joinActivity(
-                        activityId = activity.id,
-                        participant = ActivityParticipant(
-                            pupilId = user.id,
-                            name = user.name,
-                            pupilClass = user.pupilClass ?: "10-А",
-                        ),
-                    )
+                when (val result = activityRepository.vote(activity.id)) {
+                    is DomainResult.Success -> dispatch(Message.Loaded(result.value))
+                    is DomainResult.Failure -> Unit
                 }
-            }
-        }
-
-        private fun simulateAdminTransition() {
-            val activity = state().activity ?: return
-            scope.launch {
-                activityRepository.transitionToAdmin(activity.id)
-            }
-        }
-
-        private fun simulateApprove(time: String, location: String) {
-            val activity = state().activity ?: return
-            scope.launch {
-                activityRepository.approveActivity(
-                    activityId = activity.id,
-                    confirmedTime = time,
-                    confirmedLocation = location,
-                )
             }
         }
     }

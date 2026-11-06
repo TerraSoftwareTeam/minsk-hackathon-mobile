@@ -57,6 +57,7 @@ import com.dev.lbsuhack.core.designsystem.theme.hack
 import com.dev.lbsuhack.core.localization.text.resolve
 import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
+import com.dev.lbsuhack.feature.activities.domain.ActivityScope
 import com.dev.lbsuhack.feature.activities.presentation.create.CreateActivityViewModel
 import com.dev.lbsuhack.feature.activities.store.create.CreateActivityStore
 import com.dev.lbsuhack.feature.activities.ui.activities.icon
@@ -116,10 +117,44 @@ fun CreateActivityScreen(
             )
         },
         bottomBar = {
-            SubmitActivityBar(
-                isSubmitting = state.isSubmitting,
-                onSubmit = { viewModel.accept(CreateActivityStore.Intent.Submit) },
-            )
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 8.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.hack.gridLine),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                ) {
+                    Button(
+                        onClick = { viewModel.accept(CreateActivityStore.Intent.Submit) },
+                        enabled = !state.isSubmitting,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                        ),
+                    ) {
+                        if (state.isSubmitting) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(22.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.5.dp,
+                            )
+                        } else {
+                            Text(
+                                text = stringResource(R.string.create_activity_submit_action),
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            )
+                        }
+                    }
+                }
+            }
         },
     ) { padding ->
         Column(
@@ -127,9 +162,36 @@ fun CreateActivityScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(MaterialTheme.shapes.large)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                        shape = MaterialTheme.shapes.large,
+                    )
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.HourglassEmpty,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = stringResource(R.string.create_activity_moderation_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
             FormSection(title = stringResource(R.string.create_activity_main_section)) {
                 FieldLabel(text = stringResource(R.string.create_activity_category_label))
                 Spacer(modifier = Modifier.height(10.dp))
@@ -148,79 +210,52 @@ fun CreateActivityScreen(
                     singleLine = true,
                 )
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 FormTextField(
                     label = stringResource(R.string.create_activity_desc_label),
                     hint = stringResource(R.string.create_activity_desc_hint),
                     value = state.description,
                     onValueChange = { viewModel.accept(CreateActivityStore.Intent.ChangeDescription(it)) },
-                    modifier = Modifier.height(132.dp),
+                    modifier = Modifier.height(110.dp),
                 )
             }
 
             FormSection(title = stringResource(R.string.create_activity_participants_section)) {
-                FieldLabel(text = stringResource(R.string.create_activity_limits_label))
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    NumberStepperCard(
-                        title = stringResource(R.string.create_activity_min_title),
-                        value = state.minParticipants,
-                        decrementEnabled = state.minParticipants > 2,
-                        incrementEnabled = state.minParticipants < 50,
-                        onDecrement = {
-                            viewModel.accept(
-                                CreateActivityStore.Intent.ChangeMinParticipants(state.minParticipants - 1),
-                            )
-                        },
-                        onIncrement = {
-                            viewModel.accept(
-                                CreateActivityStore.Intent.ChangeMinParticipants(state.minParticipants + 1),
-                            )
-                        },
-                        modifier = Modifier.weight(1f),
-                    )
-
-                    NumberStepperCard(
-                        title = stringResource(R.string.create_activity_max_title),
-                        value = state.maxParticipants,
-                        decrementEnabled = state.maxParticipants > state.minParticipants,
-                        incrementEnabled = state.maxParticipants < 100,
-                        onDecrement = {
-                            viewModel.accept(
-                                CreateActivityStore.Intent.ChangeMaxParticipants(state.maxParticipants - 1),
-                            )
-                        },
-                        onIncrement = {
-                            viewModel.accept(
-                                CreateActivityStore.Intent.ChangeMaxParticipants(state.maxParticipants + 1),
-                            )
-                        },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
+                FieldLabel(text = stringResource(R.string.create_activity_scope_label))
+                Spacer(modifier = Modifier.height(10.dp))
+                ScopeSelector(
+                    selected = state.scope,
+                    onSelect = { viewModel.accept(CreateActivityStore.Intent.ChangeScope(it)) },
+                )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                FormTextField(
-                    label = stringResource(R.string.create_activity_target_class_label),
-                    hint = stringResource(R.string.create_activity_target_class_hint),
-                    value = state.targetClass,
-                    onValueChange = { viewModel.accept(CreateActivityStore.Intent.ChangeTargetClass(it)) },
-                    singleLine = true,
+                NumberStepperCard(
+                    title = stringResource(R.string.create_activity_threshold_label),
+                    value = state.voteThreshold,
+                    decrementEnabled = state.voteThreshold > 1,
+                    incrementEnabled = state.voteThreshold < 1000,
+                    onDecrement = {
+                        viewModel.accept(
+                            CreateActivityStore.Intent.ChangeVoteThreshold(state.voteThreshold - 1),
+                        )
+                    },
+                    onIncrement = {
+                        viewModel.accept(
+                            CreateActivityStore.Intent.ChangeVoteThreshold(state.voteThreshold + 1),
+                        )
+                    },
                 )
             }
 
             FormSection(title = stringResource(R.string.create_activity_organization_section)) {
                 FormTextField(
-                    label = stringResource(R.string.create_activity_preferences_label),
-                    hint = stringResource(R.string.create_activity_preferences_hint),
-                    value = state.preferenceNotes,
-                    onValueChange = { viewModel.accept(CreateActivityStore.Intent.ChangePreferences(it)) },
-                    modifier = Modifier.height(104.dp),
+                    label = stringResource(R.string.create_activity_date_label),
+                    hint = "2026-11-21T10:00:00.000Z",
+                    value = state.startsAt,
+                    onValueChange = { viewModel.accept(CreateActivityStore.Intent.ChangeStartsAt(it)) },
+                    singleLine = true,
                 )
             }
 
@@ -357,6 +392,54 @@ private fun CategorySelector(
 }
 
 @Composable
+private fun ScopeSelector(
+    selected: ActivityScope,
+    onSelect: (ActivityScope) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        ActivityScope.entries.forEach { scope ->
+            val isSelected = selected == scope
+            val label = when (scope) {
+                ActivityScope.CLASS -> stringResource(R.string.create_activity_scope_class)
+                ActivityScope.GRADE -> stringResource(R.string.create_activity_scope_grade)
+                ActivityScope.SCHOOL -> stringResource(R.string.create_activity_scope_school)
+            }
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.surfaceContainerLow,
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.outlineVariant,
+                        shape = MaterialTheme.shapes.medium,
+                    )
+                    .clickable { onSelect(scope) }
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    ),
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun NumberStepperCard(
     title: String,
     value: Int,
@@ -368,6 +451,7 @@ private fun NumberStepperCard(
 ) {
     Column(
         modifier = modifier
+            .fillMaxWidth()
             .clip(MaterialTheme.shapes.large)
             .background(MaterialTheme.colorScheme.surfaceContainerLow)
             .border(
@@ -375,7 +459,7 @@ private fun NumberStepperCard(
                 color = MaterialTheme.colorScheme.outlineVariant,
                 shape = MaterialTheme.shapes.large,
             )
-            .padding(horizontal = 12.dp, vertical = 14.dp),
+            .padding(horizontal = 14.dp, vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
@@ -416,11 +500,17 @@ private fun StepperButton(
 ) {
     Box(
         modifier = Modifier
-            .size(36.dp)
+            .size(38.dp)
             .clip(CircleShape)
             .background(
-                if (enabled) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                else MaterialTheme.colorScheme.surfaceVariant,
+                if (enabled) MaterialTheme.colorScheme.surfaceContainerHigh
+                else MaterialTheme.colorScheme.surfaceContainerLow,
+            )
+            .border(
+                width = 1.dp,
+                color = if (enabled) MaterialTheme.colorScheme.outlineVariant
+                else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                shape = CircleShape,
             )
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -428,64 +518,9 @@ private fun StepperButton(
         Icon(
             imageVector = icon,
             contentDescription = null,
+            tint = if (enabled) MaterialTheme.colorScheme.onSurface
+            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
             modifier = Modifier.size(18.dp),
-            tint = if (enabled) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
         )
-    }
-}
-
-@Composable
-private fun SubmitActivityBar(
-    isSubmitting: Boolean,
-    onSubmit: () -> Unit,
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.background,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.navigationBarsPadding()) {
-            HorizontalDivider(color = MaterialTheme.hack.gridLine)
-            Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Outlined.HourglassEmpty,
-                        contentDescription = null,
-                        modifier = Modifier.size(17.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = stringResource(R.string.create_activity_moderation_note),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Button(
-                    onClick = onSubmit,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                    ),
-                    enabled = !isSubmitting,
-                ) {
-                    if (isSubmitting) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                        )
-                    } else {
-                        Text(
-                            text = stringResource(R.string.create_activity_submit_action),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        )
-                    }
-                }
-            }
-        }
     }
 }

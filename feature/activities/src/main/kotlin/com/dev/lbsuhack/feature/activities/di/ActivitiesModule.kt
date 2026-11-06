@@ -10,13 +10,19 @@ import com.dev.lbsuhack.feature.activities.presentation.details.ActivityDetailsV
 import com.dev.lbsuhack.feature.activities.store.activities.ActivitiesStoreFactory
 import com.dev.lbsuhack.feature.activities.store.create.CreateActivityStoreFactory
 import com.dev.lbsuhack.feature.activities.store.details.ActivityDetailsStoreFactory
+import kotlinx.coroutines.Dispatchers
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
 val activitiesModule = module {
-    singleOf(::ActivityRepositoryImpl) bind ActivityRepository::class
+    single<ActivityRepository> {
+        ActivityRepositoryImpl(
+            httpClient = get(),
+            ioDispatcher = Dispatchers.IO,
+        )
+    }
 
     singleOf(::ActivitiesStoreFactory)
     singleOf(::CreateActivityStoreFactory)

@@ -4,18 +4,18 @@ import com.arkivanov.mvikotlin.core.store.Reducer
 import com.arkivanov.mvikotlin.core.store.Store
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
-import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
-import com.dev.lbsuhack.core.domain.session.SessionState
+import com.dev.lbsuhack.core.domain.DomainResult
 import com.dev.lbsuhack.core.localization.text.UiText
 import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
 import com.dev.lbsuhack.feature.activities.domain.ActivityRepository
+import com.dev.lbsuhack.feature.activities.domain.ActivityScope
+import com.dev.lbsuhack.feature.activities.toUiText
 import kotlinx.coroutines.launch
 
 class CreateActivityStoreFactory(
     private val storeFactory: StoreFactory,
     private val activityRepository: ActivityRepository,
-    private val observeSessionUseCase: ObserveSessionUseCase,
 ) {
 
     fun create(): CreateActivityStore =
@@ -31,10 +31,9 @@ class CreateActivityStoreFactory(
         data class CategoryChanged(val category: ActivityCategory) : Message
         data class TitleChanged(val title: String) : Message
         data class DescriptionChanged(val description: String) : Message
-        data class TargetClassChanged(val targetClass: String) : Message
-        data class MinParticipantsChanged(val min: Int) : Message
-        data class MaxParticipantsChanged(val max: Int) : Message
-        data class PreferencesChanged(val preferences: String) : Message
+        data class ScopeChanged(val scope: ActivityScope) : Message
+        data class VoteThresholdChanged(val threshold: Int) : Message
+        data class StartsAtChanged(val startsAt: String) : Message
         data object Submitting : Message
         data class ErrorOccurred(val error: UiText) : Message
         data object ErrorDismissed : Message
@@ -49,10 +48,9 @@ class CreateActivityStoreFactory(
                 is CreateActivityStore.Intent.ChangeCategory -> dispatch(Message.CategoryChanged(intent.category))
                 is CreateActivityStore.Intent.ChangeTitle -> dispatch(Message.TitleChanged(intent.title))
                 is CreateActivityStore.Intent.ChangeDescription -> dispatch(Message.DescriptionChanged(intent.description))
-                is CreateActivityStore.Intent.ChangeTargetClass -> dispatch(Message.TargetClassChanged(intent.targetClass))
-                is CreateActivityStore.Intent.ChangeMinParticipants -> dispatch(Message.MinParticipantsChanged(intent.min))
-                is CreateActivityStore.Intent.ChangeMaxParticipants -> dispatch(Message.MaxParticipantsChanged(intent.max))
-                is CreateActivityStore.Intent.ChangePreferences -> dispatch(Message.PreferencesChanged(intent.preferences))
+                is CreateActivityStore.Intent.ChangeScope -> dispatch(Message.ScopeChanged(intent.scope))
+                is CreateActivityStore.Intent.ChangeVoteThreshold -> dispatch(Message.VoteThresholdChanged(intent.threshold))
+                is CreateActivityStore.Intent.ChangeStartsAt -> dispatch(Message.StartsAtChanged(intent.startsAt))
                 CreateActivityStore.Intent.DismissError -> dispatch(Message.ErrorDismissed)
                 CreateActivityStore.Intent.Submit -> submit()
             }
@@ -70,33 +68,29 @@ class CreateActivityStoreFactory(
                 dispatch(Message.ErrorOccurred(UiText.Resource(R.string.create_activity_error_desc_empty)))
                 return
             }
-            if (currentState.minParticipants > currentState.maxParticipants) {
-                dispatch(Message.ErrorOccurred(UiText.Resource(R.string.create_activity_error_limits_invalid)))
-                return
-            }
 
             scope.launch {
                 dispatch(Message.Submitting)
-                val sessionUser = (observeSessionUseCase.state.value as? SessionState.Authenticated)?.user
-                val authorId = sessionUser?.id ?: "101"
-                val authorName = sessionUser?.name ?: "Никита Ковалев"
-                val authorClass = sessionUser?.pupilClass ?: "10-А"
 
-                val created = activityRepository.createProposal(
-                    title = currentState.title,
-                    category = currentState.category,
-                    description = currentState.description,
-                    targetClass = currentState.targetClass,
-                    minParticipants = currentState.minParticipants,
-                    maxParticipants = currentState.maxParticipants,
-                    preferenceNotes = currentState.preferenceNotes,
-                    authorId = authorId,
-                    authorName = authorName,
-                    authorClass = authorClass,
-                )
+                when (
+                    val result = activityRepository.createEvent(
+                        name = currentState.title,
+                        category = currentState.category,
+                        description = currentState.description,
+                        scope = currentState.scope,
+                        voteThreshold = currentState.voteThreshold,
+                        startsAt = currentState.startsAt,
+                    )
+                ) {
+                    is DomainResult.Success -> {
+                        dispatch(Message.Submitted)
+                        publish(CreateActivityStore.Label.Created(result.value.id))
+                    }
 
-                dispatch(Message.Submitted)
-                publish(CreateActivityStore.Label.Created(created.id))
+                    is DomainResult.Failure -> {
+                        dispatch(Message.ErrorOccurred(result.error.toUiText()))
+                    }
+                }
             }
         }
     }
@@ -107,10 +101,9 @@ class CreateActivityStoreFactory(
                 is Message.CategoryChanged -> copy(category = msg.category)
                 is Message.TitleChanged -> copy(title = msg.title, error = null)
                 is Message.DescriptionChanged -> copy(description = msg.description, error = null)
-                is Message.TargetClassChanged -> copy(targetClass = msg.targetClass)
-                is Message.MinParticipantsChanged -> copy(minParticipants = msg.min, error = null)
-                is Message.MaxParticipantsChanged -> copy(maxParticipants = msg.max, error = null)
-                is Message.PreferencesChanged -> copy(preferenceNotes = msg.preferences)
+                is Message.ScopeChanged -> copy(scope = msg.scope)
+                is Message.VoteThresholdChanged -> copy(voteThreshold = msg.threshold)
+                is Message.StartsAtChanged -> copy(startsAt = msg.startsAt)
                 Message.Submitting -> copy(isSubmitting = true, error = null)
                 is Message.ErrorOccurred -> copy(isSubmitting = false, error = msg.error)
                 Message.ErrorDismissed -> copy(error = null)

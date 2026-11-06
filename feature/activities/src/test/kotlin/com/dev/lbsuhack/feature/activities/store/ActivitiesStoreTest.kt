@@ -6,11 +6,14 @@ import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
 import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionState
 import com.dev.lbsuhack.core.domain.session.SessionUser
-import com.dev.lbsuhack.feature.activities.data.ActivityRepositoryImpl
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
+import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
+import com.dev.lbsuhack.feature.activities.domain.ActivityScope
+import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
 import com.dev.lbsuhack.feature.activities.store.activities.ActivitiesStore
 import com.dev.lbsuhack.feature.activities.store.activities.ActivitiesStoreFactory
 import com.dev.lbsuhack.feature.activities.store.activities.ActivityTab
+import com.dev.lbsuhack.feature.activities.util.FakeActivityRepository
 import com.dev.lbsuhack.feature.activities.util.FakeSessionRepository
 import com.dev.lbsuhack.feature.activities.util.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -18,7 +21,6 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -40,7 +42,42 @@ class ActivitiesStoreTest {
         initialState = SessionState.Authenticated(sessionUser),
     )
 
-    private val activityRepository = ActivityRepositoryImpl()
+    private val initialProposals = listOf(
+        ActivityProposal(
+            id = "act-1",
+            title = "Футбольный матч",
+            description = "Игра на поле",
+            category = ActivityCategory.SPORTS,
+            scope = ActivityScope.SCHOOL,
+            status = ActivityStatus.ON_VOTE,
+            voteThreshold = 15,
+            votesCount = 10,
+            hasVoted = false,
+            startsAt = "2026-11-21T10:00:00.000Z",
+            votingClosesAt = "2026-11-19T10:00:00.000Z",
+            authorId = "101",
+            authorName = "Никита Ковалев",
+            authorClass = "10-А",
+        ),
+        ActivityProposal(
+            id = "act-2",
+            title = "Шахматный турнир",
+            description = "Быстрые шахматы",
+            category = ActivityCategory.INTELLECTUAL,
+            scope = ActivityScope.GRADE,
+            status = ActivityStatus.FINALIZED,
+            voteThreshold = 10,
+            votesCount = 10,
+            hasVoted = true,
+            startsAt = "2026-11-21T12:00:00.000Z",
+            votingClosesAt = "2026-11-19T12:00:00.000Z",
+            authorId = "202",
+            authorName = "Мария",
+            authorClass = "10-Б",
+        ),
+    )
+
+    private val activityRepository = FakeActivityRepository(initialProposals)
 
     private fun createStore(): ActivitiesStore = ActivitiesStoreFactory(
         storeFactory = DefaultStoreFactory(),
@@ -67,11 +104,11 @@ class ActivitiesStoreTest {
         store.accept(ActivitiesStore.Intent.Load)
         runCurrent()
 
-        store.accept(ActivitiesStore.Intent.SelectCategory(ActivityCategory.BOARD_GAMES))
+        store.accept(ActivitiesStore.Intent.SelectCategory(ActivityCategory.SPORTS))
         runCurrent()
 
-        assertEquals(ActivityCategory.BOARD_GAMES, store.state.selectedCategory)
-        assertTrue(store.state.filteredActivities.all { it.category == ActivityCategory.BOARD_GAMES })
+        assertEquals(ActivityCategory.SPORTS, store.state.selectedCategory)
+        assertTrue(store.state.filteredActivities.all { it.category == ActivityCategory.SPORTS })
     }
 
     @Test
@@ -100,20 +137,17 @@ class ActivitiesStoreTest {
     }
 
     @Test
-    fun toggleJoinTogglesParticipation() = runTest(mainDispatcherRule.testDispatcher) {
+    fun voteCallsRepositoryAndUpdatesState() = runTest(mainDispatcherRule.testDispatcher) {
         val store = createStore()
 
         store.accept(ActivitiesStore.Intent.Load)
         runCurrent()
 
-        val itemBefore = store.state.activities.find { it.id == "act-4" }
-        assertNotNull(itemBefore)
-        val initialJoined = itemBefore?.isJoined(sessionUser.id) == true
-
-        store.accept(ActivitiesStore.Intent.ToggleJoin("act-4"))
+        store.accept(ActivitiesStore.Intent.Vote("act-1"))
         runCurrent()
 
-        val itemAfter = store.state.activities.find { it.id == "act-4" }
-        assertEquals(!initialJoined, itemAfter?.isJoined(sessionUser.id))
+        val itemAfter = store.state.activities.find { it.id == "act-1" }
+        assertTrue(itemAfter?.hasVoted == true)
+        assertEquals(11, itemAfter?.votesCount)
     }
 }

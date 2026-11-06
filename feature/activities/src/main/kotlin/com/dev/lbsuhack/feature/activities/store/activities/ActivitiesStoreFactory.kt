@@ -8,7 +8,6 @@ import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionState
 import com.dev.lbsuhack.core.domain.session.SessionUser
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
-import com.dev.lbsuhack.feature.activities.domain.ActivityParticipant
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.domain.ActivityRepository
 import kotlinx.coroutines.flow.collectLatest
@@ -42,17 +41,17 @@ class ActivitiesStoreFactory(
 
         override fun executeIntent(intent: ActivitiesStore.Intent) {
             when (intent) {
-                ActivitiesStore.Intent.Load, ActivitiesStore.Intent.Refresh -> startObserving()
+                ActivitiesStore.Intent.Load, ActivitiesStore.Intent.Refresh -> load()
                 is ActivitiesStore.Intent.SelectCategory -> dispatch(Message.CategorySelected(intent.category))
                 is ActivitiesStore.Intent.SelectTab -> dispatch(Message.TabSelected(intent.tab))
                 is ActivitiesStore.Intent.ClickActivity -> publish(ActivitiesStore.Label.OpenDetails(intent.activityId))
                 ActivitiesStore.Intent.ClickCreate -> publish(ActivitiesStore.Label.OpenCreate)
                 ActivitiesStore.Intent.ClickProfile -> publish(ActivitiesStore.Label.OpenProfile)
-                is ActivitiesStore.Intent.ToggleJoin -> toggleJoin(intent.activityId)
+                is ActivitiesStore.Intent.Vote -> vote(intent.activityId)
             }
         }
 
-        private fun startObserving() {
+        private fun load() {
             scope.launch {
                 observeSessionUseCase.state.collectLatest { sessionState ->
                     val user = (sessionState as? SessionState.Authenticated)?.user
@@ -61,30 +60,20 @@ class ActivitiesStoreFactory(
             }
 
             scope.launch {
-                dispatch(Message.Loading)
                 activityRepository.observeActivities().collectLatest { activitiesList ->
                     dispatch(Message.ActivitiesLoaded(activitiesList))
                 }
             }
-        }
-
-        private fun toggleJoin(activityId: String) {
-            val user = state().currentUser ?: return
-            val activity = state().activities.find { it.id == activityId } ?: return
 
             scope.launch {
-                if (activity.isJoined(user.id)) {
-                    activityRepository.leaveActivity(activityId, user.id)
-                } else {
-                    activityRepository.joinActivity(
-                        activityId = activityId,
-                        participant = ActivityParticipant(
-                            pupilId = user.id,
-                            name = user.name,
-                            pupilClass = user.pupilClass ?: "10-А",
-                        ),
-                    )
-                }
+                dispatch(Message.Loading)
+                activityRepository.refresh()
+            }
+        }
+
+        private fun vote(activityId: String) {
+            scope.launch {
+                activityRepository.vote(activityId)
             }
         }
     }

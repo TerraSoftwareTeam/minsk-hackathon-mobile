@@ -109,13 +109,12 @@ fun ActivitiesScreen(
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = {
                     Text(
-                        text = stringResource(R.string.activities_create_action),
-                        fontWeight = FontWeight.Bold,
+                        stringResource(R.string.activities_create_action),
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                     )
                 },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = MaterialTheme.shapes.large,
             )
         },
     ) { padding ->
@@ -126,7 +125,10 @@ fun ActivitiesScreen(
         ) {
             when {
                 state.isLoading && state.activities.isEmpty() -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 }
 
                 state.filteredActivities.isEmpty() -> {
@@ -136,7 +138,7 @@ fun ActivitiesScreen(
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp),
+                        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 96.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         items(
@@ -145,13 +147,8 @@ fun ActivitiesScreen(
                         ) { proposal ->
                             ActivityCard(
                                 proposal = proposal,
-                                currentUserId = state.currentUser?.id,
-                                onClick = {
-                                    viewModel.accept(ActivitiesStore.Intent.ClickActivity(proposal.id))
-                                },
-                                onToggleJoin = {
-                                    viewModel.accept(ActivitiesStore.Intent.ToggleJoin(proposal.id))
-                                },
+                                onVote = { viewModel.accept(ActivitiesStore.Intent.Vote(proposal.id)) },
+                                onClick = { viewModel.accept(ActivitiesStore.Intent.ClickActivity(proposal.id)) },
                             )
                         }
                     }
@@ -175,28 +172,28 @@ private fun ActivitiesTopBar(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
-            .statusBarsPadding()
-            .padding(top = 16.dp),
+            .statusBarsPadding(),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = 20.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.activities_title),
-                    style = MaterialTheme.typography.headlineLarge,
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onBackground,
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = if (userName != null) {
                         stringResource(
                             R.string.activities_greeting_format,
                             userName,
-                            pupilClass ?: "10-А",
+                            pupilClass.orEmpty(),
                         )
                     } else {
                         stringResource(R.string.activities_subtitle)
@@ -356,71 +353,41 @@ private fun ActivitiesTabRow(
 @Composable
 private fun ActivityCard(
     proposal: ActivityProposal,
-    currentUserId: String?,
+    onVote: () -> Unit,
     onClick: () -> Unit,
-    onToggleJoin: () -> Unit,
 ) {
-    val isJoined = currentUserId != null && proposal.isJoined(currentUserId)
-    val progress = if (proposal.maxParticipants > 0) {
-        (proposal.currentParticipantsCount.toFloat() / proposal.maxParticipants.toFloat()).coerceIn(0f, 1f)
-    } else {
-        0f
-    }
-
+    val cardShape = MaterialTheme.shapes.large
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.extraLarge)
+            .clip(cardShape)
             .background(MaterialTheme.colorScheme.surfaceContainer)
             .border(
                 width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant,
-                shape = MaterialTheme.shapes.extraLarge,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                shape = cardShape,
             )
             .clickable(onClick = onClick)
             .padding(20.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            CategoryBadge(
-                category = proposal.category,
-                modifier = Modifier.weight(1f),
-            )
-            Spacer(modifier = Modifier.width(10.dp))
+            CategoryBadge(category = proposal.category)
             StatusBadge(status = proposal.status)
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         Text(
             text = proposal.title,
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Outlined.Person,
-                contentDescription = null,
-                modifier = Modifier.size(17.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(modifier = Modifier.width(7.dp))
-            Text(
-                text = "${proposal.authorName} · ${proposal.authorClass}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
             text = proposal.description,
@@ -430,21 +397,34 @@ private fun ActivityCard(
             overflow = TextOverflow.Ellipsis,
         )
 
-        if (proposal.status == ActivityStatus.APPROVED &&
-            (proposal.confirmedTime != null || proposal.confirmedLocation != null)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-            ConfirmedActivityInfo(proposal = proposal)
+            Icon(
+                imageVector = Icons.Outlined.Person,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = "${proposal.authorName} (${proposal.authorClass})",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
 
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    MaterialTheme.colorScheme.surfaceContainerLow,
-                    MaterialTheme.shapes.large,
+                    MaterialTheme.colorScheme.surfaceContainerHigh,
+                    MaterialTheme.shapes.medium,
                 )
                 .padding(14.dp),
         ) {
@@ -456,24 +436,20 @@ private fun ActivityCard(
                 Text(
                     text = stringResource(
                         R.string.activities_capacity_format,
-                        proposal.currentParticipantsCount,
-                        proposal.maxParticipants,
+                        proposal.votesCount,
+                        proposal.voteThreshold,
                     ),
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = when {
-                        proposal.isFull -> stringResource(R.string.activities_full_badge)
-                        proposal.hasQuorum -> stringResource(R.string.activities_quorum_reached)
-                        else -> stringResource(
-                            R.string.activities_min_max_format,
-                            proposal.minParticipants,
-                            proposal.maxParticipants,
-                        )
+                    text = if (proposal.isQuorumReached) {
+                        stringResource(R.string.activities_quorum_reached)
+                    } else {
+                        stringResource(R.string.activities_min_max_format, proposal.voteThreshold)
                     },
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = if (proposal.hasQuorum) MaterialTheme.hack.success
+                    color = if (proposal.isQuorumReached) MaterialTheme.hack.success
                     else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -481,7 +457,7 @@ private fun ActivityCard(
             Spacer(modifier = Modifier.height(10.dp))
 
             LinearProgressIndicator(
-                progress = { progress },
+                progress = { proposal.progress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(7.dp)
@@ -494,9 +470,9 @@ private fun ActivityCard(
         Spacer(modifier = Modifier.height(16.dp))
 
         when {
-            isJoined -> {
+            proposal.hasVoted -> {
                 OutlinedButton(
-                    onClick = onToggleJoin,
+                    onClick = onClick,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
@@ -515,9 +491,9 @@ private fun ActivityCard(
                 }
             }
 
-            proposal.status == ActivityStatus.RECRUITING && !proposal.isFull -> {
+            proposal.status == ActivityStatus.ON_VOTE -> {
                 Button(
-                    onClick = onToggleJoin,
+                    onClick = onVote,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
@@ -527,7 +503,7 @@ private fun ActivityCard(
                     ),
                 ) {
                     Text(
-                        text = stringResource(R.string.activities_join_action),
+                        text = stringResource(R.string.activities_vote_action),
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                     )
                 }
@@ -548,48 +524,6 @@ private fun ActivityCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ConfirmedActivityInfo(proposal: ActivityProposal) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                MaterialTheme.hack.successContainer,
-                MaterialTheme.shapes.large,
-            )
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        proposal.confirmedTime?.let { time ->
-            ConfirmedInfoRow(icon = Icons.Outlined.Schedule, text = time)
-        }
-        proposal.confirmedLocation?.let { location ->
-            ConfirmedInfoRow(icon = Icons.Outlined.LocationOn, text = location)
-        }
-    }
-}
-
-@Composable
-private fun ConfirmedInfoRow(
-    icon: ImageVector,
-    text: String,
-) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            tint = MaterialTheme.hack.success,
-        )
-        Spacer(modifier = Modifier.width(9.dp))
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.onSurface,
-        )
     }
 }
 
@@ -641,11 +575,13 @@ internal fun StatusBadge(status: ActivityStatus) {
         Text(
             text = stringResource(
                 when (status) {
-                    ActivityStatus.MODERATING -> R.string.activities_status_moderating
-                    ActivityStatus.RECRUITING -> R.string.activities_status_recruiting
-                    ActivityStatus.PENDING_ADMIN -> R.string.activities_status_pending_admin
-                    ActivityStatus.APPROVED -> R.string.activities_status_approved
-                    ActivityStatus.REJECTED -> R.string.activities_status_rejected
+                    ActivityStatus.ON_MODERATION -> R.string.activities_status_moderating
+                    ActivityStatus.ON_VOTE -> R.string.activities_status_recruiting
+                    ActivityStatus.ON_ADMIN_MODERATION -> R.string.activities_status_pending_admin
+                    ActivityStatus.FINALIZED -> R.string.activities_status_approved
+                    ActivityStatus.DECLINED,
+                    ActivityStatus.DECLINED_BY_ADMIN,
+                    ActivityStatus.EXPIRED -> R.string.activities_status_rejected
                 },
             ),
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
@@ -657,11 +593,13 @@ internal fun StatusBadge(status: ActivityStatus) {
 
 @Composable
 private fun statusColor(status: ActivityStatus): Color = when (status) {
-    ActivityStatus.MODERATING -> MaterialTheme.colorScheme.onSurfaceVariant
-    ActivityStatus.RECRUITING -> MaterialTheme.colorScheme.primary
-    ActivityStatus.PENDING_ADMIN -> MaterialTheme.hack.amber.accent
-    ActivityStatus.APPROVED -> MaterialTheme.hack.success
-    ActivityStatus.REJECTED -> MaterialTheme.hack.danger
+    ActivityStatus.ON_MODERATION -> MaterialTheme.colorScheme.onSurfaceVariant
+    ActivityStatus.ON_VOTE -> MaterialTheme.colorScheme.primary
+    ActivityStatus.ON_ADMIN_MODERATION -> MaterialTheme.hack.amber.accent
+    ActivityStatus.FINALIZED -> MaterialTheme.hack.success
+    ActivityStatus.DECLINED,
+    ActivityStatus.DECLINED_BY_ADMIN,
+    ActivityStatus.EXPIRED -> MaterialTheme.hack.danger
 }
 
 @Composable
@@ -700,30 +638,36 @@ private fun ActivitiesEmpty(modifier: Modifier = Modifier) {
 }
 
 internal fun ActivityCategory.icon(): ImageVector = when (this) {
-    ActivityCategory.CINEMA -> Icons.Outlined.Movie
-    ActivityCategory.BOARD_GAMES -> Icons.Outlined.Casino
     ActivityCategory.SPORTS -> Icons.Outlined.SportsBasketball
-    ActivityCategory.CREATIVITY -> Icons.Outlined.Palette
-    ActivityCategory.EXCURSION -> Icons.Outlined.Museum
-    ActivityCategory.SCIENCE -> Icons.Outlined.Computer
+    ActivityCategory.INTELLECTUAL -> Icons.Outlined.Casino
+    ActivityCategory.CULTURAL -> Icons.Outlined.Museum
+    ActivityCategory.CREATIVE -> Icons.Outlined.Palette
+    ActivityCategory.EDUCATIONAL -> Icons.Outlined.Computer
+    ActivityCategory.VOLUNTEER -> Icons.Outlined.AutoAwesome
+    ActivityCategory.ENVIRONMENTAL -> Icons.Outlined.CalendarMonth
+    ActivityCategory.TOURISM -> Icons.Outlined.LocationOn
+    ActivityCategory.ENTERTAINMENT -> Icons.Outlined.Movie
     ActivityCategory.OTHER -> Icons.Outlined.AutoAwesome
 }
 
 internal fun ActivityCategory.labelRes(): Int = when (this) {
-    ActivityCategory.CINEMA -> R.string.activities_filter_cinema
-    ActivityCategory.BOARD_GAMES -> R.string.activities_filter_board_games
     ActivityCategory.SPORTS -> R.string.activities_filter_sports
-    ActivityCategory.CREATIVITY -> R.string.activities_filter_creativity
-    ActivityCategory.EXCURSION -> R.string.activities_filter_excursion
-    ActivityCategory.SCIENCE -> R.string.activities_filter_science
+    ActivityCategory.INTELLECTUAL -> R.string.activities_filter_intellectual
+    ActivityCategory.CULTURAL -> R.string.activities_filter_cultural
+    ActivityCategory.CREATIVE -> R.string.activities_filter_creative
+    ActivityCategory.EDUCATIONAL -> R.string.activities_filter_educational
+    ActivityCategory.VOLUNTEER -> R.string.activities_filter_volunteer
+    ActivityCategory.ENVIRONMENTAL -> R.string.activities_filter_environmental
+    ActivityCategory.TOURISM -> R.string.activities_filter_tourism
+    ActivityCategory.ENTERTAINMENT -> R.string.activities_filter_entertainment
     ActivityCategory.OTHER -> R.string.activities_filter_other
 }
 
 private fun ActivityTab.labelRes(): Int = when (this) {
     ActivityTab.ALL -> R.string.activities_tab_all
-    ActivityTab.RECRUITING -> R.string.activities_tab_recruiting
-    ActivityTab.PENDING_ADMIN -> R.string.activities_tab_pending_admin
-    ActivityTab.APPROVED -> R.string.activities_tab_approved
+    ActivityTab.ON_VOTE -> R.string.activities_tab_recruiting
+    ActivityTab.ON_ADMIN_MODERATION -> R.string.activities_tab_pending_admin
+    ActivityTab.FINALIZED -> R.string.activities_tab_approved
     ActivityTab.MY_PROPOSALS -> R.string.activities_tab_my_proposals
-    ActivityTab.MY_PARTICIPATIONS -> R.string.activities_tab_my_participations
+    ActivityTab.MY_VOTES -> R.string.activities_tab_my_participations
 }

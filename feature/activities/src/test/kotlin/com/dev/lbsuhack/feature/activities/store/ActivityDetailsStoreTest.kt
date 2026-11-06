@@ -6,10 +6,13 @@ import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
 import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionState
 import com.dev.lbsuhack.core.domain.session.SessionUser
-import com.dev.lbsuhack.feature.activities.data.ActivityRepositoryImpl
+import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
+import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
+import com.dev.lbsuhack.feature.activities.domain.ActivityScope
 import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
 import com.dev.lbsuhack.feature.activities.store.details.ActivityDetailsStore
 import com.dev.lbsuhack.feature.activities.store.details.ActivityDetailsStoreFactory
+import com.dev.lbsuhack.feature.activities.util.FakeActivityRepository
 import com.dev.lbsuhack.feature.activities.util.FakeSessionRepository
 import com.dev.lbsuhack.feature.activities.util.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -39,7 +42,26 @@ class ActivityDetailsStoreTest {
         initialState = SessionState.Authenticated(sessionUser),
     )
 
-    private val activityRepository = ActivityRepositoryImpl()
+    private val initialProposals = listOf(
+        ActivityProposal(
+            id = "act-1",
+            title = "Футбольный матч",
+            description = "Игра на поле",
+            category = ActivityCategory.SPORTS,
+            scope = ActivityScope.SCHOOL,
+            status = ActivityStatus.ON_VOTE,
+            voteThreshold = 15,
+            votesCount = 10,
+            hasVoted = false,
+            startsAt = "2026-11-21T10:00:00.000Z",
+            votingClosesAt = "2026-11-19T10:00:00.000Z",
+            authorId = "101",
+            authorName = "Никита Ковалев",
+            authorClass = "10-А",
+        ),
+    )
+
+    private val activityRepository = FakeActivityRepository(initialProposals)
 
     private fun createStore(): ActivityDetailsStore = ActivityDetailsStoreFactory(
         storeFactory = DefaultStoreFactory(),
@@ -61,51 +83,19 @@ class ActivityDetailsStoreTest {
     }
 
     @Test
-    fun toggleJoinTogglesParticipation() = runTest(mainDispatcherRule.testDispatcher) {
-        val store = createStore()
-
-        store.accept(ActivityDetailsStore.Intent.Load("act-4"))
-        runCurrent()
-
-        val initialJoined = store.state.isJoined
-
-        store.accept(ActivityDetailsStore.Intent.ToggleJoin)
-        runCurrent()
-
-        assertEquals(!initialJoined, store.state.isJoined)
-    }
-
-    @Test
-    fun simulateTransitionToAdminUpdatesStatus() = runTest(mainDispatcherRule.testDispatcher) {
+    fun voteUpdatesParticipation() = runTest(mainDispatcherRule.testDispatcher) {
         val store = createStore()
 
         store.accept(ActivityDetailsStore.Intent.Load("act-1"))
         runCurrent()
 
-        store.accept(ActivityDetailsStore.Intent.SimulateTransitionToAdmin)
+        assertFalse(store.state.hasVoted)
+
+        store.accept(ActivityDetailsStore.Intent.Vote)
         runCurrent()
 
-        assertEquals(ActivityStatus.PENDING_ADMIN, store.state.activity?.status)
-    }
-
-    @Test
-    fun simulateApproveUpdatesStatusAndLocation() = runTest(mainDispatcherRule.testDispatcher) {
-        val store = createStore()
-
-        store.accept(ActivityDetailsStore.Intent.Load("act-2"))
-        runCurrent()
-
-        store.accept(
-            ActivityDetailsStore.Intent.SimulateApprove(
-                time = "Суббота, 14:00",
-                location = "Актовый зал",
-            ),
-        )
-        runCurrent()
-
-        assertEquals(ActivityStatus.APPROVED, store.state.activity?.status)
-        assertEquals("Суббота, 14:00", store.state.activity?.confirmedTime)
-        assertEquals("Актовый зал", store.state.activity?.confirmedLocation)
+        assertTrue(store.state.hasVoted)
+        assertEquals(11, store.state.activity?.votesCount)
     }
 
     @Test

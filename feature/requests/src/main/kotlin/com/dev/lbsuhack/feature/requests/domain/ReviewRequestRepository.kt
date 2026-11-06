@@ -1,21 +1,22 @@
 package com.dev.lbsuhack.feature.requests.domain
 
+import com.dev.lbsuhack.core.domain.DomainResult
 import kotlinx.coroutines.flow.Flow
 
 interface ReviewRequestRepository {
 
     fun observeRequests(): Flow<List<ReviewRequest>>
 
-    suspend fun approvePublication(requestId: String): ReviewRequest
+    suspend fun refresh(audience: RequestAudience): DomainResult<Unit>
 
-    suspend fun approveVisit(
+    suspend fun approve(
         requestId: String,
-        confirmedDate: String,
-        confirmedLocation: String,
-    ): ReviewRequest
+        audience: RequestAudience,
+    ): DomainResult<ReviewRequest>
 
     suspend fun decline(
         requestId: String,
         reason: String?,
-    ): ReviewRequest
+        audience: RequestAudience,
+    ): DomainResult<ReviewRequest>
 }

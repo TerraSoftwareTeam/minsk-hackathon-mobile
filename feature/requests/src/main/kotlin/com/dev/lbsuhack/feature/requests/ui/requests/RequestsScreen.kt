@@ -1,6 +1,5 @@
 package com.dev.lbsuhack.feature.requests.ui.requests
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,10 +29,6 @@ import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.outlined.Campaign
 import androidx.compose.material.icons.outlined.Event
-import androidx.compose.material.icons.outlined.ExpandMore
-import androidx.compose.material.icons.outlined.Groups
-import androidx.compose.material.icons.outlined.KeyboardArrowUp
-import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.AlertDialog
@@ -58,10 +53,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -79,7 +71,6 @@ import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.localization.text.resolve
 import com.dev.lbsuhack.feature.requests.R
 import com.dev.lbsuhack.feature.requests.domain.RequestAudience
-import com.dev.lbsuhack.feature.requests.domain.RequestParticipant
 import com.dev.lbsuhack.feature.requests.domain.ReviewRequest
 import com.dev.lbsuhack.feature.requests.domain.ReviewStatus
 import com.dev.lbsuhack.feature.requests.domain.isPending
@@ -180,10 +171,9 @@ fun RequestsScreen(
     if (dialog != null) {
         RequestsDialog(
             dialog = dialog,
+            audience = state.audience,
             isSubmitting = state.isSubmitting,
             onDismiss = { viewModel.accept(RequestsStore.Intent.DismissDialog) },
-            onChangeDate = { viewModel.accept(RequestsStore.Intent.ChangeConfirmedDate(it)) },
-            onChangeLocation = { viewModel.accept(RequestsStore.Intent.ChangeConfirmedLocation(it)) },
             onChangeReason = { viewModel.accept(RequestsStore.Intent.ChangeDeclineReason(it)) },
             onConfirmApprove = { viewModel.accept(RequestsStore.Intent.ConfirmApprove) },
             onConfirmDecline = { viewModel.accept(RequestsStore.Intent.ConfirmDecline) },
@@ -369,49 +359,6 @@ private fun RequestCard(
                 icon = Icons.Outlined.Schedule,
                 text = stringResource(R.string.requests_date_format, request.proposedDate),
             )
-            if (request is ReviewRequest.Visit) {
-                RequestInfoRow(
-                    icon = Icons.Outlined.LocationOn,
-                    text = stringResource(R.string.requests_location_format, request.proposedLocation),
-                )
-            }
-        }
-
-        if (request is ReviewRequest.Visit) {
-            ParticipantsSection(request = request)
-        }
-
-        if (request.status == ReviewStatus.APPROVED &&
-            request is ReviewRequest.Visit &&
-            request.confirmedDate != null
-        ) {
-            Spacer(modifier = Modifier.height(14.dp))
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        MaterialTheme.hack.successContainer,
-                        MaterialTheme.shapes.large,
-                    )
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                RequestInfoRow(
-                    icon = Icons.Outlined.Schedule,
-                    text = stringResource(R.string.requests_confirmed_date_format, request.confirmedDate),
-                    contentColor = MaterialTheme.hack.success,
-                )
-                if (request.confirmedLocation != null) {
-                    RequestInfoRow(
-                        icon = Icons.Outlined.LocationOn,
-                        text = stringResource(
-                            R.string.requests_confirmed_location_format,
-                            request.confirmedLocation,
-                        ),
-                        contentColor = MaterialTheme.hack.success,
-                    )
-                }
-            }
         }
 
         val declineReason = request.declineReason
@@ -489,106 +436,23 @@ private fun RequestCard(
 }
 
 @Composable
-private fun ParticipantsSection(request: ReviewRequest.Visit) {
-    var expanded by rememberSaveable(request.id) { mutableStateOf(false) }
-
-    Spacer(modifier = Modifier.height(14.dp))
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.large)
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant,
-                shape = MaterialTheme.shapes.large,
-            ),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = !expanded }
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Groups,
-                contentDescription = null,
-                modifier = Modifier.size(21.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = if (expanded) {
-                    stringResource(R.string.requests_participants_hide)
-                } else {
-                    stringResource(R.string.requests_participants_show, request.participants.size)
-                },
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Icon(
-                imageVector = if (expanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.ExpandMore,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        AnimatedVisibility(visible = expanded) {
-            Column(
-                modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
-            ) {
-                HorizontalDivider(color = MaterialTheme.hack.gridLine)
-                Spacer(modifier = Modifier.height(12.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    request.participants.forEach { participant ->
-                        ParticipantRow(participant = participant)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ParticipantRow(participant: RequestParticipant) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                MaterialTheme.colorScheme.surfaceContainer,
-                MaterialTheme.shapes.medium,
-            )
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f), CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = participant.name.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-        Spacer(modifier = Modifier.width(11.dp))
-        Text(
-            text = participant.name,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+private fun RequestInfoRow(
+    icon: ImageVector,
+    text: String,
+    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = contentColor,
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(9.dp))
         Text(
-            text = participant.pupilClass,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            text = text,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+            color = contentColor,
         )
     }
 }
@@ -633,28 +497,6 @@ private fun RequestKindBadge(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-@Composable
-private fun RequestInfoRow(
-    icon: ImageVector,
-    text: String,
-    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            tint = contentColor,
-        )
-        Spacer(modifier = Modifier.width(9.dp))
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-            color = contentColor,
         )
     }
 }
@@ -782,10 +624,9 @@ private fun AccessDenied(modifier: Modifier = Modifier) {
 @Composable
 private fun RequestsDialog(
     dialog: RequestDialog,
+    audience: RequestAudience?,
     isSubmitting: Boolean,
     onDismiss: () -> Unit,
-    onChangeDate: (String) -> Unit,
-    onChangeLocation: (String) -> Unit,
     onChangeReason: (String) -> Unit,
     onConfirmApprove: () -> Unit,
     onConfirmDecline: () -> Unit,
@@ -795,7 +636,7 @@ private fun RequestsDialog(
             onDismissRequest = {
                 if (!isSubmitting) onDismiss()
             },
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
             title = {
                 Text(
                     text = stringResource(R.string.requests_dialog_approve_title),
@@ -803,32 +644,22 @@ private fun RequestsDialog(
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Text(
                         text = dialog.title,
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    if (dialog.requiresDetails) {
-                        Text(
-                            text = stringResource(R.string.requests_dialog_approve_visit_text),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                        DialogTextField(
-                            value = dialog.confirmedDate,
-                            onValueChange = onChangeDate,
-                            label = stringResource(R.string.requests_confirm_date_label),
-                        )
-                        DialogTextField(
-                            value = dialog.confirmedLocation,
-                            onValueChange = onChangeLocation,
-                            label = stringResource(R.string.requests_confirm_location_label),
-                        )
-                    } else {
-                        Text(
-                            text = stringResource(R.string.requests_dialog_approve_teacher_text),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
+                    Text(
+                        text = stringResource(
+                            if (audience == RequestAudience.ADMIN) {
+                                R.string.requests_dialog_approve_admin_text
+                            } else {
+                                R.string.requests_dialog_approve_teacher_text
+                            },
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
             },
             confirmButton = {
@@ -864,7 +695,7 @@ private fun RequestsDialog(
             onDismissRequest = {
                 if (!isSubmitting) onDismiss()
             },
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
             title = {
                 Text(
                     text = stringResource(R.string.requests_dialog_decline_title),
@@ -872,10 +703,11 @@ private fun RequestsDialog(
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Text(
                         text = dialog.title,
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = stringResource(R.string.requests_dialog_decline_text),
@@ -933,28 +765,38 @@ private fun DialogTextField(
     hint: String? = null,
     minLines: Int = 1,
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = Modifier.fillMaxWidth(),
-        label = { Text(label) },
-        placeholder = if (hint == null) {
-            null
-        } else {
-            {
-                Text(
-                    text = hint,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                )
-            }
-        },
-        minLines = minLines,
-        shape = MaterialTheme.shapes.medium,
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-        ),
-    )
+    Column {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = if (hint == null) {
+                null
+            } else {
+                {
+                    Text(
+                        text = hint,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    )
+                }
+            },
+            minLines = minLines,
+            shape = MaterialTheme.shapes.medium,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            ),
+        )
+    }
 }

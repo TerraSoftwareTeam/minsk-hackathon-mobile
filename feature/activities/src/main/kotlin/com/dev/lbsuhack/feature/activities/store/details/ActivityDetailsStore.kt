@@ -10,9 +10,7 @@ interface ActivityDetailsStore :
 
     sealed interface Intent {
         data class Load(val activityId: String) : Intent
-        data object ToggleJoin : Intent
-        data object SimulateTransitionToAdmin : Intent
-        data class SimulateApprove(val time: String, val location: String) : Intent
+        data object Vote : Intent
         data object Back : Intent
     }
 
@@ -25,8 +23,8 @@ interface ActivityDetailsStore :
         val isAuthor: Boolean
             get() = currentUser != null && activity?.authorId == currentUser.id
 
-        val isJoined: Boolean
-            get() = currentUser != null && activity?.isJoined(currentUser.id) == true
+        val hasVoted: Boolean
+            get() = activity?.hasVoted == true
     }
 
     sealed interface Label {

@@ -22,9 +22,6 @@ sealed interface RequestDialog {
     data class Approve(
         override val requestId: String,
         override val title: String,
-        val confirmedDate: String = "",
-        val confirmedLocation: String = "",
-        val requiresDetails: Boolean = false,
     ) : RequestDialog
 
     data class Decline(
@@ -53,8 +50,6 @@ interface RequestsStore : Store<RequestsStore.Intent, RequestsStore.State, Reque
         data class ClickApprove(val requestId: String) : Intent
         data class ClickDecline(val requestId: String) : Intent
         data object DismissDialog : Intent
-        data class ChangeConfirmedDate(val value: String) : Intent
-        data class ChangeConfirmedLocation(val value: String) : Intent
         data class ChangeDeclineReason(val value: String) : Intent
         data object ConfirmApprove : Intent
         data object ConfirmDecline : Intent

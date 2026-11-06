@@ -1,17 +1,26 @@
 package com.dev.lbsuhack.feature.profile.store
 
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
+import com.dev.lbsuhack.core.domain.DomainError
+import com.dev.lbsuhack.core.domain.DomainResult
+import com.dev.lbsuhack.core.domain.model.User
 import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.domain.session.ClearSessionUseCase
-import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
+import com.dev.lbsuhack.core.domain.session.SaveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionState
 import com.dev.lbsuhack.core.domain.session.SessionUser
-import com.dev.lbsuhack.feature.profile.data.ProfileRepositoryImpl
+import com.dev.lbsuhack.core.domain.user.GetCurrentUserUseCase
+import com.dev.lbsuhack.core.domain.user.UpdateUserCacheUseCase
+import com.dev.lbsuhack.core.domain.user.UserRepository
+import com.dev.lbsuhack.feature.profile.domain.ProfileRepository
 import com.dev.lbsuhack.feature.profile.store.profile.ProfileStore
 import com.dev.lbsuhack.feature.profile.store.profile.ProfileStoreFactory
 import com.dev.lbsuhack.feature.profile.util.FakeSessionRepository
 import com.dev.lbsuhack.feature.profile.util.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -26,6 +35,16 @@ class ProfileStoreTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
+    private val testUser = User.Pupil(
+        id = "7",
+        name = "Nikita",
+        surname = "Ivanov",
+        fathersName = "Petrovich",
+        schoolsById = "School #1",
+        schoolName = "School #1",
+        pupilClass = "10-А",
+    )
+
     private val sessionUser = SessionUser(
         id = "7",
         name = "Nikita",
@@ -36,14 +55,19 @@ class ProfileStoreTest {
         initialState = SessionState.Authenticated(sessionUser),
     )
 
-    private val profileRepository = ProfileRepositoryImpl()
+    private val profileRepository = FakeProfileRepository()
 
-    private fun createStore(): ProfileStore = ProfileStoreFactory(
-        storeFactory = DefaultStoreFactory(),
-        profileRepository = profileRepository,
-        observeSession = ObserveSessionUseCase(sessionRepository),
-        clearSession = ClearSessionUseCase(sessionRepository),
-    ).create()
+    private fun createStore(customUser: User = testUser): ProfileStore {
+        val userRepo = FakeUserRepository(customUser)
+        return ProfileStoreFactory(
+            storeFactory = DefaultStoreFactory(),
+            profileRepository = profileRepository,
+            getCurrentUser = GetCurrentUserUseCase(userRepo),
+            updateUserCache = UpdateUserCacheUseCase(userRepo),
+            saveSession = SaveSessionUseCase(sessionRepository),
+            clearSession = ClearSessionUseCase(sessionRepository),
+        ).create()
+    }
 
     @Test
     fun `load fills the state with the session user`() =
@@ -54,8 +78,9 @@ class ProfileStoreTest {
             runCurrent()
 
             assertFalse(store.state.isLoading)
-            assertEquals("Nikita", store.state.name)
+            assertEquals("Nikita Ivanov Petrovich", store.state.fullName)
             assertEquals("School #1", store.state.schoolName)
+            assertEquals("10-А", store.state.pupilClass)
             assertEquals(0, store.state.savedCount)
             assertTrue(store.state.notificationsEnabled)
             assertFalse(store.state.canReviewRequests)
@@ -64,22 +89,19 @@ class ProfileStoreTest {
     @Test
     fun `teacher can open the requests section`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            val teacherRepository = FakeSessionRepository(
-                initialState = SessionState.Authenticated(
-                    sessionUser.copy(role = UserRole.TEACHER),
-                ),
+            val teacher = User.Teacher(
+                id = "8",
+                name = "Elena",
+                surname = "Smirnova",
+                schoolsById = "School #1",
             )
-            val store = ProfileStoreFactory(
-                storeFactory = DefaultStoreFactory(),
-                profileRepository = profileRepository,
-                observeSession = ObserveSessionUseCase(teacherRepository),
-                clearSession = ClearSessionUseCase(teacherRepository),
-            ).create()
+            val store = createStore(teacher)
 
             store.accept(ProfileStore.Intent.Load)
             runCurrent()
 
             assertTrue(store.state.canReviewRequests)
+            assertEquals(UserRole.TEACHER, store.state.role)
         }
 
     @Test
@@ -103,4 +125,49 @@ class ProfileStoreTest {
 
             assertTrue(sessionRepository.cleared)
         }
+
+    private class FakeProfileRepository : ProfileRepository {
+        private var notifications = true
+
+        override suspend fun isNotificationsEnabled(): Boolean = notifications
+
+        override suspend fun setNotificationsEnabled(enabled: Boolean) {
+            notifications = enabled
+        }
+
+        override suspend fun savedCount(): Int = 0
+
+        override suspend fun updateOwnProfile(
+            userId: String,
+            name: String,
+            surname: String,
+            fathersName: String,
+        ): DomainResult<User> = DomainResult.Success(
+            User.Pupil(
+                id = userId,
+                name = name,
+                surname = surname,
+                fathersName = fathersName,
+                pupilClass = "10-А",
+            ),
+        )
+    }
+
+    private class FakeUserRepository(initialUser: User? = null) : UserRepository {
+        private val _user = MutableStateFlow(initialUser)
+        override val currentUser: StateFlow<User?> = _user.asStateFlow()
+
+        override suspend fun getCurrentUser(forceRefresh: Boolean): DomainResult<User> {
+            val user = _user.value ?: return DomainResult.Failure(DomainError.NotFound)
+            return DomainResult.Success(user)
+        }
+
+        override suspend fun updateCache(user: User) {
+            _user.value = user
+        }
+
+        override suspend fun clearCache() {
+            _user.value = null
+        }
+    }
 }
