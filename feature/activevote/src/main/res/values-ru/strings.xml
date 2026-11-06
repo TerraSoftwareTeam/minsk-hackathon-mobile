@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="active_vote_title">Голосование</string>
+    <string name="active_vote_back">Назад</string>
+    <string name="active_vote_stub_title">Голосование не найдено</string>
+    <string name="active_vote_stub_description">Запрашиваемое голосование не существует или уже завершено.</string>
+    <string name="active_vote_events_section">Выбранные мероприятия</string>
+    <string name="active_vote_question_section">Голосование</string>
+    <string name="active_vote_users_section">Участники голосования</string>
+    <string name="active_vote_submit_button">Проголосовать</string>
+    <string name="active_vote_submitted_button">Голос учтён</string>
+    <string name="active_vote_submitted_success">Ваш голос успешно учтён!</string>
+    <string name="active_vote_user_status_voted">Проголосовал</string>
+    <string name="active_vote_user_status_waiting">Ожидает</string>
+    <string name="active_vote_event_details">Подробнее</string>
+    <string name="active_vote_your_choice">Ваш выбор</string>
+    <string name="active_vote_participants_label">Участники</string>
+    <string name="active_vote_seats_left">%d мест</string>
+    <string name="active_vote_no_seats">Мест нет</string>
+    <string name="active_vote_error_option">Выберите вариант ответа</string>
+    <string name="active_vote_error_failed">Не удалось отправить голос. Попробуйте ещё раз</string>
+</resources>

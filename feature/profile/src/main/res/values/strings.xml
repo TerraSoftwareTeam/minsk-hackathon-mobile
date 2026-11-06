@@ -9,6 +9,8 @@
     <string name="profile_requests">Requests</string>
     <string name="profile_requests_teacher">Publications</string>
     <string name="profile_requests_admin">Events</string>
+    <string name="profile_voting">Voting</string>
+    <string name="profile_create_vote">Create vote</string>
     <string name="profile_logout">Sign out</string>
 
     <string name="profile_settings_title">Settings</string>

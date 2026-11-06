@@ -41,7 +41,12 @@ git worktree per parallel agent.
   controller → theme bridge), and the final registration of features.
 - `core:designsystem` — the single app design system. Owns `HackTheme`, the
   dark and light colour schemes, `HackExtras`, typography, shapes, and the
-  persisted `ThemeController`. Shared by `app` and any feature that needs UI.
+  persisted `ThemeController`. It holds tokens and the theme only, not
+  composite components.
+- `core:ui` — shared Compose component kit. Owns custom composite components
+  used by two or more features (top bar, loading, empty state, labels,
+  primary button, selectable rows). Depends on `core:designsystem` and never
+  on a feature.
 - `core:domain` — pure session contract (`SessionRepository`, `SessionState`,
   `SessionUser`) and the session use cases, plus result/error primitives and
   global value objects. Core logic is exposed only through use cases.
@@ -60,13 +65,17 @@ git worktree per parallel agent.
 - `build-logic` — Gradle convention plugins. Integrator-owned.
 - `api/openapi.yaml` — shared API contract. Integrator-owned.
 
-Package layout inside the two UI-facing core modules:
+Package layout inside the UI-facing core modules:
 
 ```text
 core/designsystem/.../designsystem/
   theme/    HackTheme, colour schemes, typography, shapes, previews
   mode/     AppThemeMode, ThemeModeCodec, ThemeController, ThemePreferences
   di/       designSystemModule
+
+core/ui/.../core/ui/
+  component/ HackTopBar, HackLoading, HackEmptyState, HackLabels,
+             HackPrimaryButton, previews
 
 core/localization/.../localization/
   language/ AppLanguage, LanguageController, AndroidLanguageController
@@ -159,9 +168,11 @@ feature/<name>/src/main/kotlin/.../feature/<name>/
 - `feature:*` must not depend on another `feature:*`.
 - Cross-feature contracts go through `core:<capability>` or a small API
   contract approved by the integrator.
-- Do not share entities, DTOs, stores, or UI components between features by
-  copying them into `core:domain`. Extract a `core:<capability>` only after
-  two or more real usages.
+- Do not share entities, DTOs, or stores between features by copying them
+  into `core:domain`. Extract a `core:<capability>` only after two or more
+  real usages.
+- Do not share UI components by copying them between features. A composite
+  component needed by two or more features moves to `core:ui`.
 - `core:domain` stays small: result/error primitives, the session contract with
   its use cases, and truly global value objects only.
 
@@ -216,8 +227,11 @@ feature/<name>/src/main/kotlin/.../feature/<name>/
 - Use Material 3 components and the existing app theme.
 - Do not add a new theme, color palette, or typography scale without the
   integrator's approval.
-- Do not duplicate a shared component. If it is needed by two features,
-  report it instead.
+- Do not duplicate a shared component. If it is needed by two features, move
+  it to `core:ui` instead.
+- Components in `core:ui` take plain `String` text and callbacks, not
+  `UiText`, `@StringRes`, domain models, or navigation. The caller owns
+  localization and wiring.
 
 ### Design system and theming
 
@@ -242,6 +256,23 @@ feature/<name>/src/main/kotlin/.../feature/<name>/
   `HackTheme(mode = AppThemeMode.DARK) { ... }`.
 - Regenerating the palette is a two-block edit in `HackColorScheme.kt`; the
   default mode is the single `DefaultThemeMode` constant in `AppThemeMode.kt`.
+
+### Shared UI components
+
+- `core:designsystem` holds design tokens and the theme only.
+- `core:ui` holds reusable composite Composables shared by two or more
+  features. Keep feature-specific components in `feature/<name>/ui/` until a
+  second real consumer appears.
+- Shared components must not depend on feature modules, business logic,
+  routes, ViewModels, stores, or repositories.
+- Every shared component must have a preview that passes
+  `HackTheme(mode = AppThemeMode.DARK)` and `AppThemeMode.LIGHT`.
+- Place one concern per file in `component/`. Do not create a package per
+  component.
+- `core:ui` may depend on `core:designsystem` and Compose only. Any other
+  dependency needs the integrator's approval.
+- A feature consumes shared components with
+  `implementation(project(":core:ui"))`.
 
 ### Dependencies
 
