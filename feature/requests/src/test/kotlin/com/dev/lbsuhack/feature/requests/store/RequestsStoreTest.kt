@@ -142,10 +142,11 @@ class RequestsStoreTest {
         }
 
     @Test
-    fun `admin approve dialog forecasts the chance for the chosen date`() =
+    fun `admin approve dialog shows the author date and chance`() =
         runTest(mainDispatcherRule.testDispatcher) {
+            val date = OffsetDateTime.now().plusDays(10).withNano(0)
             val repository = FakeReviewRequestRepository(
-                adminQueue = listOf(adminRequest("a-1").copy(categoryKey = "SPORTS", successProbability = 0.58)),
+                adminQueue = listOf(adminRequest("a-1").copy(proposedDate = date, successProbability = 0.58)),
             )
             val store = createStore(user = admin, repository = repository)
             store.accept(RequestsStore.Intent.Load(UserRole.ORGANIZATOR))
@@ -153,23 +154,8 @@ class RequestsStoreTest {
 
             store.accept(RequestsStore.Intent.ClickApprove("a-1"))
             val opened = store.state.dialog as RequestDialog.Approve
+            assertEquals(date, opened.startsAt)
             assertEquals(0.58, opened.chance!!, 0.0001)
-            assertTrue(opened.isChanceLoading)
-
-            advanceTimeBy(CHANCE_WAIT_MS)
-            runCurrent()
-            assertEquals(0.72, (store.state.dialog as RequestDialog.Approve).chance!!, 0.0001)
-            assertEquals("SPORTS", repository.probabilityRequests.last().first)
-
-            repository.probabilityResult = DomainResult.Success(0.41)
-            store.accept(RequestsStore.Intent.ChangeStartsAt(OffsetDateTime.now().plusDays(2)))
-            advanceTimeBy(CHANCE_WAIT_MS)
-            runCurrent()
-
-            val updated = store.state.dialog as RequestDialog.Approve
-            assertFalse(updated.isChanceLoading)
-            assertEquals(0.41, updated.chance!!, 0.0001)
-            assertEquals(2, repository.probabilityRequests.size)
             store.dispose()
         }
 
@@ -192,6 +178,7 @@ class RequestsStoreTest {
         assertEquals(AccessState.Granted, store.state.accessState)
         assertTrue(store.state.canReview)
         assertEquals(RequestAudience.TEACHER, store.state.audience)
+        assertEquals(teacher.name, store.state.userName)
         assertEquals(
             listOf("publication-1", "publication-2", "publication-3"),
             store.state.queueRequests.map { it.id },
@@ -448,7 +435,7 @@ class RequestsStoreTest {
         }
 
     @Test
-    fun `admin cannot approve with a date in the past`() = runTest(mainDispatcherRule.testDispatcher) {
+    fun `admin approves without choosing a date`() = runTest(mainDispatcherRule.testDispatcher) {
         val store = createStore(
             user = admin,
             repository = FakeReviewRequestRepository(
@@ -461,46 +448,6 @@ class RequestsStoreTest {
         store.accept(RequestsStore.Intent.ClickApprove("admin-1"))
         runCurrent()
 
-        val dialog = store.state.dialog as RequestDialog.Approve
-        assertNotNull(dialog.startsAt)
-
-        store.accept(RequestsStore.Intent.ChangeStartsAt(OffsetDateTime.now().minusDays(1)))
-        runCurrent()
-
-        assertTrue((store.state.dialog as RequestDialog.Approve).hasDateError)
-
-        store.labels.test {
-            store.accept(RequestsStore.Intent.ConfirmApprove)
-            runCurrent()
-
-            assertEquals(
-                RequestsStore.Label.ShowMessage(UiText.Resource(R.string.requests_error_date_in_past)),
-                awaitItem(),
-            )
-            cancelAndIgnoreRemainingEvents()
-        }
-
-        assertNotNull(store.state.dialog)
-        assertEquals(ReviewStatus.PENDING_ADMIN, store.state.requests.first { it.id == "admin-1" }.status)
-    }
-
-    @Test
-    fun `admin approve sends the selected date`() = runTest(mainDispatcherRule.testDispatcher) {
-        val store = createStore(
-            user = admin,
-            repository = FakeReviewRequestRepository(
-                adminQueue = listOf(adminRequest("admin-1")),
-            ),
-        )
-        store.accept(RequestsStore.Intent.Load(UserRole.ORGANIZATOR))
-        runCurrent()
-
-        store.accept(RequestsStore.Intent.ClickApprove("admin-1"))
-        runCurrent()
-
-        val startsAt = OffsetDateTime.now().plusDays(3).withHour(15).withMinute(30).withSecond(0).withNano(0)
-        store.accept(RequestsStore.Intent.ChangeStartsAt(startsAt))
-        runCurrent()
         store.accept(RequestsStore.Intent.ConfirmApprove)
         runCurrent()
 
@@ -556,4 +503,3 @@ class RequestsStoreTest {
 
 private const val POLL_INTERVAL_MS = 1_000L
 
-private const val CHANCE_WAIT_MS = 300L

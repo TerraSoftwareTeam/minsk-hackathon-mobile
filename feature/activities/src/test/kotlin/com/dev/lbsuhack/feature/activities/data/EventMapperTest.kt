@@ -30,7 +30,7 @@ class EventMapperTest {
     fun votingEventCategoryToDomainMapsAllValues() {
         for (dtoCategory in VotingEventResponseDto.Category.entries) {
             val domain = dtoCategory.toDomain()
-            assertEquals(dtoCategory.name, domain.name)
+            assertEquals(if (dtoCategory.name == "VOLUNTEER") "OTHER" else dtoCategory.name, domain.name)
         }
     }
 
@@ -38,7 +38,7 @@ class EventMapperTest {
     fun eventResponseCategoryToDomainMapsAllValues() {
         for (dtoCategory in EventResponseDto.Category.entries) {
             val domain = dtoCategory.toDomain()
-            assertEquals(dtoCategory.name, domain.name)
+            assertEquals(if (dtoCategory.name == "VOLUNTEER") "OTHER" else dtoCategory.name, domain.name)
         }
     }
 
@@ -147,16 +147,22 @@ class EventMapperTest {
         assertEquals(1, liked.likesCount)
         assertTrue(liked.likedByMe)
 
-        val unliked = liked.withLikeResult(EventLikeResponseDto(eventId = "1", liked = false, likesCount = 0))
+        val disliked = liked.withLikeResult(EventLikeResponseDto(eventId = "1", liked = false, disliked = true, likesCount = -1))
+        assertEquals(-1, disliked.likesCount)
+        assertFalse(disliked.likedByMe)
+        assertTrue(disliked.dislikedByMe)
+
+        val unliked = disliked.withLikeResult(EventLikeResponseDto(eventId = "1", liked = false, disliked = false, likesCount = 0))
         assertEquals(0, unliked.likesCount)
         assertFalse(unliked.likedByMe)
+        assertFalse(unliked.dislikedByMe)
     }
 
     @Test
     fun toDisplayDateTimeFormatsValidIsoDate() {
         val iso = "2026-11-20T14:30:00Z"
         val formatted = iso.toDisplayDateTime(zone = ZoneId.of("UTC"), locale = Locale.ENGLISH)
-        assertEquals("20 November 2026, 14:30", formatted)
+        assertEquals("20 November, 14:30", formatted)
 
         val invalid = "not-a-date"
         assertEquals("not-a-date", invalid.toDisplayDateTime())

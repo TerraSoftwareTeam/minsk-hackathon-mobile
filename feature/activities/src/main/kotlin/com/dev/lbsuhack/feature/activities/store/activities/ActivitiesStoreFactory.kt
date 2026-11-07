@@ -67,12 +67,17 @@ class ActivitiesStoreFactory(
                 ActivitiesStore.Intent.StopPolling -> stopPolling()
                 is ActivitiesStore.Intent.SelectCategory -> dispatch(Message.CategorySelected(intent.category))
                 is ActivitiesStore.Intent.SelectTab -> dispatch(Message.TabSelected(intent.tab))
+                ActivitiesStore.Intent.ResetFilters -> {
+                    dispatch(Message.CategorySelected(null))
+                    dispatch(Message.TabSelected(ActivityTab.ALL))
+                }
                 is ActivitiesStore.Intent.ClickActivity -> publish(ActivitiesStore.Label.OpenDetails(intent.activityId))
                 ActivitiesStore.Intent.ClickCreate -> openCreate()
                 ActivitiesStore.Intent.ClickProfile -> publish(ActivitiesStore.Label.OpenProfile)
                 is ActivitiesStore.Intent.Vote -> vote(intent.activityId)
                 is ActivitiesStore.Intent.Unvote -> unvote(intent.activityId)
                 is ActivitiesStore.Intent.Like -> like(intent.activityId)
+                is ActivitiesStore.Intent.Dislike -> dislike(intent.activityId)
                 is ActivitiesStore.Intent.Unlike -> unlike(intent.activityId)
             }
         }
@@ -109,6 +114,8 @@ class ActivitiesStoreFactory(
             if (pollingJob?.isActive == true) return
             pollingJob = scope.launch {
                 var failures = 0
+                val cached = activityRepository.observeActivities().first()
+                if (cached.isNotEmpty()) dispatch(Message.ActivitiesLoaded(cached))
                 refresh(silent = state().activities.isNotEmpty())
                 while (isActive) {
                     delay(pollDelay(failures))
@@ -166,10 +173,16 @@ class ActivitiesStoreFactory(
             act(activityId, ActivityOperation.LIKE) { activityRepository.like(it) }
         }
 
+        private fun dislike(activityId: String) {
+            val activity = state().activities.find { it.id == activityId } ?: return
+            if (!state().canLikeIn(activity) || activity.dislikedByMe) return
+            act(activityId, ActivityOperation.LIKE) { activityRepository.dislike(it) }
+        }
+
         private fun unlike(activityId: String) {
             val activity = state().activities.find { it.id == activityId } ?: return
             if (!state().canLikeIn(activity)) return
-            if (!activity.likedByMe) return
+            if (!activity.likedByMe && !activity.dislikedByMe) return
             act(activityId, ActivityOperation.LIKE) { activityRepository.unlike(it) }
         }
 
@@ -209,7 +222,9 @@ class ActivitiesStoreFactory(
                     activities = msg.activities,
                     hasLoaded = hasLoaded || msg.activities.isNotEmpty(),
                 )
-                is Message.UserUpdated -> copy(currentUser = msg.user)
+                is Message.UserUpdated -> if (currentUser?.id != msg.user?.id || currentUser?.role != msg.user?.role) {
+                    ActivitiesStore.State(currentUser = msg.user)
+                } else copy(currentUser = msg.user)
                 is Message.CategorySelected -> copy(selectedCategory = msg.category)
                 is Message.TabSelected -> copy(selectedTab = msg.tab)
             }

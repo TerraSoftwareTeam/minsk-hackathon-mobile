@@ -39,6 +39,7 @@ fun HackDateTimeField(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     isError: Boolean = false,
+    minDate: LocalDate? = null,
 ) {
     val context = LocalContext.current
     val zone = ZoneId.systemDefault()
@@ -72,7 +73,7 @@ fun HackDateTimeField(
                 local.monthValue - 1,
                 local.dayOfMonth,
             ).apply {
-                datePicker.minDate = LocalDate.now(zone).atStartOfDay(zone).toInstant().toEpochMilli()
+                datePicker.minDate = (minDate ?: LocalDate.now(zone)).atStartOfDay(zone).toInstant().toEpochMilli()
             }.show()
         },
         enabled = enabled,

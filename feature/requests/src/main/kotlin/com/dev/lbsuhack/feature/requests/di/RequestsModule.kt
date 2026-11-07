@@ -1,5 +1,6 @@
 package com.dev.lbsuhack.feature.requests.di
 
+import com.dev.lbsuhack.core.domain.session.SessionClearHook
 import com.dev.lbsuhack.core.navigation.api.NavigationInstaller
 import com.dev.lbsuhack.feature.requests.data.EventReviewRequestRepository
 import com.dev.lbsuhack.feature.requests.domain.ReviewRequestRepository
@@ -10,16 +11,17 @@ import kotlinx.coroutines.Dispatchers
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.bind
+import org.koin.dsl.binds
 import org.koin.dsl.module
 
 val requestsModule = module {
-    single<ReviewRequestRepository> {
+    single {
         EventReviewRequestRepository(
             httpClient = get(),
             ioDispatcher = Dispatchers.IO,
             observeSession = get(),
         )
-    }
+    } binds arrayOf(ReviewRequestRepository::class, SessionClearHook::class)
 
     single {
         RequestsStoreFactory(

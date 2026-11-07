@@ -20,6 +20,7 @@ interface ActivityRepository {
     suspend fun vote(eventId: String): DomainResult<ActivityProposal>
     suspend fun unvote(eventId: String): DomainResult<ActivityProposal>
     suspend fun like(eventId: String): DomainResult<ActivityProposal>
+    suspend fun dislike(eventId: String): DomainResult<ActivityProposal>
     suspend fun unlike(eventId: String): DomainResult<ActivityProposal>
     suspend fun previewSuccessProbability(
         category: ActivityCategory,
@@ -31,6 +32,8 @@ interface ActivityRepository {
         description: String,
         scope: ActivityScope = ActivityScope.CLASS,
         voteThreshold: Int = 15,
-        startsAt: String? = null,
+        startsAt: String,
+        maxParticipants: Int? = null,
     ): DomainResult<ActivityProposal>
+    suspend fun delete(eventId: String): DomainResult<Unit>
 }

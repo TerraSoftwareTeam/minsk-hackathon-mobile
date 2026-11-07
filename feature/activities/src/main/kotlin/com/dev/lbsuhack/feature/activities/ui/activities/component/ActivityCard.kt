@@ -10,24 +10,21 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.dev.lbsuhack.feature.activities.domain.ActivityOrigin
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
+import com.dev.lbsuhack.feature.activities.domain.ActivityStage
 import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
-import com.dev.lbsuhack.feature.activities.ui.component.ActivityAuthorBadges
+import com.dev.lbsuhack.feature.activities.domain.stage
+import com.dev.lbsuhack.feature.activities.ui.component.ActivityAuthorRow
 import com.dev.lbsuhack.feature.activities.ui.component.ActivityChanceMeter
 import com.dev.lbsuhack.feature.activities.ui.component.ActivityRating
 import com.dev.lbsuhack.feature.activities.ui.component.ActivityVoteButton
@@ -42,9 +39,11 @@ internal fun ActivityCard(
     onVote: () -> Unit,
     onUnvote: () -> Unit,
     onLike: () -> Unit,
+    onDislike: () -> Unit,
     onUnlike: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val stage = proposal.stage
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -60,7 +59,11 @@ internal fun ActivityCard(
         proposal.photoUri?.let { photoUri ->
             ActivityCardCover(proposal = proposal, photoUri = photoUri)
         }
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(
+            modifier = Modifier
+                .padding(20.dp)
+                .alpha(if (stage == ActivityStage.CLOSED) CLOSED_ALPHA else 1f),
+        ) {
             if (proposal.photoUri == null) {
                 ActivityMetadata(proposal = proposal)
                 Spacer(modifier = Modifier.height(16.dp))
@@ -76,21 +79,7 @@ internal fun ActivityCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Outlined.Person,
-                    contentDescription = null,
-                    modifier = Modifier.size(17.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.width(7.dp))
-                Text(
-                    text = proposal.authorName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                ActivityAuthorBadges(proposal = proposal, isAuthor = isAuthor)
-            }
+            ActivityAuthorRow(proposal = proposal, isAuthor = isAuthor)
 
             if (proposal.description.isNotBlank()) {
                 Spacer(modifier = Modifier.height(12.dp))
@@ -99,21 +88,32 @@ internal fun ActivityCard(
                     text = proposal.description,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 3,
+                    maxLines = if (stage == ActivityStage.VOTING) 3 else 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
 
-            if (proposal.confirmedTime != null && (proposal.status == ActivityStatus.FINALIZED || proposal.origin == ActivityOrigin.SCHOOL)) {
+            proposal.confirmedTime?.let { date ->
                 Spacer(modifier = Modifier.height(16.dp))
-                ConfirmedActivityInfo(confirmedTime = proposal.confirmedTime)
+                ConfirmedActivityInfo(confirmedTime = date)
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            when (stage) {
+                ActivityStage.VOTING,
+                ActivityStage.CONFIRMED,
+                -> {
+                    Spacer(modifier = Modifier.height(18.dp))
+                    ActivityVoteProgress(proposal = proposal)
+                }
+                ActivityStage.WAITING,
+                ActivityStage.CLOSED,
+                -> {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    ActivityStageNote(proposal = proposal)
+                }
+            }
 
-            ActivityVoteProgress(proposal = proposal)
-
-            if (proposal.showsChance) {
+            if (proposal.showsChance && proposal.status != ActivityStatus.ON_MODERATION) {
                 Spacer(modifier = Modifier.height(14.dp))
                 ActivityChanceMeter(
                     probability = proposal.successProbability,
@@ -123,28 +123,55 @@ internal fun ActivityCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                ActivityRating(
-                    likesCount = proposal.likesCount,
-                    likedByMe = proposal.likedByMe,
-                    enabled = canLike,
-                    onLike = onLike,
-                    onUnlike = onUnlike,
-                )
-                ActivityVoteButton(
-                    proposal = proposal,
-                    isAuthor = isAuthor,
-                    canInteract = canInteract,
-                    onVote = onVote,
-                    onUnvote = onUnvote,
-                    onOpenDetails = onClick,
-                    modifier = Modifier.weight(1f).height(50.dp),
-                )
+            when (stage) {
+                ActivityStage.VOTING,
+                ActivityStage.CONFIRMED,
+                -> Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    ActivityRating(
+                        likesCount = proposal.likesCount,
+                        likedByMe = proposal.likedByMe,
+                        dislikedByMe = proposal.dislikedByMe,
+                        enabled = canLike,
+                        onLike = onLike,
+                        onDislike = onDislike,
+                        onUnlike = onUnlike,
+                    )
+                    ActivityVoteButton(
+                        proposal = proposal,
+                        canInteract = canInteract,
+                        onVote = onVote,
+                        onUnvote = onUnvote,
+                        onOpenDetails = onClick,
+                        modifier = Modifier.weight(1f).height(50.dp),
+                    )
+                }
+                ActivityStage.WAITING,
+                ActivityStage.CLOSED,
+                -> Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (proposal.canLike) {
+                        ActivityRating(
+                            likesCount = proposal.likesCount,
+                            likedByMe = proposal.likedByMe,
+                            dislikedByMe = proposal.dislikedByMe,
+                            enabled = canLike,
+                            onLike = onLike,
+                            onDislike = onDislike,
+                            onUnlike = onUnlike,
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    ActivityDetailsLink(modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp))
+                }
             }
         }
     }
 }
+
+private const val CLOSED_ALPHA = 0.62f

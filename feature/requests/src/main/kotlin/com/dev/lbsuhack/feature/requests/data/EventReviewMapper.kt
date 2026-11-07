@@ -18,6 +18,8 @@ fun EventResponseDto.toDomain(audience: RequestAudience): ReviewRequest {
         title = name,
         description = description.orEmpty(),
         proposedDate = startsAt.toOffsetDateTimeOrNull(),
+        deadline = deadline.toOffsetDateTimeOrNull(),
+        maxParticipants = maxParticipants,
         authorName = authorName,
         voters = voters.map { voter -> listOf(voter.name, voter.surname).filter(String::isNotBlank).joinToString(" ") },
         votesCount = votesCount,
@@ -27,6 +29,7 @@ fun EventResponseDto.toDomain(audience: RequestAudience): ReviewRequest {
         audience = audience,
         declineReason = declineReason,
         categoryKey = category.value,
+        originKey = createdByRole.value,
         successProbability = successProbability.toDouble(),
     )
 }

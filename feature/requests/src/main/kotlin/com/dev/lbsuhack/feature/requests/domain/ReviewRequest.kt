@@ -21,6 +21,8 @@ data class ReviewRequest(
     val title: String,
     val description: String,
     val proposedDate: OffsetDateTime?,
+    val deadline: OffsetDateTime? = null,
+    val maxParticipants: Int? = null,
     val authorName: String,
     val status: ReviewStatus,
     val audience: RequestAudience,
@@ -30,6 +32,7 @@ data class ReviewRequest(
     val voteThreshold: Int = 0,
     val likesCount: Int = 0,
     val categoryKey: String = "",
+    val originKey: String = "PUPIL",
     val successProbability: Double? = null,
 )
 

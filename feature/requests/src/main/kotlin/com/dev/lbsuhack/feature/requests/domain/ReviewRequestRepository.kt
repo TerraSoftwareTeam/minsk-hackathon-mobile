@@ -12,7 +12,6 @@ interface ReviewRequestRepository {
     suspend fun approve(
         requestId: String,
         audience: RequestAudience,
-        startsAt: String? = null,
     ): DomainResult<ReviewRequest>
 
     suspend fun decline(
@@ -20,9 +19,4 @@ interface ReviewRequestRepository {
         reason: String?,
         audience: RequestAudience,
     ): DomainResult<ReviewRequest>
-
-    suspend fun previewSuccessProbability(
-        categoryKey: String,
-        startsAt: String?,
-    ): DomainResult<Double>
 }

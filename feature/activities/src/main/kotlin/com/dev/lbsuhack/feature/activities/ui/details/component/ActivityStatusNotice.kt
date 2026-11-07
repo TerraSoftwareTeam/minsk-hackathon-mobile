@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.HourglassEmpty
 import androidx.compose.material.icons.outlined.Schedule
@@ -98,15 +99,32 @@ internal fun ActivityStatusNotice(proposal: ActivityProposal, modifier: Modifier
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        if (proposal.confirmedTime != null && (proposal.status == ActivityStatus.FINALIZED || proposal.origin == ActivityOrigin.SCHOOL)) {
+        val deadlineLabel = when (proposal.status) {
+            ActivityStatus.ON_MODERATION -> R.string.details_deadline_label_moderation
+            ActivityStatus.ON_VOTE -> R.string.details_deadline_label_voting
+            ActivityStatus.ON_ADMIN_MODERATION -> R.string.details_deadline_label_admin
+            else -> null
+        }
+        val deadline = proposal.deadlineTime?.takeIf { it != proposal.confirmedTime }
+        if (proposal.confirmedTime != null || (deadlineLabel != null && deadline != null)) {
             Spacer(modifier = Modifier.height(16.dp))
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                ConfirmedDetailsRow(
-                    icon = Icons.Outlined.Schedule,
-                    label = stringResource(R.string.details_confirmed_time_label),
-                    value = proposal.confirmedTime,
-                    accent = MaterialTheme.colorScheme.onSurface,
-                )
+                proposal.confirmedTime?.let { date ->
+                    ConfirmedDetailsRow(
+                        icon = Icons.Outlined.Event,
+                        label = stringResource(R.string.details_confirmed_time_label),
+                        value = date,
+                        accent = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                if (deadlineLabel != null && deadline != null) {
+                    ConfirmedDetailsRow(
+                        icon = Icons.Outlined.Schedule,
+                        label = stringResource(deadlineLabel),
+                        value = deadline,
+                        accent = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
             }
         }
     }

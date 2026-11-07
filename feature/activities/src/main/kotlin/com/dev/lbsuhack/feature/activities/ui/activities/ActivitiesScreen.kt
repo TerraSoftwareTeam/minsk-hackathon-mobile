@@ -9,11 +9,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.material.icons.outlined.FilterAltOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -27,7 +30,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -38,14 +40,16 @@ import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.localization.text.UiText
 import com.dev.lbsuhack.core.localization.text.resolve
 import com.dev.lbsuhack.core.ui.component.HackEmptyState
+import com.dev.lbsuhack.core.ui.component.HackFloatingActionButton
 import com.dev.lbsuhack.core.ui.component.HackLoading
+import com.dev.lbsuhack.core.ui.component.HackTopBar
 import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.presentation.activities.ActivitiesViewModel
 import com.dev.lbsuhack.feature.activities.store.activities.ActivitiesStore
 import com.dev.lbsuhack.feature.activities.ui.activities.component.ActivitiesBottomActions
+import com.dev.lbsuhack.feature.activities.ui.activities.component.ActivitiesSectionHeader
 import com.dev.lbsuhack.feature.activities.ui.activities.component.ActivitiesTopBar
 import com.dev.lbsuhack.feature.activities.ui.activities.component.ActivityCard
-import com.dev.lbsuhack.feature.activities.ui.activities.component.rememberHideOnScrollState
 import com.dev.lbsuhack.feature.activities.ui.common.FloatingActionsBackdrop
 import org.koin.androidx.compose.koinViewModel
 
@@ -56,14 +60,15 @@ fun ActivitiesScreen(
     onOpenCreate: () -> Unit,
     onOpenRequests: (UserRole) -> Unit,
     onOpenProfile: () -> Unit,
+    onBack: (() -> Unit)? = null,
     viewModel: ActivitiesViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val staffRole = state.currentUser?.role?.takeIf { it != UserRole.PUPIL }
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
     val retry = stringResource(R.string.activities_retry)
     var scanError by remember { mutableStateOf<UiText?>(null) }
-    val filtersOnScroll = rememberHideOnScrollState()
 
     LaunchedEffect(state.errorId) {
         if (state.activities.isEmpty()) return@LaunchedEffect
@@ -99,16 +104,30 @@ fun ActivitiesScreen(
         snackbarHost = { SnackbarHost(snackbar) },
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            ActivitiesTopBar(
-                userName = state.currentUser?.name,
-                pupilClass = state.currentUser?.pupilClass,
-                selectedCategory = state.selectedCategory,
-                selectedTab = state.selectedTab,
-                onSelectCategory = { viewModel.accept(ActivitiesStore.Intent.SelectCategory(it)) },
-                onSelectTab = { viewModel.accept(ActivitiesStore.Intent.SelectTab(it)) },
-                onOpenProfile = { viewModel.accept(ActivitiesStore.Intent.ClickProfile) },
-                filtersVisible = filtersOnScroll.isVisible,
-            )
+            if (staffRole != null) {
+                HackTopBar(
+                    title = stringResource(
+                        if (staffRole == UserRole.ORGANIZATOR) {
+                            R.string.activities_staff_title_school
+                        } else {
+                            R.string.activities_staff_title_teacher
+                        },
+                    ),
+                    onBack = onBack,
+                    backContentDescription = stringResource(R.string.activities_back),
+                )
+            } else {
+                ActivitiesTopBar(
+                    userName = state.currentUser?.name,
+                    pupilClass = state.currentUser?.pupilClass,
+                    selectedCategory = state.selectedCategory,
+                    selectedTab = state.selectedTab,
+                    onSelectCategory = { viewModel.accept(ActivitiesStore.Intent.SelectCategory(it)) },
+                    onSelectTab = { viewModel.accept(ActivitiesStore.Intent.SelectTab(it)) },
+                    onOpenProfile = { viewModel.accept(ActivitiesStore.Intent.ClickProfile) },
+                    showQuickFilters = state.canInteract,
+                )
+            }
         },
     ) { padding ->
         Box(
@@ -119,9 +138,7 @@ fun ActivitiesScreen(
             PullToRefreshBox(
                 isRefreshing = state.isLoading && state.activities.isNotEmpty(),
                 onRefresh = { viewModel.accept(ActivitiesStore.Intent.Refresh) },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .nestedScroll(filtersOnScroll.connection),
+                modifier = Modifier.fillMaxSize(),
             ) {
                 when {
                     state.isInitialLoading -> {
@@ -152,12 +169,37 @@ fun ActivitiesScreen(
                     state.filteredActivities.isEmpty() -> {
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
                             item(key = EMPTY_STATE_KEY) {
-                                HackEmptyState(
-                                    title = stringResource(R.string.activities_empty_title),
-                                    description = stringResource(R.string.activities_empty_desc),
-                                    icon = Icons.Outlined.CalendarMonth,
-                                    modifier = Modifier.fillParentMaxSize(),
-                                )
+                                if (state.hasActiveFilters) {
+                                    HackEmptyState(
+                                        title = stringResource(R.string.activities_filtered_empty_title),
+                                        description = stringResource(R.string.activities_filtered_empty_desc),
+                                        icon = Icons.Outlined.FilterAltOff,
+                                        modifier = Modifier.fillParentMaxSize(),
+                                        action = {
+                                            OutlinedButton(
+                                                onClick = { viewModel.accept(ActivitiesStore.Intent.ResetFilters) },
+                                                shape = MaterialTheme.shapes.medium,
+                                            ) {
+                                                Text(
+                                                    text = stringResource(R.string.activities_filters_reset),
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                )
+                                            }
+                                        },
+                                    )
+                                } else {
+                                    HackEmptyState(
+                                        title = stringResource(
+                                            if (state.canInteract) R.string.activities_empty_title else R.string.activities_staff_empty_title,
+                                        ),
+                                        description = stringResource(
+                                            if (state.canInteract) R.string.activities_empty_desc else R.string.activities_staff_empty_desc,
+                                        ),
+                                        icon = Icons.Outlined.CalendarMonth,
+                                        modifier = Modifier.fillParentMaxSize(),
+                                    )
+                                }
                             }
                         }
                     }
@@ -168,24 +210,38 @@ fun ActivitiesScreen(
                             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 112.dp),
                             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
                         ) {
-                            items(
-                                items = state.filteredActivities,
-                                key = { it.id },
-                            ) { proposal ->
-                                ActivityCard(
-                                    proposal = proposal,
-                                    isAuthor = state.isAuthorOf(proposal),
-                                    onClick = {
-                                        viewModel.accept(ActivitiesStore.Intent.ClickActivity(proposal.id))
-                                    },
-                                    canInteract = state.canInteract,
-                                    canLike = state.canLikeIn(proposal),
-                                    onVote = { viewModel.accept(ActivitiesStore.Intent.Vote(proposal.id)) },
-                                    onUnvote = { viewModel.accept(ActivitiesStore.Intent.Unvote(proposal.id)) },
-                                    onLike = { viewModel.accept(ActivitiesStore.Intent.Like(proposal.id)) },
-                                    onUnlike = { viewModel.accept(ActivitiesStore.Intent.Unlike(proposal.id)) },
-                                    modifier = Modifier.animateItem(),
-                                )
+                            val sections = state.feedSections
+                            val showHeaders = sections.size > 1
+                            sections.forEach { section ->
+                                if (showHeaders) {
+                                    item(key = "section-${section.stage.name}") {
+                                        ActivitiesSectionHeader(
+                                            stage = section.stage,
+                                            count = section.activities.size,
+                                            modifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null),
+                                        )
+                                    }
+                                }
+                                items(
+                                    items = section.activities,
+                                    key = { it.id },
+                                ) { proposal ->
+                                    ActivityCard(
+                                        proposal = proposal,
+                                        isAuthor = state.isAuthorOf(proposal),
+                                        onClick = {
+                                            viewModel.accept(ActivitiesStore.Intent.ClickActivity(proposal.id))
+                                        },
+                                        canInteract = state.canInteract,
+                                        canLike = state.canLikeIn(proposal),
+                                        onVote = { viewModel.accept(ActivitiesStore.Intent.Vote(proposal.id)) },
+                                        onUnvote = { viewModel.accept(ActivitiesStore.Intent.Unvote(proposal.id)) },
+                                        onLike = { viewModel.accept(ActivitiesStore.Intent.Like(proposal.id)) },
+                                        onDislike = { viewModel.accept(ActivitiesStore.Intent.Dislike(proposal.id)) },
+                                        onUnlike = { viewModel.accept(ActivitiesStore.Intent.Unlike(proposal.id)) },
+                                        modifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null),
+                                    )
+                                }
                             }
                         }
                     }
@@ -194,13 +250,26 @@ fun ActivitiesScreen(
             FloatingActionsBackdrop(
                 modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(180.dp),
             )
-            ActivitiesBottomActions(
-                actionLabel = state.primaryActionLabel.resolve(context),
-                onOpenDetails = onOpenDetails,
-                onScanError = { scanError = it },
-                onPrimaryAction = { viewModel.accept(ActivitiesStore.Intent.ClickCreate) },
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
+            if (staffRole != null) {
+                HackFloatingActionButton(
+                    text = stringResource(R.string.activities_create_action),
+                    icon = Icons.Default.Add,
+                    onClick = { viewModel.accept(ActivitiesStore.Intent.ClickCreate) },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .height(64.dp),
+                )
+            } else {
+                ActivitiesBottomActions(
+                    actionLabel = state.primaryActionLabel.resolve(context),
+                    onOpenDetails = onOpenDetails,
+                    onScanError = { scanError = it },
+                    onPrimaryAction = { viewModel.accept(ActivitiesStore.Intent.ClickCreate) },
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
+            }
         }
     }
 }

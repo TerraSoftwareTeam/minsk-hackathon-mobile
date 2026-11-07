@@ -1,5 +1,13 @@
 package com.dev.lbsuhack.feature.requests.data
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.StandardTestDispatcher
+import com.dev.lbsuhack.core.domain.session.SessionState
+import com.dev.lbsuhack.core.domain.session.SessionUser
+import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
+import com.dev.lbsuhack.feature.requests.util.FakeSessionRepository
 import com.dev.lbsuhack.core.domain.DomainError
 import com.dev.lbsuhack.core.domain.DomainResult
 import com.dev.lbsuhack.core.network.client.AppHttpClientFactory
@@ -29,6 +37,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.OffsetDateTime
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class EventReviewRequestRepositoryTest {
 
     private val json = AppHttpClientFactory.defaultJson
@@ -81,6 +90,39 @@ class EventReviewRequestRepositoryTest {
             install(ContentNegotiation) { json(json) }
         }
         return EventReviewRequestRepository(client)
+    }
+
+    @Test
+    fun logoutInvalidatesCachedRequestsAndInFlightRefreshForTheSameAccount() = runTest {
+        val user = SessionUser("teacher", "First")
+        val session = FakeSessionRepository(SessionState.Authenticated(user))
+        val gate = CompletableDeferred<Unit>()
+        var delayed = false
+        HttpClient(MockEngine {
+            if (delayed) gate.await()
+            okResponse("[${eventJson("e-1", "ON_MODERATION")}]")
+        }) {
+            install(ContentNegotiation) { json(json) }
+        }.use { client ->
+            val repository = EventReviewRequestRepository(client, StandardTestDispatcher(testScheduler), ObserveSessionUseCase(session))
+            repository.refresh(RequestAudience.TEACHER)
+            assertEquals(1, repository.observeRequests().first().size)
+            delayed = true
+            val pending = async { repository.refresh(RequestAudience.TEACHER) }
+            runCurrent()
+            repository.beforeClear()
+            session.clear()
+            session.save(user)
+            assertTrue(repository.observeRequests().first().isEmpty())
+            gate.complete(Unit)
+            assertEquals(DomainError.Unauthorized, (pending.await() as DomainResult.Failure).error)
+            assertTrue(repository.observeRequests().first().isEmpty())
+            delayed = false
+            repository.refresh(RequestAudience.TEACHER)
+            assertEquals(1, repository.observeRequests().first().size)
+            session.save(user.copy(id = "second"))
+            assertTrue(repository.observeRequests().first().isEmpty())
+        }
     }
 
     @Test
@@ -178,6 +220,9 @@ class EventReviewRequestRepositoryTest {
                     request.url.encodedPath == "/api/v1/events/e-1/approve" ->
                     okResponse(eventJson("e-1", "ON_VOTE"))
 
+                request.method == HttpMethod.Get && request.url.encodedPath == "/api/v1/events/e-1" ->
+                    okResponse(eventJson("e-1", "EXPIRED"))
+
                 else -> respond("Not found", HttpStatusCode.NotFound)
             }
         }
@@ -193,7 +238,30 @@ class EventReviewRequestRepositoryTest {
     }
 
     @Test
-    fun approveAdminSendsTheStartDateInTheBody() = runTest {
+    fun refreshDropsProcessedRequestsDeletedOnServer() = runTest {
+        var moderationList = "[${eventJson("e-1", "ON_MODERATION")}]"
+        val repository = createRepository { request ->
+            when {
+                request.url.encodedPath == "/api/v1/events/moderation" -> okResponse(moderationList)
+
+                request.method == HttpMethod.Post &&
+                    request.url.encodedPath == "/api/v1/events/e-1/approve" ->
+                    okResponse(eventJson("e-1", "ON_VOTE"))
+
+                else -> respond("Not found", HttpStatusCode.NotFound)
+            }
+        }
+        repository.refresh(RequestAudience.TEACHER)
+        repository.approve("e-1", RequestAudience.TEACHER)
+        moderationList = "[]"
+
+        repository.refresh(RequestAudience.TEACHER)
+
+        assertTrue(repository.observeRequests().firstValue().isEmpty())
+    }
+
+    @Test
+    fun approveAdminSendsNoBody() = runTest {
         var approveBody: OutgoingContent? = null
         val repository = createRepository { request ->
             when {
@@ -211,23 +279,11 @@ class EventReviewRequestRepositoryTest {
         }
         repository.refresh(RequestAudience.ADMIN)
 
-        val result = repository.approve("e-2", RequestAudience.ADMIN, "2026-11-21T10:00:00+03:00")
+        val result = repository.approve("e-2", RequestAudience.ADMIN)
 
-        assertTrue(approveBody !is OutgoingContent.NoContent)
+        assertTrue(approveBody is OutgoingContent.NoContent)
         assertTrue(result is DomainResult.Success)
         assertEquals(ReviewStatus.APPROVED, (result as DomainResult.Success).value.status)
-    }
-
-    @Test
-    fun approveAdminWithoutDateIsRejected() = runTest {
-        val repository = createRepository { _ ->
-            respond("Should not be called", HttpStatusCode.OK)
-        }
-
-        val result = repository.approve("e-2", RequestAudience.ADMIN, null)
-
-        assertTrue(result is DomainResult.Failure)
-        assertEquals(DomainError.Validation, (result as DomainResult.Failure).error)
     }
 
     @Test

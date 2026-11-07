@@ -1,9 +1,9 @@
 package com.dev.lbsuhack.feature.requests.navigation
 
 import com.dev.lbsuhack.core.navigation.api.LocalAppNavigation
+import com.dev.lbsuhack.core.navigation.api.LocalNavigator
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import com.dev.lbsuhack.core.navigation.api.LocalNavigator
 import com.dev.lbsuhack.core.navigation.api.NavigationInstaller
 import com.dev.lbsuhack.core.navigation.layer.GlobalLayerMeta
 import com.dev.lbsuhack.feature.requests.ui.requests.RequestsScreen
@@ -19,7 +19,7 @@ class RequestsNavigationInstaller : NavigationInstaller {
                 RequestsScreen(
                     role = route.role,
                     onBack = navigator::back,
-                    onOpenProfile = appNavigation::openProfile,
+                    onOpenActivity = appNavigation::openActivity,
                 )
             }
         }

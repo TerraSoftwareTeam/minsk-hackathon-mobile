@@ -24,10 +24,14 @@ fun VotingEventResponseDto.toDomain(isMine: Boolean = false): ActivityProposal =
     scope = scope.toDomain(),
     status = status.toDomain(),
     voteThreshold = voteThreshold,
+    maxParticipants = maxParticipants,
     votesCount = votesCount,
     hasVoted = hasVoted,
     startsAt = startsAt.orEmpty(),
     votingClosesAt = votingClosesAt,
+    deadline = deadline,
+    votingClosesTime = votingClosesAt.toDisplayDateTime(),
+    deadlineTime = deadline?.toDisplayDateTime(),
     createdAt = createdAt,
     authorName = initiator.fullName(),
     teacherName = moderators.moderatorNames(status == VotingEventResponseDto.Status.ON_MODERATION),
@@ -37,6 +41,7 @@ fun VotingEventResponseDto.toDomain(isMine: Boolean = false): ActivityProposal =
     voters = voters.map { it.fullName() },
     likesCount = likesCount,
     likedByMe = likedByMe,
+    dislikedByMe = dislikedByMe,
     isMine = isMine,
     origin = createdByRole.toOrigin(),
     successProbability = successProbability.toDouble(),
@@ -46,6 +51,7 @@ fun EventResponseDto.toDomain(
     hasVoted: Boolean = false,
     likedByMe: Boolean = false,
     isMine: Boolean = false,
+    dislikedByMe: Boolean = false,
 ): ActivityProposal = ActivityProposal(
     id = id,
     title = name,
@@ -54,10 +60,14 @@ fun EventResponseDto.toDomain(
     scope = scope.toDomain(),
     status = status.toDomain(),
     voteThreshold = voteThreshold,
+    maxParticipants = maxParticipants,
     votesCount = votesCount,
     hasVoted = hasVoted,
     startsAt = startsAt.orEmpty(),
     votingClosesAt = votingClosesAt,
+    deadline = deadline,
+    votingClosesTime = votingClosesAt.toDisplayDateTime(),
+    deadlineTime = deadline?.toDisplayDateTime(),
     createdAt = createdAt,
     authorName = initiator.fullName(),
     teacherName = moderators.moderatorNames(status == EventResponseDto.Status.ON_MODERATION),
@@ -67,6 +77,7 @@ fun EventResponseDto.toDomain(
     voters = voters.map { it.fullName() },
     likesCount = likesCount,
     likedByMe = likedByMe,
+    dislikedByMe = dislikedByMe,
     isMine = isMine,
     origin = createdByRole.toOrigin(),
     successProbability = successProbability.toDouble(),
@@ -82,6 +93,7 @@ fun ActivityProposal.withVoteResult(
 ): ActivityProposal = copy(
     votesCount = voteResult.votesCount,
     voteThreshold = voteResult.voteThreshold,
+    maxParticipants = voteResult.maxParticipants ?: maxParticipants,
     status = voteResult.status.toDomain(),
     hasVoted = voted,
     voters = when {
@@ -95,6 +107,7 @@ fun ActivityProposal.withVoteResult(
 fun ActivityProposal.withLikeResult(likeResult: EventLikeResponseDto): ActivityProposal = copy(
     likesCount = likeResult.likesCount,
     likedByMe = likeResult.liked,
+    dislikedByMe = likeResult.disliked,
 )
 
 fun ActivityCategory.toDto(): CreateEventDto.Category = when (this) {
@@ -103,7 +116,6 @@ fun ActivityCategory.toDto(): CreateEventDto.Category = when (this) {
     ActivityCategory.CULTURAL -> CreateEventDto.Category.CULTURAL
     ActivityCategory.CREATIVE -> CreateEventDto.Category.CREATIVE
     ActivityCategory.EDUCATIONAL -> CreateEventDto.Category.EDUCATIONAL
-    ActivityCategory.VOLUNTEER -> CreateEventDto.Category.VOLUNTEER
     ActivityCategory.ENVIRONMENTAL -> CreateEventDto.Category.ENVIRONMENTAL
     ActivityCategory.TOURISM -> CreateEventDto.Category.TOURISM
     ActivityCategory.ENTERTAINMENT -> CreateEventDto.Category.ENTERTAINMENT
@@ -116,7 +128,7 @@ fun VotingEventResponseDto.Category.toDomain(): ActivityCategory = when (this) {
     VotingEventResponseDto.Category.CULTURAL -> ActivityCategory.CULTURAL
     VotingEventResponseDto.Category.CREATIVE -> ActivityCategory.CREATIVE
     VotingEventResponseDto.Category.EDUCATIONAL -> ActivityCategory.EDUCATIONAL
-    VotingEventResponseDto.Category.VOLUNTEER -> ActivityCategory.VOLUNTEER
+    VotingEventResponseDto.Category.VOLUNTEER -> ActivityCategory.OTHER
     VotingEventResponseDto.Category.ENVIRONMENTAL -> ActivityCategory.ENVIRONMENTAL
     VotingEventResponseDto.Category.TOURISM -> ActivityCategory.TOURISM
     VotingEventResponseDto.Category.ENTERTAINMENT -> ActivityCategory.ENTERTAINMENT
@@ -129,7 +141,7 @@ fun EventResponseDto.Category.toDomain(): ActivityCategory = when (this) {
     EventResponseDto.Category.CULTURAL -> ActivityCategory.CULTURAL
     EventResponseDto.Category.CREATIVE -> ActivityCategory.CREATIVE
     EventResponseDto.Category.EDUCATIONAL -> ActivityCategory.EDUCATIONAL
-    EventResponseDto.Category.VOLUNTEER -> ActivityCategory.VOLUNTEER
+    EventResponseDto.Category.VOLUNTEER -> ActivityCategory.OTHER
     EventResponseDto.Category.ENVIRONMENTAL -> ActivityCategory.ENVIRONMENTAL
     EventResponseDto.Category.TOURISM -> ActivityCategory.TOURISM
     EventResponseDto.Category.ENTERTAINMENT -> ActivityCategory.ENTERTAINMENT
@@ -188,7 +200,7 @@ internal fun String.toDisplayDateTime(zone: ZoneId = ZoneId.systemDefault(), loc
     runCatching {
         OffsetDateTime.parse(this)
             .atZoneSameInstant(zone)
-            .format(DateTimeFormatter.ofPattern("d MMMM yyyy, HH:mm", locale))
+            .format(DateTimeFormatter.ofPattern("d MMMM, HH:mm", locale))
     }.getOrDefault(this)
 
 private fun List<EventUserResponseDto>.moderatorNames(isTeacherModeration: Boolean): String? =

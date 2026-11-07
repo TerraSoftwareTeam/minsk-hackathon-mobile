@@ -22,6 +22,7 @@ import com.dev.lbsuhack.feature.profile.store.profile.ProfileStore
 import com.dev.lbsuhack.feature.profile.store.profile.ProfileStoreFactory
 import com.dev.lbsuhack.feature.profile.util.FakeSessionRepository
 import com.dev.lbsuhack.feature.profile.util.MainDispatcherRule
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -66,7 +67,7 @@ class ProfileStoreTest {
 
     private val notificationSettings = FakeNotificationSettingsRepository()
 
-    private fun createStore(customUser: User? = testUser, repo: FakeUserRepository? = null): ProfileStore {
+    private fun createStore(customUser: User? = testUser, repo: UserRepository? = null): ProfileStore {
         val userRepo = repo ?: FakeUserRepository(customUser)
         return ProfileStoreFactory(
             storeFactory = DefaultStoreFactory(),
@@ -79,6 +80,61 @@ class ProfileStoreTest {
             clearSession = ClearSessionUseCase(sessionRepository),
             observeSession = ObserveSessionUseCase(sessionRepository),
         ).create()
+    }
+
+    @Test
+    fun switchingAccountsResetsProfileImmediatelyBeforeRefreshing() = runTest(mainDispatcherRule.testDispatcher) {
+        val repo = FakeUserRepository(testUser)
+        val store = createStore(repo = repo)
+        store.accept(ProfileStore.Intent.Load)
+        runCurrent()
+        assertEquals("Nikita Ivanov", store.state.fullName)
+
+        val teacher = User.Teacher(id = "new-teacher", name = "Elena", surname = "Smirnova")
+        repo.updateCache(teacher)
+        sessionRepository.save(SessionUser(teacher.id, teacher.name, surname = teacher.surname, role = UserRole.TEACHER))
+        store.accept(ProfileStore.Intent.Load)
+
+        assertEquals("Elena Smirnova", store.state.fullName)
+        assertEquals(UserRole.TEACHER, store.state.role)
+        assertEquals("", store.state.pupilClass)
+        assertTrue(store.state.canReviewRequests)
+        runCurrent()
+        assertEquals("Elena Smirnova", store.state.fullName)
+        store.dispose()
+    }
+
+    @Test
+    fun staleCachedRoleNeverReplacesSessionButtonsDuringRefresh() = runTest(mainDispatcherRule.testDispatcher) {
+        val gate = CompletableDeferred<Unit>()
+        var refreshes = 0
+        val repo = object : UserRepository {
+            override val currentUser = MutableStateFlow<User?>(User.Organizator("old-account", "Old admin"))
+            override suspend fun getCurrentUser(forceRefresh: Boolean): DomainResult<User> {
+                if (!forceRefresh) return DomainResult.Success(requireNotNull(currentUser.value))
+                refreshes += 1
+                gate.await()
+                return DomainResult.Success(testUser)
+            }
+            override suspend fun updateCache(user: User) { currentUser.value = user }
+            override suspend fun clearCache() { currentUser.value = null }
+        }
+        val store = createStore(repo = repo)
+        store.accept(ProfileStore.Intent.Load)
+        runCurrent()
+        store.accept(ProfileStore.Intent.Load)
+        runCurrent()
+
+        assertEquals(1, refreshes)
+        assertEquals(UserRole.PUPIL, store.state.role)
+        assertFalse(store.state.canReviewRequests)
+        assertTrue(store.state.hasUser)
+        assertFalse(store.state.isLoading)
+        gate.complete(Unit)
+        runCurrent()
+        assertEquals("Nikita Ivanov", store.state.fullName)
+        assertEquals(UserRole.PUPIL, store.state.role)
+        store.dispose()
     }
 
     @Test
@@ -110,6 +166,7 @@ class ProfileStoreTest {
                 surname = "Smirnova",
                 schoolsById = "School #1",
             )
+            sessionRepository.save(sessionUser.copy(id = teacher.id, name = teacher.name, role = UserRole.TEACHER))
             val store = createStore(teacher)
 
             store.accept(ProfileStore.Intent.Load)

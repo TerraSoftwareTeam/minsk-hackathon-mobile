@@ -5,6 +5,7 @@ import com.dev.lbsuhack.core.domain.DomainError
 import com.dev.lbsuhack.core.domain.DomainResult
 import com.dev.lbsuhack.core.domain.model.User
 import com.dev.lbsuhack.core.domain.model.UserRole
+import com.dev.lbsuhack.core.domain.session.SessionClearHook
 import com.dev.lbsuhack.core.domain.session.SessionRepository
 import com.dev.lbsuhack.core.domain.session.SessionState
 import com.dev.lbsuhack.core.domain.user.UserRepository
@@ -29,62 +30,63 @@ class DefaultUserRepository(
     private val httpClient: HttpClient,
     private val sessionRepository: SessionRepository,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-) : UserRepository {
+) : UserRepository, SessionClearHook {
 
     init {
         storage.remove(LEGACY_FATHERS_NAME_KEY)
     }
 
     private val mutex = Mutex()
+    private var cacheGeneration = 0L
     private val _currentUser = MutableStateFlow<User?>(null)
     override val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
 
     init {
         val cached = readFromPrefs()
-        if (cached != null) {
+        if (cached != null && cached.id == (sessionRepository.state.value as? SessionState.Authenticated)?.user?.id) {
             _currentUser.value = cached
         }
     }
 
+    private data class UserRequest(val userId: String, val schoolName: String?, val generation: Long)
+
     override suspend fun getCurrentUser(forceRefresh: Boolean): DomainResult<User> = withContext(ioDispatcher) {
+        val request = mutex.withLock {
+            val session = (sessionRepository.state.value as? SessionState.Authenticated)?.user
+                ?: return@withContext DomainResult.Failure(DomainError.Unauthorized)
+            if (session.id.isBlank()) return@withContext DomainResult.Failure(DomainError.Unauthorized)
+            val cached = (_currentUser.value ?: readFromPrefs())?.takeIf { it.id == session.id && it.role == session.role }
+            if (!forceRefresh && cached != null) {
+                _currentUser.value = cached
+                return@withContext DomainResult.Success(cached)
+            }
+            UserRequest(session.id, cached?.schoolName ?: session.schoolName, cacheGeneration)
+        }
+        val result = safeCall { httpClient.get("api/v1/users/${request.userId}").body<UserResponseDto>() }
         mutex.withLock {
-            val sessionState = sessionRepository.state.value
-            val userId = (sessionState as? SessionState.Authenticated)?.user?.id
-            if (userId.isNullOrBlank()) {
+            val currentId = (sessionRepository.state.value as? SessionState.Authenticated)?.user?.id
+            if (currentId != request.userId || cacheGeneration != request.generation) {
                 return@withLock DomainResult.Failure(DomainError.Unauthorized)
             }
-            val inMemory = _currentUser.value?.takeIf { it.id == userId }
-            val cached = readFromPrefs()?.takeIf { it.id == userId }
-            if (!forceRefresh && (inMemory != null || cached != null)) {
-                val user = requireNotNull(inMemory ?: cached)
-                _currentUser.value = user
-                return@withLock DomainResult.Success(user)
-            }
-
-            val result: NetworkResult<UserResponseDto> = safeCall {
-                httpClient.get("api/v1/users/$userId").body()
-            }
-
             when (result) {
                 is NetworkResult.Success -> {
-                    val existingSchoolName = inMemory?.schoolName
-                        ?: cached?.schoolName
-                        ?: (sessionState as? SessionState.Authenticated)?.user?.schoolName
-                    val domainUser = result.data.toDomain(existingSchoolName)
-                    _currentUser.value = domainUser
-                    writeToPrefs(domainUser)
-                    DomainResult.Success(domainUser)
+                    if (result.data.id != request.userId) return@withLock DomainResult.Failure(DomainError.Unauthorized)
+                    val user = result.data.toDomain(request.schoolName)
+                    _currentUser.value = user
+                    writeToPrefs(user)
+                    DomainResult.Success(user)
                 }
-                is NetworkResult.Error -> {
-                    DomainResult.Failure(result.error.toDomain())
-                }
+                is NetworkResult.Error -> DomainResult.Failure(result.error.toDomain())
             }
         }
     }
 
+    override suspend fun beforeClear() = clearCache()
+
     override suspend fun updateCache(user: User) {
         withContext(ioDispatcher) {
             mutex.withLock {
+                cacheGeneration += 1
                 _currentUser.value = user
                 writeToPrefs(user)
             }
@@ -94,6 +96,7 @@ class DefaultUserRepository(
     override suspend fun clearCache() {
         withContext(ioDispatcher) {
             mutex.withLock {
+                cacheGeneration += 1
                 _currentUser.value = null
                 storage.clear()
             }

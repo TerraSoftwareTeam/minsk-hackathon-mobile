@@ -1,5 +1,14 @@
 package com.dev.lbsuhack.feature.activities.data
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.test.runCurrent
+import com.dev.lbsuhack.core.domain.DomainResult
+import com.dev.lbsuhack.core.domain.DomainError
+import com.dev.lbsuhack.core.domain.session.SessionState
+import com.dev.lbsuhack.core.domain.session.SessionUser
+import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
+import com.dev.lbsuhack.feature.activities.util.FakeSessionRepository
+import org.junit.Assert.assertFalse
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
 import com.dev.lbsuhack.feature.activities.domain.ActivityScope
 import io.ktor.client.HttpClient
@@ -25,6 +34,138 @@ import org.junit.Test
 class ActivityRepositoryImplTest {
 
     private val json = AppHttpClientFactory.defaultJson
+
+    @Test
+    fun reactionEndpointsPreserveNegativeScoresAndPendingReactionDuringRefresh() = runTest {
+        val event = """
+            {
+              "id": "e-sync", "name": "Синхронизация", "description": null, "scope": "CLASS", "category": "SPORTS",
+              "status": "ON_VOTE", "declineReason": null, "voteThreshold": 10, "startsAt": null,
+              "votingClosesAt": "2026-12-01T00:00:00.000Z", "successProbability": 0.5, "imageUrl": null,
+              "likesCount": 0, "initiator": {"name": "А", "surname": "Б"}, "createdByRole": "PUPIL", "moderators": [],
+              "voters": [], "votesCount": 0, "createdAt": "2026-11-01T00:00:00.000Z",
+              "updatedAt": "2026-11-01T00:00:00.000Z", "hasVoted": false, "likedByMe": false
+            }
+        """.trimIndent()
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val calls = mutableListOf<String>()
+        var serverReaction = 0
+        var delayDislike = false
+        var rejectNextLike = false
+        HttpClient(MockEngine(io.ktor.client.engine.mock.MockEngineConfig().apply {
+            dispatcher = StandardTestDispatcher(testScheduler)
+            addHandler { request ->
+                val path = request.url.encodedPath
+                if (path.endsWith("/like") && rejectNextLike) {
+                    rejectNextLike = false
+                    return@addHandler respond("{}", HttpStatusCode.InternalServerError, headersOf(HttpHeaders.ContentType, "application/json"))
+                }
+                val body = when (path) {
+                    "/api/v1/events/voting" -> "[" + event
+                        .replace("\"likesCount\": 0", "\"likesCount\": $serverReaction")
+                        .replace("\"likedByMe\": false", "\"likedByMe\": ${serverReaction == 1}, \"dislikedByMe\": ${serverReaction == -1}") + "]"
+                    "/api/v1/events/my" -> "[]"
+                    else -> {
+                        calls += "${request.method.value} $path"
+                        if (path.endsWith("/dislike") && delayDislike) gate.await()
+                        serverReaction = when {
+                            request.method.value == "DELETE" -> 0
+                            path.endsWith("/dislike") -> -1
+                            else -> 1
+                        }
+                        """{"eventId":"e-sync","liked":${serverReaction == 1},"disliked":${serverReaction == -1},"likesCount":$serverReaction}"""
+                    }
+                }
+                respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            }
+        })) {
+            expectSuccess = true
+            install(ContentNegotiation) { json(json) }
+        }.use { client ->
+            val repository = ActivityRepositoryImpl(client, StandardTestDispatcher(testScheduler))
+            repository.refresh()
+            val first = (repository.dislike("e-sync") as DomainResult.Success).value
+            assertEquals(-1, first.likesCount)
+            assertTrue(first.dislikedByMe)
+            advanceUntilIdle()
+            repository.refresh()
+            assertTrue(repository.observeActivities().first().single().dislikedByMe)
+            assertEquals(-1, repository.observeActivities().first().single().likesCount)
+
+            assertEquals(1, (repository.like("e-sync") as DomainResult.Success).value.likesCount)
+            advanceUntilIdle()
+            assertEquals(0, (repository.unlike("e-sync") as DomainResult.Success).value.likesCount)
+            advanceUntilIdle()
+            delayDislike = true
+            repository.dislike("e-sync")
+            runCurrent()
+            repository.refresh()
+            assertEquals(-1, repository.observeActivities().first().single().likesCount)
+            gate.complete(Unit)
+            advanceUntilIdle()
+            val final = repository.observeActivities().first().single()
+            assertEquals(-1, final.likesCount)
+            assertTrue(final.dislikedByMe)
+            assertFalse(final.likedByMe)
+            rejectNextLike = true
+            assertEquals(1, (repository.like("e-sync") as DomainResult.Success).value.likesCount)
+            advanceUntilIdle()
+            val rolledBack = repository.observeActivities().first().single()
+            assertEquals(-1, rolledBack.likesCount)
+            assertTrue(rolledBack.dislikedByMe)
+            assertFalse(rolledBack.likedByMe)
+        }
+        assertTrue("PUT /api/v1/events/e-sync/dislike" in calls)
+        assertTrue("PUT /api/v1/events/e-sync/like" in calls)
+        assertTrue("DELETE /api/v1/events/e-sync/like" in calls)
+    }
+
+    @Test
+    fun logoutInvalidatesCachedActivitiesAndInFlightRefreshForTheSameAccount() = runTest {
+        val event = """
+            {
+              "id": "e-sync", "name": "Синхронизация", "description": null, "scope": "CLASS", "category": "SPORTS",
+              "status": "ON_VOTE", "declineReason": null, "voteThreshold": 10, "startsAt": null,
+              "votingClosesAt": "2026-12-01T00:00:00.000Z", "successProbability": 0.5, "imageUrl": null,
+              "likesCount": 1, "initiator": {"name": "А", "surname": "Б"}, "createdByRole": "PUPIL", "moderators": [],
+              "voters": [], "votesCount": 0, "createdAt": "2026-11-01T00:00:00.000Z",
+              "updatedAt": "2026-11-01T00:00:00.000Z", "hasVoted": false, "likedByMe": false
+            }
+        """.trimIndent()
+        val user = SessionUser("me", "First")
+        val session = FakeSessionRepository(SessionState.Authenticated(user))
+        val gate = CompletableDeferred<Unit>()
+        var delayed = false
+        HttpClient(MockEngine { request ->
+            if (delayed) gate.await()
+            respond(
+                if (request.url.encodedPath.endsWith("/voting")) "[$event]" else "[]",
+                HttpStatusCode.OK,
+                headersOf(HttpHeaders.ContentType, "application/json"),
+            )
+        }) {
+            install(ContentNegotiation) { json(json) }
+        }.use { client ->
+            val repository = ActivityRepositoryImpl(client, StandardTestDispatcher(testScheduler), ObserveSessionUseCase(session))
+            repository.refresh()
+            assertEquals(1, repository.observeActivities().first().size)
+            delayed = true
+            val pending = async { repository.refresh() }
+            runCurrent()
+            repository.beforeClear()
+            session.clear()
+            session.save(user)
+            assertTrue(repository.observeActivities().first().isEmpty())
+            gate.complete(Unit)
+            assertEquals(DomainError.Unauthorized, (pending.await() as DomainResult.Failure).error)
+            assertTrue(repository.observeActivities().first().isEmpty())
+            delayed = false
+            repository.refresh()
+            assertEquals(1, repository.observeActivities().first().size)
+            session.save(user.copy(id = "second"))
+            assertTrue(repository.observeActivities().first().isEmpty())
+        }
+    }
 
     @Test
     fun refreshLoadsVotingEvents() = runTest {
@@ -214,6 +355,7 @@ class ActivityRepositoryImplTest {
             description = "Описание",
             scope = ActivityScope.CLASS,
             voteThreshold = 15,
+            startsAt = "2026-12-05T12:00:00+03:00",
         )
 
         assertTrue(result is com.dev.lbsuhack.core.domain.DomainResult.Success)
@@ -367,7 +509,7 @@ class ActivityRepositoryImplTest {
     @Test
     fun startsAtIsFormattedAsConfirmedTime() {
         assertEquals(
-            "5 декабря 2026, 12:00",
+            "5 декабря, 12:00",
             "2026-12-05T09:00:00.000Z".toDisplayDateTime(
                 zone = java.time.ZoneId.of("Europe/Minsk"),
                 locale = java.util.Locale.forLanguageTag("ru"),

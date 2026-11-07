@@ -6,7 +6,6 @@ enum class ActivityCategory {
     CULTURAL,
     CREATIVE,
     EDUCATIONAL,
-    VOLUNTEER,
     ENVIRONMENTAL,
     TOURISM,
     ENTERTAINMENT,

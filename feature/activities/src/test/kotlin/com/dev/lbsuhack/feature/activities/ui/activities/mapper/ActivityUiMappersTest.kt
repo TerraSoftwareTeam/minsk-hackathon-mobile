@@ -100,8 +100,12 @@ class ActivityUiMappersTest {
             DomainError.Exception(RuntimeException()).toUiText(ActivityOperation.LIST),
         )
         assertEquals(
-            UiText.Raw("Custom message"),
-            DomainError.BusinessRule(message = "Custom message").toUiText(ActivityOperation.LIST),
+            UiText.Resource(R.string.activity_error_vote_conflict),
+            DomainError.BusinessRule(code = "409", message = "Voting is closed").toUiText(ActivityOperation.VOTE),
+        )
+        assertEquals(
+            UiText.Resource(R.string.activity_error_delete_conflict),
+            DomainError.BusinessRule(code = "409", message = "decided").toUiText(ActivityOperation.DELETE),
         )
     }
 }

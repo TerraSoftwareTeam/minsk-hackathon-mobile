@@ -34,6 +34,7 @@ class ActivitiesNavigationInstaller(
                         onOpenRequests = { role ->
                             appNavigation.openRequests(role)
                         },
+                        onBack = if (navigator.canGoBack) navigator::back else null,
                         onOpenProfile = {
                             appNavigation.openProfile()
                         },

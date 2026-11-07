@@ -26,6 +26,7 @@ import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
+import org.koin.dsl.binds
 import org.koin.dsl.module
 
 val dataModule = module {
@@ -69,7 +70,7 @@ val dataModule = module {
             sessionRepository = get(),
             ioDispatcher = Dispatchers.IO,
         )
-    } bind UserRepository::class
+    } binds arrayOf(UserRepository::class, SessionClearHook::class)
 
     single { ObserveSessionUseCase(repository = get()) }
     single { RestoreSessionUseCase(repository = get()) }

@@ -27,7 +27,6 @@ import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 @Composable
 internal fun ActivityVoteButton(
     proposal: ActivityProposal,
-    isAuthor: Boolean,
     canInteract: Boolean,
     onVote: () -> Unit,
     onUnvote: () -> Unit,
@@ -36,26 +35,8 @@ internal fun ActivityVoteButton(
 ) {
     val shape = MaterialTheme.shapes.medium
     when {
-        isAuthor -> {
-            OutlinedButton(
-                onClick = {},
-                enabled = false,
-                modifier = modifier,
-                shape = shape,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-            ) {
-                Text(
-                    text = stringResource(R.string.activities_author_cannot_vote),
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                )
-            }
-        }
-
         proposal.hasVoted -> {
-            val canCancel = proposal.canChangeVote && canInteract
+            val canCancel = proposal.canWithdrawVote && canInteract
             OutlinedButton(
                 onClick = onUnvote,
                 enabled = canCancel,

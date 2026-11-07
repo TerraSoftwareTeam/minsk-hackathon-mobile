@@ -1,5 +1,8 @@
 package com.dev.lbsuhack.core.data.user
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.test.runCurrent
 import com.dev.lbsuhack.core.data.FakeKeyValueStorage
 import com.dev.lbsuhack.core.data.FakeSessionRepository
 import com.dev.lbsuhack.core.domain.DomainError
@@ -43,6 +46,7 @@ class DefaultUserRepositoryTest {
         sessionState: SessionState = SessionState.Authenticated(
             SessionUser(id = "user-1", name = "Ann", schoolName = "Session School"),
         ),
+        sessionRepository: FakeSessionRepository = FakeSessionRepository(sessionState),
         handler: MockRequestHandler = {
             requestCount += 1
             respondJson(pupilResponse())
@@ -55,7 +59,7 @@ class DefaultUserRepositoryTest {
         return DefaultUserRepository(
             storage = storage,
             httpClient = client,
-            sessionRepository = FakeSessionRepository(sessionState),
+            sessionRepository = sessionRepository,
             ioDispatcher = StandardTestDispatcher(testScheduler),
         )
     }
@@ -75,6 +79,43 @@ class DefaultUserRepositoryTest {
     ): String {
         val classPart = if (pupilClass == null) "" else ""","class":"$pupilClass""""
         return """{"id":"$id","schoolsById":"schools","name":"$name","surname":"Lee"$classPart,"role":"$role"}"""
+    }
+
+    @Test
+    fun oldResponseCannotRestoreProfileAfterLogoutAndLogin() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val repository = repository(handler = {
+            gate.await()
+            respondJson(pupilResponse(name = "Old profile"))
+        })
+        val pending = async { repository.getCurrentUser(forceRefresh = true) }
+        runCurrent()
+
+        repository.beforeClear()
+        assertNull(repository.currentUser.value)
+        repository.updateCache(User.Pupil(id = "user-1", name = "New profile", pupilClass = "9A"))
+        gate.complete(Unit)
+
+        assertEquals(DomainError.Unauthorized, (pending.await() as DomainResult.Failure).error)
+        assertEquals("New profile", repository.currentUser.value?.name)
+        assertEquals("New profile", (repository.getCurrentUser() as DomainResult.Success).value.name)
+    }
+
+    @Test
+    fun oldResponseIsDiscardedAfterSwitchingAccounts() = runTest {
+        val session = FakeSessionRepository(SessionState.Authenticated(SessionUser("user-1", "First")))
+        val gate = CompletableDeferred<Unit>()
+        val repository = repository(sessionRepository = session, handler = {
+            gate.await()
+            respondJson(pupilResponse())
+        })
+        val pending = async { repository.getCurrentUser(forceRefresh = true) }
+        runCurrent()
+        session.save(SessionUser("user-2", "Second"))
+        gate.complete(Unit)
+
+        assertEquals(DomainError.Unauthorized, (pending.await() as DomainResult.Failure).error)
+        assertNull(repository.currentUser.value)
     }
 
     @Test

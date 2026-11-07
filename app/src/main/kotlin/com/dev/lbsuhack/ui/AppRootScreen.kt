@@ -116,6 +116,10 @@ fun AppRootScreen(
                             override fun openActivities() {
                                 navigator.navigate(ActivitiesRoute)
                             }
+
+                            override fun openActivity(activityId: String) {
+                                navigator.navigate(ActivityDetailsRoute(activityId))
+                            }
                         }
                     },
                 )
@@ -201,6 +205,7 @@ private object EmptyAppNavigation : AppNavigation {
     override fun openRequests(role: UserRole) = Unit
     override fun openCreateActivity() = Unit
     override fun openActivities() = Unit
+    override fun openActivity(activityId: String) = Unit
 }
 
 private const val AUTH_HOST_KEY = "auth-host"

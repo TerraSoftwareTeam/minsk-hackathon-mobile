@@ -26,8 +26,10 @@ import androidx.compose.ui.unit.dp
 internal fun ActivityRating(
     likesCount: Int,
     likedByMe: Boolean,
+    dislikedByMe: Boolean,
     enabled: Boolean,
     onLike: () -> Unit,
+    onDislike: () -> Unit,
     onUnlike: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -35,12 +37,12 @@ internal fun ActivityRating(
     Row(
         modifier = modifier
             .background(
-                if (likedByMe) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerLow,
+                if (likedByMe || dislikedByMe) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerLow,
                 shape,
             )
             .border(
                 width = 1.dp,
-                color = if (likedByMe) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outlineVariant,
+                color = if (likedByMe || dislikedByMe) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outlineVariant,
                 shape = shape,
             )
             .padding(horizontal = 2.dp),
@@ -72,9 +74,9 @@ internal fun ActivityRating(
         }
         RatingArrow(
             up = false,
-            active = false,
-            enabled = enabled && likedByMe,
-            onClick = onUnlike,
+            active = dislikedByMe,
+            enabled = enabled,
+            onClick = { if (dislikedByMe) onUnlike() else onDislike() },
         )
     }
 }

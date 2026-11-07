@@ -36,10 +36,11 @@ import com.dev.lbsuhack.core.ui.component.HackSectionLabel
 import com.dev.lbsuhack.core.ui.component.HackTopBar
 import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.domain.ActivityOrigin
-import com.dev.lbsuhack.feature.activities.domain.ActivityScope
 import com.dev.lbsuhack.feature.activities.presentation.create.CreateActivityViewModel
+import com.dev.lbsuhack.feature.activities.store.create.CreateActivityScopeOrder
 import com.dev.lbsuhack.feature.activities.store.create.CreateActivityStore
 import com.dev.lbsuhack.feature.activities.store.create.CreationState
+import com.dev.lbsuhack.feature.activities.store.create.MAX_VOTE_THRESHOLD
 import com.dev.lbsuhack.feature.activities.ui.activities.mapper.labelRes
 import com.dev.lbsuhack.feature.activities.ui.component.ActivityChanceMeter
 import com.dev.lbsuhack.feature.activities.ui.component.ActivityTag
@@ -49,6 +50,7 @@ import com.dev.lbsuhack.feature.activities.ui.create.component.CreateActivityCom
 import com.dev.lbsuhack.feature.activities.ui.create.component.CreateOriginBanner
 import com.dev.lbsuhack.feature.activities.ui.create.component.FormSection
 import com.dev.lbsuhack.feature.activities.ui.create.component.FormTextField
+import com.dev.lbsuhack.feature.activities.ui.create.component.MaxParticipantsField
 import com.dev.lbsuhack.feature.activities.ui.create.component.ParticipantCountRow
 import com.dev.lbsuhack.feature.activities.ui.create.component.PhotoPendingState
 import com.dev.lbsuhack.feature.activities.ui.create.component.SchoolDateField
@@ -157,11 +159,22 @@ fun CreateActivityScreen(
                         }
 
                         FormSection(title = stringResource(R.string.create_activity_participants_section)) {
+                            val formEnabled = state.canEdit && !state.isSubmitting
+                            state.startsAt?.let { startsAt ->
+                                SchoolDateField(
+                                    startsAt = startsAt,
+                                    hasError = state.hasDateError,
+                                    enabled = formEnabled,
+                                    onChange = { viewModel.accept(CreateActivityStore.Intent.ChangeStartsAt(it)) },
+                                )
+                                Spacer(modifier = Modifier.height(20.dp))
+                            }
+
                             ParticipantCountRow(
                                 title = stringResource(R.string.create_activity_threshold_label),
                                 value = state.voteThreshold,
-                                decrementEnabled = state.voteThreshold > 1 && state.canEdit && !state.isSubmitting,
-                                incrementEnabled = state.voteThreshold < 10000 && state.canEdit && !state.isSubmitting,
+                                decrementEnabled = state.voteThreshold > state.minVoteThreshold && formEnabled,
+                                incrementEnabled = state.voteThreshold < MAX_VOTE_THRESHOLD && formEnabled,
                                 onDecrement = {
                                     viewModel.accept(
                                         CreateActivityStore.Intent.ChangeVoteThreshold(state.voteThreshold - 1),
@@ -173,26 +186,35 @@ fun CreateActivityScreen(
                                     )
                                 },
                             )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(
+                                    if (state.isStaff) {
+                                        R.string.create_activity_threshold_hint_staff
+                                    } else {
+                                        R.string.create_activity_threshold_hint
+                                    },
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            MaxParticipantsField(
+                                maxParticipants = state.maxParticipants,
+                                minParticipants = state.voteThreshold,
+                                maxAllowed = MAX_VOTE_THRESHOLD,
+                                enabled = formEnabled,
+                                onChange = { viewModel.accept(CreateActivityStore.Intent.ChangeMaxParticipants(it)) },
+                            )
 
                             Spacer(modifier = Modifier.height(20.dp))
-
-                            if (state.requiresDate) {
-                                val startsAt = state.startsAt
-                                if (startsAt != null) {
-                                    SchoolDateField(
-                                        startsAt = startsAt,
-                                        hasError = state.hasDateError,
-                                        enabled = state.canEdit && !state.isSubmitting,
-                                        onChange = { viewModel.accept(CreateActivityStore.Intent.ChangeStartsAt(it)) },
-                                    )
-                                    Spacer(modifier = Modifier.height(20.dp))
-                                }
-                            }
 
                             HackSectionLabel(text = stringResource(R.string.create_activity_scope_label))
                             Spacer(modifier = Modifier.height(10.dp))
 
-                            if (state.requiresDate) {
+                            if (state.fixedScope) {
                                 ActivityTag(
                                     text = stringResource(R.string.create_activity_scope_school),
                                     icon = Icons.Outlined.Groups,
@@ -202,7 +224,7 @@ fun CreateActivityScreen(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
-                                    ActivityScope.entries.forEach { scope ->
+                                    CreateActivityScopeOrder.forEach { scope ->
                                         FilterChip(
                                             selected = state.scope == scope,
                                             colors = FilterChipDefaults.filterChipColors(

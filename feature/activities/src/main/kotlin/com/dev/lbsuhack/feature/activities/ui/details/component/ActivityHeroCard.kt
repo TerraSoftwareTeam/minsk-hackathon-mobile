@@ -26,7 +26,7 @@ import com.dev.lbsuhack.core.designsystem.theme.hack
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.ui.activities.component.ActivityCardCover
 import com.dev.lbsuhack.feature.activities.ui.activities.component.ActivityMetadata
-import com.dev.lbsuhack.feature.activities.ui.component.ActivityAuthorBadges
+import com.dev.lbsuhack.feature.activities.ui.component.ActivityAuthorRow
 
 @Composable
 internal fun ActivityHeroCard(proposal: ActivityProposal, isAuthor: Boolean) {
@@ -57,21 +57,7 @@ internal fun ActivityHeroCard(proposal: ActivityProposal, isAuthor: Boolean) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Outlined.Person,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = proposal.authorName,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                ActivityAuthorBadges(proposal = proposal, isAuthor = isAuthor)
-            }
+            ActivityAuthorRow(proposal = proposal, isAuthor = isAuthor)
 
             if (!proposal.teacherName.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))

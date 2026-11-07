@@ -9,6 +9,16 @@ import com.dev.lbsuhack.feature.requests.domain.isPending
 import com.dev.lbsuhack.feature.requests.domain.isProcessed
 import java.time.OffsetDateTime
 
+enum class RequestsSectionKind {
+    PENDING,
+    PROCESSED,
+}
+
+data class RequestsSection(
+    val kind: RequestsSectionKind,
+    val requests: List<ReviewRequest>,
+)
+
 enum class RequestsTab {
     PENDING,
     PROCESSED,
@@ -29,9 +39,7 @@ sealed interface RequestDialog {
         override val requestId: String,
         override val title: String,
         val startsAt: OffsetDateTime? = null,
-        val hasDateError: Boolean = false,
         val chance: Double? = null,
-        val isChanceLoading: Boolean = false,
     ) : RequestDialog
 
     data class Decline(
@@ -60,13 +68,14 @@ interface RequestsStore : Store<RequestsStore.Intent, RequestsStore.State, Reque
         data class ClickDecline(val requestId: String) : Intent
         data object DismissDialog : Intent
         data class ChangeDeclineReason(val value: String) : Intent
-        data class ChangeStartsAt(val value: OffsetDateTime) : Intent
         data object ConfirmApprove : Intent
         data object ConfirmDecline : Intent
     }
 
     data class State(
         val audience: RequestAudience? = null,
+        val userName: String = "",
+        val userClass: String? = null,
         val accessState: AccessState = AccessState.Checking,
         val requests: List<ReviewRequest> = emptyList(),
         val selectedTab: RequestsTab = RequestsTab.PENDING,
@@ -94,6 +103,18 @@ interface RequestsStore : Store<RequestsStore.Intent, RequestsStore.State, Reque
                     RequestsTab.ALL -> true
                 }
             }
+
+        val sections: List<RequestsSection>
+            get() = listOf(
+                RequestsSection(RequestsSectionKind.PENDING, visibleRequests.filter { it.isPending }),
+                RequestsSection(RequestsSectionKind.PROCESSED, visibleRequests.filter { it.isProcessed }),
+            ).filter { it.requests.isNotEmpty() }
+
+        val queueSections: List<RequestsSection>
+            get() = listOf(
+                RequestsSection(RequestsSectionKind.PENDING, queueRequests.filter { it.isPending }),
+                RequestsSection(RequestsSectionKind.PROCESSED, queueRequests.filter { it.isProcessed }),
+            ).filter { it.requests.isNotEmpty() }
 
         val pendingCount: Int
             get() = queueRequests.count { it.isPending }

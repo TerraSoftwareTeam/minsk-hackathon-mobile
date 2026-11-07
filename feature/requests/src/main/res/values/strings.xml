@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="requests_title">Requests</string>
-    <string name="requests_title_teacher">Publication requests</string>
+    <string name="requests_title_teacher">Pupil requests</string>
     <string name="requests_title_admin">Event approval</string>
     <string name="requests_back">Back</string>
     <string name="requests_subtitle_teacher">Requests from pupils of your class</string>
     <string name="requests_subtitle_admin">Events that need school approval</string>
 
-    <string name="requests_tab_pending">To review (%1$d)</string>
+    <string name="requests_tab_pending">Awaiting · %1$d</string>
     <string name="requests_tab_processed">Processed</string>
     <string name="requests_tab_all">All</string>
 
-    <string name="requests_status_pending_teacher">To review</string>
-    <string name="requests_status_pending_admin">Awaiting approval</string>
+    <string name="requests_status_pending_teacher">In moderation</string>
+    <string name="requests_status_pending_admin">With the school</string>
     <string name="requests_status_approved">Approved</string>
     <string name="requests_status_declined">Declined</string>
 
@@ -31,8 +31,8 @@
     <string name="requests_retry">Retry</string>
 
     <string name="requests_dialog_approve_title">Confirm approval?</string>
-    <string name="requests_dialog_approve_teacher_text">The request will be approved and can be published in the feed.</string>
-    <string name="requests_dialog_approve_admin_text">The event will be finalized and confirmed for the school.</string>
+    <string name="requests_dialog_approve_teacher_text">Pupils will be able to sign up until 3 days before the event.</string>
+    <string name="requests_dialog_approve_admin_text">The event will be confirmed on the date chosen by the author.</string>
     <string name="requests_dialog_decline_title">Decline the request?</string>
     <string name="requests_dialog_decline_text">Add a reason so the author understands the decision.</string>
     <string name="requests_dialog_decline_reason_label">Reason (optional)</string>
@@ -60,11 +60,45 @@
     <string name="requests_success_declined">Request declined</string>
     <string name="requests_profile">Profile</string>
     <string name="requests_refresh">Refresh</string>
-    <string name="requests_date_not_set">Date not set</string>
     <string name="requests_dialog_approve_date_label">Event date</string>
-    <string name="requests_error_date_in_past">Pick an event date in the future</string>
     <plurals name="requests_new_arrived">
         <item quantity="one">%d new request arrived</item>
         <item quantity="other">%d new requests arrived</item>
     </plurals>
+    <string name="requests_home_title">Sixth school day</string>
+    <string name="requests_greeting_format">Hi, %1$s, %2$s</string>
+    <string name="requests_greeting_simple_format">Hi, %1$s</string>
+    <string name="requests_section_pending">Awaiting your decision</string>
+    <string name="requests_section_processed">Processed</string>
+    <string name="requests_origin_teacher">Teacher</string>
+    <string name="requests_note_teacher_pending_title">Awaiting your decision</string>
+    <string name="requests_note_teacher_pending_desc">After approval pupils can sign up.</string>
+    <string name="requests_note_admin_pending_title">Minimum reached</string>
+    <string name="requests_note_admin_pending_desc">The date was chosen by the author. Approve or decline.</string>
+    <string name="requests_note_teacher_approved_title">You approved it</string>
+    <string name="requests_note_teacher_approved_desc">Pupils are signing up.</string>
+    <string name="requests_note_admin_approved_title">Event confirmed</string>
+    <string name="requests_note_declined_title">You declined it</string>
+    <string name="requests_note_no_reason">No reason given.</string>
+    <string name="requests_votes_capacity">Participants: %1$d</string>
+    <string name="requests_votes_threshold">Minimum %1$d</string>
+    <string name="requests_votes_quorum">Minimum reached</string>
+    <string name="requests_voters_nobody">Nobody is going yet</string>
+    <string name="requests_my_activities">School events</string>
+    <string name="requests_create_activity">Create an event</string>
+    <string name="requests_open_details">Details</string>
+    <string name="requests_category_sports">Sports</string>
+    <string name="requests_category_intellectual">Intellectual</string>
+    <string name="requests_category_cultural">Culture</string>
+    <string name="requests_category_creative">Creative</string>
+    <string name="requests_category_educational">Education</string>
+    <string name="requests_category_environmental">Ecology</string>
+    <string name="requests_category_tourism">Tourism</string>
+    <string name="requests_category_entertainment">Entertainment</string>
+    <string name="requests_category_other">Other</string>
+    <string name="requests_origin_school">Official school event</string>
+    <string name="requests_votes_max">Places: %1$d</string>
+    <string name="requests_note_teacher_pending_until_format">Decide by %1$s, otherwise the request is cancelled.</string>
+    <string name="requests_note_admin_pending_until_format">Decide before the event starts — %1$s.</string>
+    <string name="requests_note_admin_approved_desc">The event will take place.</string>
 </resources>

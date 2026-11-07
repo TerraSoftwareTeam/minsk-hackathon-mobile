@@ -5,10 +5,8 @@
     <string name="profile_notifications">Уведомления</string>
     <string name="profile_notifications_description">Push-уведомления от сервисов</string>
     <string name="profile_notifications_error">Не удалось изменить настройки уведомлений. Попробуйте ещё раз</string>
-    <string name="profile_saved_title">Сохранённое</string>
-    <string name="profile_saved_empty">Пока ничего нет. Сохраняйте мероприятия из ленты.</string>
     <string name="profile_open_settings">Настройки</string>
-    <string name="profile_requests">Мероприятия</string>
+    <string name="profile_requests">Работа с мероприятиями</string>
     <string name="profile_requests_teacher">Заявки учеников</string>
     <string name="profile_requests_admin">Согласование</string>
     <string name="profile_logout">Выйти</string>
@@ -41,17 +39,16 @@
     <string name="profile_theme_light">Светлая</string>
     <string name="profile_theme_dark">Тёмная</string>
 
-    <plurals name="profile_saved_items">
-        <item quantity="one">%1$d сохранённый элемент</item>
-        <item quantity="few">%1$d сохранённых элемента</item>
-        <item quantity="many">%1$d сохранённых элементов</item>
-        <item quantity="other">%1$d сохранённых элементов</item>
-    </plurals>
     <string name="profile_school_not_specified">Школа не указана</string>
     <string name="profile_retry">Повторить</string>
     <string name="profile_error_load_title">Не удалось загрузить профиль</string>
     <string name="profile_error_load_desc">Не удалось загрузить данные профиля. Проверьте подключение и повторите попытку.</string>
     <string name="profile_name_unknown">—</string>
     <string name="profile_create_activity">Создать мероприятие</string>
-    <string name="profile_my_activities">Мои мероприятия</string>
+    <string name="profile_my_activities">Мероприятия школы</string>
+    <string name="profile_requests_teacher_desc">Одобряйте или отклоняйте инициативы своего класса</string>
+    <string name="profile_requests_admin_desc">Назначайте дату мероприятиям, набравшим голоса</string>
+    <string name="profile_my_activities_desc">Создавайте и просматривайте мероприятия школы</string>
+    <string name="profile_school_activities">Мероприятия школы</string>
+    <string name="profile_school_activities_desc">Создавайте и просматривайте мероприятия школы</string>
 </resources>

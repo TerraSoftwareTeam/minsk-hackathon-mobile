@@ -24,6 +24,7 @@ interface CreateActivityStore :
         data class ChangeVoteThreshold(val threshold: Int) : Intent
         data class ChangePhoto(val photoUri: String?) : Intent
         data class ChangeStartsAt(val startsAt: OffsetDateTime) : Intent
+        data class ChangeMaxParticipants(val maxParticipants: Int?) : Intent
         data object Submit : Intent
         data object DismissError : Intent
     }
@@ -37,8 +38,9 @@ interface CreateActivityStore :
         val category: ActivityCategory = ActivityCategory.SPORTS,
         val title: String = "",
         val description: String = "",
-        val scope: ActivityScope = ActivityScope.CLASS,
+        val scope: ActivityScope = ActivityScope.SCHOOL,
         val voteThreshold: Int = 15,
+        val maxParticipants: Int? = null,
         val photoUri: String? = null,
         val createdActivityId: String? = null,
         val creationState: CreationState = CreationState.EDITING,
@@ -55,7 +57,10 @@ interface CreateActivityStore :
         val isStaff: Boolean
             get() = origin != ActivityOrigin.PUPIL
 
-        val requiresDate: Boolean
+        val minVoteThreshold: Int
+            get() = if (origin == ActivityOrigin.PUPIL) MIN_PUPIL_VOTE_THRESHOLD else 1
+
+        val fixedScope: Boolean
             get() = origin == ActivityOrigin.SCHOOL
     }
 
@@ -63,3 +68,11 @@ interface CreateActivityStore :
         data class Created(val activityId: String) : Label
     }
 }
+
+const val MIN_PUPIL_VOTE_THRESHOLD = 2
+const val MAX_VOTE_THRESHOLD = 10000
+
+val CreateActivityScopeOrder: List<ActivityScope> = listOf(
+    ActivityScope.SCHOOL,
+    ActivityScope.CLASS,
+)

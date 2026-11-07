@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -17,12 +19,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.dev.lbsuhack.core.localization.R as LocalizationR
 import com.dev.lbsuhack.core.ui.component.HackButtonContent
+import com.dev.lbsuhack.core.ui.component.HackStageNote
 import com.dev.lbsuhack.feature.requests.R
 import com.dev.lbsuhack.feature.requests.domain.RequestAudience
 import com.dev.lbsuhack.feature.requests.store.requests.RequestDialog
 import com.dev.lbsuhack.feature.requests.ui.component.RequestChanceMeter
-import com.dev.lbsuhack.feature.requests.ui.component.RequestDateTimeField
-import java.time.OffsetDateTime
+import com.dev.lbsuhack.feature.requests.ui.labels.rememberRequestDateFormatter
 
 @Composable
 internal fun ApproveRequestDialog(
@@ -30,9 +32,9 @@ internal fun ApproveRequestDialog(
     audience: RequestAudience?,
     isSubmitting: Boolean,
     onDismiss: () -> Unit,
-    onChangeStartsAt: (OffsetDateTime) -> Unit,
     onConfirm: () -> Unit,
 ) {
+    val format = rememberRequestDateFormatter()
     AlertDialog(
         onDismissRequest = {
             if (!isSubmitting) onDismiss()
@@ -66,26 +68,15 @@ internal fun ApproveRequestDialog(
                 )
                 val startsAt = dialog.startsAt
                 if (startsAt != null) {
-                    Text(
-                        text = stringResource(R.string.requests_dialog_approve_date_label),
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                    HackStageNote(
+                        icon = Icons.Outlined.Event,
+                        title = stringResource(R.string.requests_dialog_approve_date_label),
+                        subtitle = format(startsAt),
                     )
-                    RequestDateTimeField(
-                        startsAt = startsAt,
-                        enabled = !isSubmitting,
-                        onChange = onChangeStartsAt,
-                    )
-                    if (dialog.hasDateError) {
-                        Text(
-                            text = stringResource(R.string.requests_error_date_in_past),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    }
                 }
-                if (dialog.isChanceLoading || dialog.chance != null) {
+                dialog.chance?.let { chance ->
                     RequestChanceMeter(
-                        probability = dialog.chance.takeUnless { dialog.isChanceLoading },
+                        probability = chance,
                         title = stringResource(
                             if (startsAt != null) LocalizationR.string.chance_for_date else LocalizationR.string.chance_title,
                         ),

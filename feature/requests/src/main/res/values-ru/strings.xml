@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="requests_title">Заявки</string>
-    <string name="requests_title_teacher">Заявки на публикацию</string>
+    <string name="requests_title_teacher">Заявки учеников</string>
     <string name="requests_title_admin">Согласование мероприятий</string>
     <string name="requests_back">Назад</string>
     <string name="requests_subtitle_teacher">Заявки от учеников вашего класса</string>
     <string name="requests_subtitle_admin">Мероприятия, которым нужно согласование школы</string>
 
-    <string name="requests_tab_pending">На проверке (%1$d)</string>
+    <string name="requests_tab_pending">Ждут решения · %1$d</string>
     <string name="requests_tab_processed">Обработанные</string>
     <string name="requests_tab_all">Все</string>
 
-    <string name="requests_status_pending_teacher">На проверке</string>
-    <string name="requests_status_pending_admin">На согласовании</string>
+    <string name="requests_status_pending_teacher">На модерации</string>
+    <string name="requests_status_pending_admin">У администрации</string>
     <string name="requests_status_approved">Одобрено</string>
     <string name="requests_status_declined">Отклонено</string>
 
@@ -31,8 +31,8 @@
     <string name="requests_retry">Повторить</string>
 
     <string name="requests_dialog_approve_title">Подтвердить одобрение?</string>
-    <string name="requests_dialog_approve_teacher_text">Заявка будет одобрена и сможет попасть в ленту мероприятий.</string>
-    <string name="requests_dialog_approve_admin_text">Мероприятие будет окончательно согласовано школой.</string>
+    <string name="requests_dialog_approve_teacher_text">Ученики смогут записываться до закрытия голосования — за 3 дня до мероприятия.</string>
+    <string name="requests_dialog_approve_admin_text">Мероприятие будет утверждено на дату, которую выбрал автор.</string>
     <string name="requests_dialog_decline_title">Отклонить заявку?</string>
     <string name="requests_dialog_decline_text">Укажите причину, чтобы автор понял решение.</string>
     <string name="requests_dialog_decline_reason_label">Причина (необязательно)</string>
@@ -60,13 +60,47 @@
     <string name="requests_success_declined">Заявка отклонена</string>
     <string name="requests_profile">Профиль</string>
     <string name="requests_refresh">Обновить</string>
-    <string name="requests_date_not_set">Дата не назначена</string>
     <string name="requests_dialog_approve_date_label">Дата проведения</string>
-    <string name="requests_error_date_in_past">Выберите дату проведения в будущем</string>
     <plurals name="requests_new_arrived">
         <item quantity="one">Пришла %d новая заявка</item>
         <item quantity="few">Пришли %d новые заявки</item>
         <item quantity="many">Пришло %d новых заявок</item>
         <item quantity="other">Пришло %d новых заявок</item>
     </plurals>
+    <string name="requests_home_title">Шестой школьный день</string>
+    <string name="requests_greeting_format">Привет, %1$s, %2$s</string>
+    <string name="requests_greeting_simple_format">Привет, %1$s</string>
+    <string name="requests_section_pending">Ждут вашего решения</string>
+    <string name="requests_section_processed">Обработанные</string>
+    <string name="requests_origin_teacher">Учитель</string>
+    <string name="requests_note_teacher_pending_title">Ждёт вашего решения</string>
+    <string name="requests_note_teacher_pending_desc">После одобрения ученики смогут записываться.</string>
+    <string name="requests_note_admin_pending_title">Минимум набран</string>
+    <string name="requests_note_admin_pending_desc">Дату выбрал автор. Одобрите или отклоните.</string>
+    <string name="requests_note_teacher_approved_title">Вы одобрили</string>
+    <string name="requests_note_teacher_approved_desc">Идёт набор участников.</string>
+    <string name="requests_note_admin_approved_title">Мероприятие утверждено</string>
+    <string name="requests_note_declined_title">Вы отклонили</string>
+    <string name="requests_note_no_reason">Причина не указана.</string>
+    <string name="requests_votes_capacity">Участников: %1$d</string>
+    <string name="requests_votes_threshold">Минимум %1$d</string>
+    <string name="requests_votes_quorum">Минимум набран</string>
+    <string name="requests_voters_nobody">Пока никто не идёт</string>
+    <string name="requests_my_activities">Мероприятия школы</string>
+    <string name="requests_create_activity">Создать мероприятие</string>
+    <string name="requests_open_details">Подробнее</string>
+    <string name="requests_category_sports">Спорт</string>
+    <string name="requests_category_intellectual">Интеллект</string>
+    <string name="requests_category_cultural">Культура</string>
+    <string name="requests_category_creative">Творчество</string>
+    <string name="requests_category_educational">Обучение</string>
+    <string name="requests_category_environmental">Экология</string>
+    <string name="requests_category_tourism">Туризм</string>
+    <string name="requests_category_entertainment">Развлечения</string>
+    <string name="requests_category_other">Другое</string>
+    <string name="requests_origin_school">Официальное школьное мероприятие</string>
+    <string name="requests_votes_max">Мест: %1$d</string>
+    <string name="requests_note_teacher_pending_until_format">Решите до %1$s, иначе заявка отменится.</string>
+    <string name="requests_note_admin_pending_until_format">Решите до начала мероприятия — %1$s.</string>
+    <string name="requests_note_admin_approved_desc">Мероприятие состоится.</string>
 </resources>

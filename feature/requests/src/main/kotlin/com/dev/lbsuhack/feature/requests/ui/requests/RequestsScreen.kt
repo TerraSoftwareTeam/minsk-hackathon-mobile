@@ -1,5 +1,6 @@
 package com.dev.lbsuhack.feature.requests.ui.requests
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -18,19 +19,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.localization.text.resolve
 import com.dev.lbsuhack.core.ui.component.HackLoading
+import com.dev.lbsuhack.core.ui.component.HackTopBar
 import com.dev.lbsuhack.feature.requests.R
 import com.dev.lbsuhack.feature.requests.presentation.requests.RequestsViewModel
 import com.dev.lbsuhack.feature.requests.store.requests.AccessState
 import com.dev.lbsuhack.feature.requests.store.requests.RequestsStore
 import com.dev.lbsuhack.feature.requests.ui.dialog.RequestsDialogHost
-import com.dev.lbsuhack.feature.requests.ui.labels.titleLabelRes
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun RequestsScreen(
     role: UserRole,
     onBack: () -> Unit,
-    onOpenProfile: () -> Unit = {},
+    onOpenActivity: (String) -> Unit = {},
     viewModel: RequestsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -57,66 +58,56 @@ fun RequestsScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            RequestsTopBar(
-                title = stringResource(state.audience?.titleLabelRes() ?: R.string.requests_title),
-                isRefreshing = state.isRefreshing,
+            HackTopBar(
+                title = stringResource(
+                    when (role) {
+                        UserRole.ORGANIZATOR -> R.string.requests_title_admin
+                        else -> R.string.requests_title_teacher
+                    },
+                ),
                 onBack = onBack,
-                onRefresh = { viewModel.accept(RequestsStore.Intent.Refresh) },
-                onOpenProfile = onOpenProfile,
+                backContentDescription = stringResource(R.string.requests_back),
             )
         },
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState)
         },
     ) { padding ->
-        val audience = state.audience
-        when {
-            state.accessState == AccessState.Checking -> {
-                HackLoading(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+        ) {
+            val audience = state.audience
+            when {
+                state.accessState == AccessState.Checking || state.isInitialLoading -> {
+                    HackLoading(modifier = Modifier.fillMaxSize())
+                }
+
+                state.accessState == AccessState.Denied -> {
+                    RequestsAccessDenied(modifier = Modifier.fillMaxSize())
+                }
+
+                state.loadFailed && state.requests.isEmpty() -> {
+                    RequestsLoadErrorState(
+                        onRetry = { viewModel.accept(RequestsStore.Intent.Refresh) },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+
+                audience != null -> {
+                    RequestsContent(
+                        audience = audience,
+                        state = state,
+                        onApprove = { viewModel.accept(RequestsStore.Intent.ClickApprove(it)) },
+                        onDecline = { viewModel.accept(RequestsStore.Intent.ClickDecline(it)) },
+                        onOpen = onOpenActivity,
+                        onRefresh = { viewModel.accept(RequestsStore.Intent.Refresh) },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
 
-            state.accessState == AccessState.Denied -> {
-                RequestsAccessDenied(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                )
-            }
-
-            state.isInitialLoading -> {
-                HackLoading(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                )
-            }
-
-            state.loadFailed && state.requests.isEmpty() -> {
-                RequestsLoadErrorState(
-                    onRetry = { viewModel.accept(RequestsStore.Intent.Refresh) },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                )
-            }
-
-            audience != null -> {
-                RequestsContent(
-                    audience = audience,
-                    state = state,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    onSelectTab = { viewModel.accept(RequestsStore.Intent.SelectTab(it)) },
-                    onApprove = { viewModel.accept(RequestsStore.Intent.ClickApprove(it)) },
-                    onDecline = { viewModel.accept(RequestsStore.Intent.ClickDecline(it)) },
-                    onRefresh = { viewModel.accept(RequestsStore.Intent.Refresh) },
-                )
-            }
         }
     }
 
@@ -126,7 +117,6 @@ fun RequestsScreen(
         isSubmitting = state.isSubmitting,
         onDismiss = { viewModel.accept(RequestsStore.Intent.DismissDialog) },
         onChangeReason = { viewModel.accept(RequestsStore.Intent.ChangeDeclineReason(it)) },
-        onChangeStartsAt = { viewModel.accept(RequestsStore.Intent.ChangeStartsAt(it)) },
         onConfirmApprove = { viewModel.accept(RequestsStore.Intent.ConfirmApprove) },
         onConfirmDecline = { viewModel.accept(RequestsStore.Intent.ConfirmDecline) },
     )

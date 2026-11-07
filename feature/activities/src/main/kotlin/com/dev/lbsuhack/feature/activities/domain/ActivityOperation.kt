@@ -6,4 +6,5 @@ enum class ActivityOperation {
     LIKE,
     DETAILS,
     LIST,
+    DELETE,
 }

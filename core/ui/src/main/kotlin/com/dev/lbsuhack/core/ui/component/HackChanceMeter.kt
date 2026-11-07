@@ -69,6 +69,9 @@ fun HackChanceMeter(
                 color = if (prominent) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
             )
+            if (!footnote.isNullOrBlank()) {
+                HackChanceInfoButton(title = title, text = footnote)
+            }
             AnimatedContent(
                 targetState = percent,
                 transitionSpec = { fadeIn(tween(FADE_MS)) togetherWith fadeOut(tween(FADE_MS)) },
@@ -126,14 +129,6 @@ fun HackChanceMeter(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        if (footnote != null) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = footnote,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = FOOTNOTE_ALPHA),
-            )
-        }
     }
 }
 
@@ -156,4 +151,3 @@ private fun ChanceLevelBadge(text: String) {
 private const val FULL_PERCENT = 100f
 private const val FILL_MS = 600
 private const val FADE_MS = 180
-private const val FOOTNOTE_ALPHA = 0.8f

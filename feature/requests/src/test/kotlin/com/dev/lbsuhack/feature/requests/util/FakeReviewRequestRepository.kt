@@ -37,7 +37,6 @@ class FakeReviewRequestRepository(
     override suspend fun approve(
         requestId: String,
         audience: RequestAudience,
-        startsAt: String?,
     ): DomainResult<ReviewRequest> {
         if (actionDelayMillis > 0L) delay(actionDelayMillis)
         return updateRequest(requestId) {
@@ -54,17 +53,6 @@ class FakeReviewRequestRepository(
         return updateRequest(requestId) {
             it.copy(status = ReviewStatus.DECLINED, declineReason = reason?.trim()?.ifBlank { null })
         }
-    }
-
-    var probabilityResult: DomainResult<Double> = DomainResult.Success(0.72)
-    val probabilityRequests = mutableListOf<Pair<String, String?>>()
-
-    override suspend fun previewSuccessProbability(
-        categoryKey: String,
-        startsAt: String?,
-    ): DomainResult<Double> {
-        probabilityRequests += categoryKey to startsAt
-        return probabilityResult
     }
 
     private fun updateRequest(

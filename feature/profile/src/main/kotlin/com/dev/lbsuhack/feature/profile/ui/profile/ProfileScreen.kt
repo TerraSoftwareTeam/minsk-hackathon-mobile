@@ -34,8 +34,7 @@ import org.koin.androidx.compose.koinViewModel
 fun ProfileScreen(
     onBack: (() -> Unit)?,
     onOpenSettings: () -> Unit,
-    onOpenRequests: (UserRole) -> Unit,
-    onCreateActivity: () -> Unit = {},
+    onOpenRequests: (UserRole) -> Unit = {},
     onOpenActivities: () -> Unit = {},
     viewModel: ProfileViewModel = koinViewModel(),
 ) {
@@ -116,7 +115,6 @@ fun ProfileScreen(
                     state = state,
                     onEditClick = { viewModel.accept(ProfileStore.Intent.ClickEdit) },
                     onOpenRequests = onOpenRequests,
-                    onCreateActivity = onCreateActivity,
                     onOpenActivities = onOpenActivities,
                     onToggleNotifications = { viewModel.accept(ProfileStore.Intent.ToggleNotifications) },
                     onOpenSettings = onOpenSettings,

@@ -3,6 +3,7 @@ package com.dev.lbsuhack.feature.activities.data
 import com.dev.lbsuhack.core.domain.DomainError
 import com.dev.lbsuhack.core.domain.DomainResult
 import com.dev.lbsuhack.core.domain.model.UserRole
+import com.dev.lbsuhack.core.domain.session.SessionClearHook
 import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionState
 import com.dev.lbsuhack.core.domain.session.SessionUser
@@ -36,6 +37,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -47,8 +49,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -63,9 +65,12 @@ class ActivityRepositoryImpl(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val observeSession: ObserveSessionUseCase? = null,
     private val imageSource: ActivityImageSource? = null,
-) : ActivityRepository {
+) : ActivityRepository, SessionClearHook {
 
-    private val activitiesFlow = MutableStateFlow<List<ActivityProposal>>(emptyList())
+    private data class AccountCache(val owner: String?, val items: List<ActivityProposal> = emptyList())
+
+    private val activitiesFlow = MutableStateFlow(AccountCache(sessionId()))
+    private val cacheGeneration = AtomicInteger(0)
 
     private val mutationFailuresFlow = MutableSharedFlow<ActivityMutationFailure>(extraBufferCapacity = 16)
 
@@ -73,13 +78,33 @@ class ActivityRepositoryImpl(
 
     private var lastMutationJob: Job? = null
 
-    private var owner: String? = sessionId()
+    private val owner: String? get() = activitiesFlow.value.owner
 
     private val mutations = AtomicInteger(0)
+    private val pendingMutations = AtomicInteger(0)
 
     private val mutationMutex = Mutex()
 
     override val mutationFailures: Flow<ActivityMutationFailure> = mutationFailuresFlow
+
+    override suspend fun beforeClear() {
+        cacheGeneration.incrementAndGet()
+        activitiesFlow.value = AccountCache(null)
+        mutationScope.coroutineContext.cancelChildren()
+        lastMutationJob = null
+    }
+
+    private fun updateActivities(
+        requestOwner: String?,
+        requestGeneration: Int,
+        transform: (List<ActivityProposal>) -> List<ActivityProposal>,
+    ) {
+        activitiesFlow.update { cache ->
+            if (cache.owner == requestOwner && cacheGeneration.get() == requestGeneration) {
+                cache.copy(items = transform(cache.items))
+            } else cache
+        }
+    }
 
     private fun sessionUser(): SessionUser? =
         (observeSession?.state?.value as? SessionState.Authenticated)?.user
@@ -89,31 +114,32 @@ class ActivityRepositoryImpl(
     private fun prepareCache() {
         val userId = sessionId()
         if (owner != userId) {
-            activitiesFlow.value = emptyList()
-            owner = userId
+            cacheGeneration.incrementAndGet()
+            activitiesFlow.value = AccountCache(userId)
         }
     }
 
     override fun observeActivities(): Flow<List<ActivityProposal>> = observeSession?.let { session ->
-        combine(activitiesFlow, session.state) { items, state ->
+        combine(activitiesFlow, session.state) { cache, state ->
             val userId = (state as? SessionState.Authenticated)?.user?.id
-            if (userId != null && userId == owner) items else emptyList()
+            if (userId != null && userId == cache.owner) cache.items else emptyList()
         }
-    } ?: activitiesFlow.asStateFlow()
+    } ?: activitiesFlow.map { it.items }
 
     override suspend fun refresh(): DomainResult<Unit> = withContext(ioDispatcher) {
         prepareCache()
         val requestOwner = sessionId()
+        val requestGeneration = cacheGeneration.get()
         val startedAtMutation = mutations.get()
         val role = sessionUser()?.role
         if (role != null && role != UserRole.PUPIL) {
             val result = safeCall { httpClient.get("api/v1/events/my").body<List<VotingEventResponseDto>>() }
             return@withContext when (result) {
                 is NetworkResult.Success -> {
-                    if (sessionId() != requestOwner) return@withContext DomainResult.Failure(DomainError.Unauthorized)
+                    if (sessionId() != requestOwner || cacheGeneration.get() != requestGeneration) return@withContext DomainResult.Failure(DomainError.Unauthorized)
                     mutationMutex.withLock {
-                        if (mutations.get() == startedAtMutation) {
-                            activitiesFlow.value = result.data.map { it.toDomain(isMine = true) }.newestFirst()
+                        if (mutations.get() == startedAtMutation && pendingMutations.get() == 0) {
+                            updateActivities(requestOwner, requestGeneration) { result.data.map { it.toDomain(isMine = true) }.newestFirst() }
                         }
                     }
                     DomainResult.Success(Unit)
@@ -135,10 +161,10 @@ class ActivityRepositoryImpl(
             voting.await() to mine.await()
         }
 
-        if (sessionId() != requestOwner) return@withContext DomainResult.Failure(DomainError.Unauthorized)
+        if (sessionId() != requestOwner || cacheGeneration.get() != requestGeneration) return@withContext DomainResult.Failure(DomainError.Unauthorized)
         val mine = (myResult as? NetworkResult.Success)?.data.orEmpty().map { it.toDomain(isMine = true) }
         val mineIds = mine.mapTo(HashSet()) { it.id }
-        val previousMineIds = activitiesFlow.value.filter { it.isMine }.mapTo(HashSet()) { it.id }
+        val previousMineIds = activitiesFlow.value.items.filter { it.isMine }.mapTo(HashSet()) { it.id }
         val voting = (votingResult as? NetworkResult.Success)?.data.orEmpty()
             .filterNot { it.id in mineIds }
             .map { it.toDomain(isMine = myResult is NetworkResult.Error && it.id in previousMineIds) }
@@ -149,13 +175,13 @@ class ActivityRepositoryImpl(
         }
         val keptFromFailedSource = if (failure != null) {
             val loadedIds = loaded.mapTo(HashSet()) { it.id }
-            activitiesFlow.value.filterNot { it.id in loadedIds }
+            activitiesFlow.value.items.filterNot { it.id in loadedIds }
         } else {
             emptyList()
         }
         mutationMutex.withLock {
-            if (mutations.get() == startedAtMutation) {
-                activitiesFlow.value = (loaded + keptFromFailedSource).newestFirst()
+            if (mutations.get() == startedAtMutation && pendingMutations.get() == 0) {
+                updateActivities(requestOwner, requestGeneration) { (loaded + keptFromFailedSource).newestFirst() }
             }
         }
         if (failure != null) DomainResult.Failure(failure.error.toActivityDomain()) else DomainResult.Success(Unit)
@@ -164,16 +190,17 @@ class ActivityRepositoryImpl(
     override suspend fun getEventById(id: String): DomainResult<ActivityProposal> = withContext(ioDispatcher) {
         prepareCache()
         val requestOwner = sessionId()
+        val requestGeneration = cacheGeneration.get()
         val role = sessionUser()?.role
-        if (activitiesFlow.value.none { it.id == id } && role == UserRole.PUPIL) {
+        if (activitiesFlow.value.items.none { it.id == id } && role == UserRole.PUPIL) {
             refresh()
         }
-        activitiesFlow.value.find { it.id == id }?.let { return@withContext DomainResult.Success(it) }
+        activitiesFlow.value.items.find { it.id == id }?.let { return@withContext DomainResult.Success(it) }
 
         when (val result = safeCall { httpClient.get("api/v1/events/$id").body<EventResponseDto>() }) {
             is NetworkResult.Success -> {
-                if (sessionId() != requestOwner) return@withContext DomainResult.Failure(DomainError.Unauthorized)
-                val previous = activitiesFlow.value.find { it.id == id }
+                if (sessionId() != requestOwner || cacheGeneration.get() != requestGeneration) return@withContext DomainResult.Failure(DomainError.Unauthorized)
+                val previous = activitiesFlow.value.items.find { it.id == id }
                 val user = sessionUser()
                 val isInitiator = user?.let { u ->
                     result.data.initiator.name.trim().equals(u.name.trim(), ignoreCase = true) &&
@@ -189,9 +216,10 @@ class ActivityRepositoryImpl(
                 val domain = result.data.toDomain(
                     hasVoted = previous?.hasVoted ?: isVoter,
                     likedByMe = previous?.likedByMe ?: false,
+                    dislikedByMe = previous?.dislikedByMe ?: false,
                     isMine = previous?.isMine ?: (if (user != null) isInitiator else (role == UserRole.PUPIL)),
                 )
-                activitiesFlow.update { current -> (current.filterNot { it.id == id } + domain).newestFirst() }
+                updateActivities(requestOwner, requestGeneration) { current -> (current.filterNot { it.id == id } + domain).newestFirst() }
                 DomainResult.Success(domain)
             }
 
@@ -206,10 +234,29 @@ class ActivityRepositoryImpl(
         changeVote(eventId, voted = false) { httpClient.delete("api/v1/events/$eventId/vote").body() }
 
     override suspend fun like(eventId: String): DomainResult<ActivityProposal> =
-        changeLike(eventId, liked = true) { httpClient.put("api/v1/events/$eventId/like").body() }
+        changeReaction(eventId, reaction = 1) { httpClient.put("api/v1/events/$eventId/like").body() }
+
+    override suspend fun dislike(eventId: String): DomainResult<ActivityProposal> =
+        changeReaction(eventId, reaction = -1) { httpClient.put("api/v1/events/$eventId/dislike").body() }
 
     override suspend fun unlike(eventId: String): DomainResult<ActivityProposal> =
-        changeLike(eventId, liked = false) { httpClient.delete("api/v1/events/$eventId/like").body() }
+        changeReaction(eventId, reaction = 0) { httpClient.delete("api/v1/events/$eventId/like").body() }
+
+    override suspend fun delete(eventId: String): DomainResult<Unit> = withContext(ioDispatcher) {
+        val requestOwner = sessionId()
+        val requestGeneration = cacheGeneration.get()
+        when (val result = safeCall { httpClient.delete("api/v1/events/$eventId") }) {
+            is NetworkResult.Success -> {
+                if (sessionId() != requestOwner || cacheGeneration.get() != requestGeneration) return@withContext DomainResult.Failure(DomainError.Unauthorized)
+                mutationMutex.withLock {
+                    mutations.incrementAndGet()
+                    updateActivities(requestOwner, requestGeneration) { items -> items.filterNot { it.id == eventId } }
+                }
+                DomainResult.Success(Unit)
+            }
+            is NetworkResult.Error -> DomainResult.Failure(result.error.toActivityDomain())
+        }
+    }
 
     private suspend fun changeVote(
         eventId: String,
@@ -241,19 +288,14 @@ class ActivityRepositoryImpl(
         )
     }
 
-    private suspend fun changeLike(
+    private suspend fun changeReaction(
         eventId: String,
-        liked: Boolean,
+        reaction: Int,
         request: suspend () -> EventLikeResponseDto,
     ): DomainResult<ActivityProposal> = mutate(
         eventId = eventId,
         operation = ActivityOperation.LIKE,
-        optimistic = { current ->
-            current.copy(
-                likesCount = (current.likesCount + if (liked) 1 else -1).coerceAtLeast(0),
-                likedByMe = liked,
-            )
-        },
+        optimistic = { current -> current.withReaction(reaction) },
         request = request,
         applyResult = { proposal, likeResult -> proposal.withLikeResult(likeResult) },
     )
@@ -267,31 +309,37 @@ class ActivityRepositoryImpl(
     ): DomainResult<ActivityProposal> = withContext(ioDispatcher) {
         prepareCache()
         val requestOwner = sessionId()
+        val requestGeneration = cacheGeneration.get()
         val existing = when (val loaded = getEventById(eventId)) {
             is DomainResult.Success -> loaded.value
             is DomainResult.Failure -> return@withContext loaded
         }
+        if (sessionId() != requestOwner || cacheGeneration.get() != requestGeneration) {
+            return@withContext DomainResult.Failure(DomainError.Unauthorized)
+        }
         val optimisticState = optimistic(existing)
         mutationMutex.withLock {
             mutations.incrementAndGet()
-            activitiesFlow.update { items -> items.replaceOrAdd(optimisticState) }
+            updateActivities(requestOwner, requestGeneration) { items -> items.replaceOrAdd(optimisticState) }
         }
         val previousJob = lastMutationJob
-        lastMutationJob = mutationScope.launch {
+        pendingMutations.incrementAndGet()
+        val mutationJob = mutationScope.launch {
             previousJob?.join()
+            if (sessionId() != requestOwner || cacheGeneration.get() != requestGeneration) return@launch
             val result = safeCall { request() }
             mutationMutex.withLock {
-                if (sessionId() != requestOwner) return@withLock
-                val current = activitiesFlow.value.find { it.id == eventId }
+                if (sessionId() != requestOwner || cacheGeneration.get() != requestGeneration) return@withLock
+                val current = activitiesFlow.value.items.find { it.id == eventId }
                 if (current != optimisticState) return@withLock
                 mutations.incrementAndGet()
                 when (result) {
-                    is NetworkResult.Success -> activitiesFlow.update { items ->
+                    is NetworkResult.Success -> updateActivities(requestOwner, requestGeneration) { items ->
                         items.replaceOrAdd(applyResult(optimisticState, result.data))
                     }
 
                     is NetworkResult.Error -> {
-                        activitiesFlow.update { items -> items.replaceOrAdd(existing) }
+                        updateActivities(requestOwner, requestGeneration) { items -> items.replaceOrAdd(existing) }
                         mutationFailuresFlow.tryEmit(
                             ActivityMutationFailure(eventId, operation, result.error.toActivityDomain()),
                         )
@@ -299,6 +347,8 @@ class ActivityRepositoryImpl(
                 }
             }
         }
+        mutationJob.invokeOnCompletion { pendingMutations.decrementAndGet() }
+        lastMutationJob = mutationJob
         DomainResult.Success(optimisticState)
     }
 
@@ -306,6 +356,7 @@ class ActivityRepositoryImpl(
         withContext(ioDispatcher) {
             prepareCache()
             val requestOwner = sessionId()
+            val requestGeneration = cacheGeneration.get()
             val image = try {
                 requireNotNull(imageSource).read(photoUri)
             } catch (cancelled: CancellationException) {
@@ -333,16 +384,17 @@ class ActivityRepositoryImpl(
             }
             when (result) {
                 is NetworkResult.Success -> {
-                    if (sessionId() != requestOwner) return@withContext DomainResult.Failure(DomainError.Unauthorized)
+                    if (sessionId() != requestOwner || cacheGeneration.get() != requestGeneration) return@withContext DomainResult.Failure(DomainError.Unauthorized)
                     val activity = mutationMutex.withLock {
                         mutations.incrementAndGet()
-                        val previous = activitiesFlow.value.find { it.id == eventId }
+                        val previous = activitiesFlow.value.items.find { it.id == eventId }
                         val activity = result.data.toDomain(
                             hasVoted = previous?.hasVoted ?: false,
                             likedByMe = previous?.likedByMe ?: false,
+                            dislikedByMe = previous?.dislikedByMe ?: false,
                             isMine = true,
                         )
-                        activitiesFlow.update { items -> items.replaceOrAdd(activity) }
+                        updateActivities(requestOwner, requestGeneration) { items -> items.replaceOrAdd(activity) }
                         activity
                     }
                     DomainResult.Success(activity)
@@ -373,10 +425,12 @@ class ActivityRepositoryImpl(
         description: String,
         scope: ActivityScope,
         voteThreshold: Int,
-        startsAt: String?,
+        startsAt: String,
+        maxParticipants: Int?,
     ): DomainResult<ActivityProposal> = withContext(ioDispatcher) {
         prepareCache()
         val requestOwner = sessionId()
+        val requestGeneration = cacheGeneration.get()
         val dto = CreateEventDto(
             name = name.trim(),
             category = category.toDto(),
@@ -384,6 +438,7 @@ class ActivityRepositoryImpl(
             description = description.trim().ifEmpty { null },
             scope = scope.toDto(),
             startsAt = startsAt,
+            maxParticipants = maxParticipants,
         )
         val result = safeCall {
             httpClient.post("api/v1/events") {
@@ -393,11 +448,11 @@ class ActivityRepositoryImpl(
         }
         when (result) {
             is NetworkResult.Success -> {
-                if (sessionId() != requestOwner) return@withContext DomainResult.Failure(DomainError.Unauthorized)
+                if (sessionId() != requestOwner || cacheGeneration.get() != requestGeneration) return@withContext DomainResult.Failure(DomainError.Unauthorized)
                 val domain = mutationMutex.withLock {
                     mutations.incrementAndGet()
                     val domain = result.data.toDomain(isMine = true)
-                    activitiesFlow.update { items -> items.replaceOrAdd(domain) }
+                    updateActivities(requestOwner, requestGeneration) { items -> items.replaceOrAdd(domain) }
                     domain
                 }
                 DomainResult.Success(domain)

@@ -13,6 +13,7 @@ import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
 import com.dev.lbsuhack.feature.activities.domain.ActivityOrigin
 import com.dev.lbsuhack.feature.activities.domain.ActivityScope
 import com.dev.lbsuhack.feature.activities.store.create.CreateActivityStore
+import com.dev.lbsuhack.feature.activities.store.create.CreateActivityScopeOrder
 import com.dev.lbsuhack.feature.activities.store.create.CreateActivityStoreFactory
 import com.dev.lbsuhack.feature.activities.store.create.CreationState
 import com.dev.lbsuhack.feature.activities.util.FakeActivityRepository
@@ -65,7 +66,7 @@ class CreateActivityStoreTest {
         runCurrent()
 
         assertEquals(ActivityCategory.CULTURAL, activityRepository.lastProbabilityRequest?.first)
-        assertNull(activityRepository.lastProbabilityRequest?.second)
+        assertEquals(store.state.startsAt, activityRepository.lastProbabilityRequest?.second)
         assertEquals(0.9, store.state.chance!!, 0.0001)
         store.dispose()
     }
@@ -73,7 +74,7 @@ class CreateActivityStoreTest {
     @Test
     fun schoolForecastUsesTheChosenDate() = runTest(mainDispatcherRule.testDispatcher) {
         val store = createStore(TestFixtures.pupil.copy(role = UserRole.ORGANIZATOR, pupilClass = null))
-        val date = OffsetDateTime.now().plusDays(3)
+        val date = OffsetDateTime.now().plusDays(10)
 
         store.accept(CreateActivityStore.Intent.ChangeStartsAt(date))
         advanceTimeBy(CHANCE_WAIT_MS)
@@ -97,26 +98,33 @@ class CreateActivityStoreTest {
     }
 
     @Test
-    fun pupilFormHasNoDateAndKeepsScopeChoice() {
+    fun pupilChoosesTheDateAndKeepsScopeChoice() {
         val store = createStore()
 
         assertEquals(ActivityOrigin.PUPIL, store.state.origin)
-        assertNull(store.state.startsAt)
-        store.accept(CreateActivityStore.Intent.ChangeScope(ActivityScope.GRADE))
-        assertEquals(ActivityScope.GRADE, store.state.scope)
+        assertNotNull(store.state.startsAt)
+        assertEquals(ActivityScope.SCHOOL, store.state.scope)
+        assertEquals(
+            listOf(ActivityScope.SCHOOL, ActivityScope.CLASS),
+            CreateActivityScopeOrder,
+        )
+        store.accept(CreateActivityStore.Intent.ChangeScope(ActivityScope.CLASS))
+        assertEquals(ActivityScope.CLASS, store.state.scope)
         store.dispose()
     }
 
     @Test
-    fun teacherPublishesWithoutDate() = runTest(mainDispatcherRule.testDispatcher) {
+    fun teacherPublishesWithTheDateAndMaxParticipants() = runTest(mainDispatcherRule.testDispatcher) {
         val store = createStore(TestFixtures.pupil.copy(role = UserRole.TEACHER))
 
         assertEquals(ActivityOrigin.TEACHER, store.state.origin)
         store.fillValidForm()
+        store.accept(CreateActivityStore.Intent.ChangeMaxParticipants(30))
         store.accept(CreateActivityStore.Intent.Submit)
         runCurrent()
 
-        assertNull(activityRepository.lastStartsAt)
+        assertNotNull(activityRepository.lastStartsAt)
+        assertEquals(30, activityRepository.lastMaxParticipants)
         assertEquals(CreationState.CREATED, store.state.creationState)
         store.dispose()
     }
@@ -187,15 +195,31 @@ class CreateActivityStoreTest {
     }
 
     @Test
-    fun voteThresholdOutOfRangeIsRejected() = runTest(mainDispatcherRule.testDispatcher) {
+    fun pupilThresholdIsAtLeastTwoAndMaxFollowsIt() = runTest(mainDispatcherRule.testDispatcher) {
         val store = createStore()
-        store.fillValidForm()
 
         store.accept(CreateActivityStore.Intent.ChangeVoteThreshold(0))
+        assertEquals(2, store.state.voteThreshold)
+
+        store.accept(CreateActivityStore.Intent.ChangeMaxParticipants(5))
+        store.accept(CreateActivityStore.Intent.ChangeVoteThreshold(8))
+        assertEquals(8, store.state.maxParticipants)
+
+        store.accept(CreateActivityStore.Intent.ChangeMaxParticipants(3))
+        assertEquals(8, store.state.maxParticipants)
+        store.dispose()
+    }
+
+    @Test
+    fun dateCloserThanVotingWindowIsRejected() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore()
+        store.fillValidForm()
+        store.accept(CreateActivityStore.Intent.ChangeStartsAt(OffsetDateTime.now().plusDays(2)))
+
+        assertTrue(store.state.hasDateError)
         store.accept(CreateActivityStore.Intent.Submit)
         runCurrent()
 
-        assertNotNull(store.state.error)
         assertEquals(0, activityRepository.createCalls)
         store.dispose()
     }

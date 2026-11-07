@@ -48,6 +48,7 @@ class ProfileStoreFactory(
             ) {}
 
     private sealed interface Message {
+        data class SessionReset(val state: ProfileStore.State) : Message
         data class UserLoaded(
             val fullName: String,
             val pupilClass: String,
@@ -74,6 +75,7 @@ class ProfileStoreFactory(
     private inner class ExecutorImpl :
         CoroutineExecutor<ProfileStore.Intent, Nothing, ProfileStore.State, Message, ProfileStore.Label>() {
 
+        private var profileOwner = (observeSession.state.value as? SessionState.Authenticated)?.user?.let { it.id to it.role }
         private var loadJob: Job? = null
         private var editJob: Job? = null
         private val toggleMutex = Mutex()
@@ -92,14 +94,23 @@ class ProfileStoreFactory(
         }
 
         private fun load() {
-            loadJob?.cancel()
+            val sessionUser = (observeSession.state.value as? SessionState.Authenticated)?.user
+            val nextOwner = sessionUser?.let { it.id to it.role }
+            if (profileOwner != nextOwner) {
+                loadJob?.cancel()
+                loadJob = null
+                profileOwner = nextOwner
+                dispatch(Message.SessionReset(initialState()))
+            }
+            if (loadJob?.isActive == true) return
+            val requestUserId = sessionUser?.id
             loadJob = scope.launch {
                 dispatch(Message.LoadingStarted)
                 dispatch(Message.NotificationsChanged(observeNotificationsEnabled().first()))
                 val initialNotifications = state().notificationsEnabled
                 val initialSaved = if (state().hasUser) state().savedCount else profileRepository.savedCount()
                 val cached = (getCurrentUser(forceRefresh = false) as? DomainResult.Success)?.value
-                if (cached != null) {
+                if (cached != null && cached.id == requestUserId && cached.role == state().role) {
                     dispatch(
                         Message.UserLoaded(
                             fullName = cached.displayName(),
@@ -114,6 +125,7 @@ class ProfileStoreFactory(
                 when (val result = getCurrentUser(forceRefresh = true)) {
                     is DomainResult.Success -> {
                         val user = result.value
+                        if (user.id != requestUserId || (observeSession.state.value as? SessionState.Authenticated)?.user?.id != requestUserId) return@launch
                         val currentNotifications = if (state().hasUser) state().notificationsEnabled else observeNotificationsEnabled().first()
                         val currentSaved = if (state().hasUser) state().savedCount else profileRepository.savedCount()
                         dispatch(
@@ -129,6 +141,7 @@ class ProfileStoreFactory(
                     }
 
                     is DomainResult.Failure -> {
+                        if ((observeSession.state.value as? SessionState.Authenticated)?.user?.id != requestUserId) return@launch
                         if (!state().hasUser) {
                             dispatch(Message.LoadingFailed)
                             publish(ProfileStore.Label.ShowMessage(result.error.toUiText()))
@@ -241,6 +254,7 @@ class ProfileStoreFactory(
 
     private object ReducerImpl : Reducer<ProfileStore.State, Message> {
         override fun ProfileStore.State.reduce(msg: Message): ProfileStore.State = when (msg) {
+            is Message.SessionReset -> msg.state
             is Message.UserLoaded -> copy(
                 fullName = msg.fullName,
                 pupilClass = msg.pupilClass,

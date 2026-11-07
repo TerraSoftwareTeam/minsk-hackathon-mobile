@@ -20,6 +20,7 @@ interface AppNavigation {
     fun openRequests(role: UserRole)
     fun openCreateActivity()
     fun openActivities()
+    fun openActivity(activityId: String)
 }
 
 val LocalAppNavigation = staticCompositionLocalOf<AppNavigation> {

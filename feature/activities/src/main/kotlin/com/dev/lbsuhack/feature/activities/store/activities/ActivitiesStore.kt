@@ -7,7 +7,27 @@ import com.dev.lbsuhack.core.localization.text.UiText
 import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
+import com.dev.lbsuhack.feature.activities.domain.ActivityStage
 import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
+import com.dev.lbsuhack.feature.activities.domain.stage
+
+data class ActivityFeedSection(
+    val stage: ActivityStage,
+    val activities: List<ActivityProposal>,
+)
+
+private val FeedSectionOrder = listOf(
+    ActivityStage.VOTING,
+    ActivityStage.CONFIRMED,
+    ActivityStage.WAITING,
+    ActivityStage.CLOSED,
+)
+
+val QuickFilterTabs: List<ActivityTab> = listOf(
+    ActivityTab.ALL,
+    ActivityTab.MY_VOTES,
+    ActivityTab.MY_PROPOSALS,
+)
 
 enum class ActivityTab {
     ALL,
@@ -26,9 +46,11 @@ interface ActivitiesStore : Store<ActivitiesStore.Intent, ActivitiesStore.State,
         data object StopPolling : Intent
         data class SelectCategory(val category: ActivityCategory?) : Intent
         data class SelectTab(val tab: ActivityTab) : Intent
+        data object ResetFilters : Intent
         data class Vote(val activityId: String) : Intent
         data class Unvote(val activityId: String) : Intent
         data class Like(val activityId: String) : Intent
+        data class Dislike(val activityId: String) : Intent
         data class Unlike(val activityId: String) : Intent
         data class ClickActivity(val activityId: String) : Intent
         data object ClickCreate : Intent
@@ -54,13 +76,26 @@ interface ActivitiesStore : Store<ActivitiesStore.Intent, ActivitiesStore.State,
                     ActivityTab.ON_ADMIN_MODERATION -> proposal.status == ActivityStatus.ON_ADMIN_MODERATION
                     ActivityTab.FINALIZED -> proposal.status == ActivityStatus.FINALIZED
                     ActivityTab.MY_PROPOSALS -> proposal.isMine
-                    ActivityTab.MY_VOTES -> proposal.hasVoted
+                    ActivityTab.MY_VOTES -> proposal.hasVoted && proposal.stage != ActivityStage.CLOSED
                 }
                 matchesCategory && matchesTab
             }
 
         val isInitialLoading: Boolean
             get() = activities.isEmpty() && error == null && (!hasLoaded || isLoading)
+
+        val feedSections: List<ActivityFeedSection>
+            get() {
+                val visible = filteredActivities
+                return FeedSectionOrder.mapNotNull { stage ->
+                    visible.filter { it.stage == stage }
+                        .takeIf { it.isNotEmpty() }
+                        ?.let { ActivityFeedSection(stage, it) }
+                }
+            }
+
+        val hasActiveFilters: Boolean
+            get() = selectedCategory != null || selectedTab != ActivityTab.ALL
 
         val canInteract: Boolean
             get() = currentUser?.role == UserRole.PUPIL
@@ -78,12 +113,12 @@ interface ActivitiesStore : Store<ActivitiesStore.Intent, ActivitiesStore.State,
         fun isAuthorOf(proposal: ActivityProposal): Boolean = proposal.isMine
 
         fun canVoteIn(proposal: ActivityProposal): Boolean =
-            canInteract && !proposal.isMine && proposal.canChangeVote
+            canInteract && proposal.canChangeVote
 
-        fun canUnvoteIn(proposal: ActivityProposal): Boolean = canInteract && !proposal.isMine
+        fun canUnvoteIn(proposal: ActivityProposal): Boolean = canInteract && proposal.canWithdrawVote
 
         fun canLikeIn(proposal: ActivityProposal): Boolean =
-            canInteract && !proposal.isMine && proposal.canLike
+            canInteract && proposal.canLike
     }
 
     sealed interface Label {

@@ -44,6 +44,8 @@ class ActivityDetailsStoreFactory(
         data object ActivityRemoved : Message
         data class ActionFailed(val error: UiText) : Message
         data class UserUpdated(val user: SessionUser?) : Message
+        data object Deleting : Message
+        data object DeleteFinished : Message
     }
 
     private inner class ExecutorImpl :
@@ -65,7 +67,9 @@ class ActivityDetailsStoreFactory(
                 ActivityDetailsStore.Intent.Vote -> vote()
                 ActivityDetailsStore.Intent.Unvote -> unvote()
                 ActivityDetailsStore.Intent.Like -> like()
+                ActivityDetailsStore.Intent.Dislike -> dislike()
                 ActivityDetailsStore.Intent.Unlike -> unlike()
+                ActivityDetailsStore.Intent.Delete -> delete()
                 ActivityDetailsStore.Intent.StartPolling -> startPolling()
                 ActivityDetailsStore.Intent.StopPolling -> {
                     pollingJob?.cancel()
@@ -167,15 +171,15 @@ class ActivityDetailsStoreFactory(
 
         private fun vote() {
             val activity = state().activity ?: return
-            if (!state().canInteract) return
+            if (!state().canVote) return
             if (!activity.canChangeVote || activity.hasVoted) return
             act(ActivityOperation.VOTE) { activityRepository.vote(it) }
         }
 
         private fun unvote() {
             val activity = state().activity ?: return
-            if (!state().canInteract) return
-            if (!activity.hasVoted) return
+            if (!state().canVote) return
+            if (!activity.canWithdrawVote || !activity.hasVoted) return
             act(ActivityOperation.VOTE) { activityRepository.unvote(it) }
         }
 
@@ -185,10 +189,35 @@ class ActivityDetailsStoreFactory(
             act(ActivityOperation.LIKE) { activityRepository.like(it) }
         }
 
+        private fun dislike() {
+            val activity = state().activity ?: return
+            if (!state().canInteract || !activity.canLike || activity.dislikedByMe) return
+            act(ActivityOperation.LIKE) { activityRepository.dislike(it) }
+        }
+
         private fun unlike() {
             val activity = state().activity ?: return
-            if (!state().canInteract || !activity.canLike || !activity.likedByMe) return
+            if (!state().canInteract || !activity.canLike || (!activity.likedByMe && !activity.dislikedByMe)) return
             act(ActivityOperation.LIKE) { activityRepository.unlike(it) }
+        }
+
+        private fun delete() {
+            val activity = state().activity ?: return
+            if (!state().canDelete || state().isDeleting) return
+            dispatch(Message.Deleting)
+            scope.launch {
+                when (val result = activityRepository.delete(activity.id)) {
+                    is DomainResult.Success -> {
+                        dispatch(Message.DeleteFinished)
+                        publish(ActivityDetailsStore.Label.Deleted)
+                    }
+                    is DomainResult.Failure -> {
+                        dispatch(Message.DeleteFinished)
+                        dispatch(Message.ActionFailed(result.error.toUiText(ActivityOperation.DELETE)))
+                        refreshActivity(activity.id)
+                    }
+                }
+            }
         }
 
         private fun act(
@@ -225,6 +254,8 @@ class ActivityDetailsStoreFactory(
                 Message.ActivityRemoved -> copy(activity = null, loadState = ActivityLoadState.NotFound)
                 is Message.ActionFailed -> copy(error = msg.error, errorId = errorId + 1)
                 is Message.UserUpdated -> copy(currentUser = msg.user)
+                Message.Deleting -> copy(isDeleting = true)
+                Message.DeleteFinished -> copy(isDeleting = false)
             }
     }
 }

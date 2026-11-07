@@ -3,7 +3,6 @@ package com.dev.lbsuhack.feature.requests.ui.dialog
 import androidx.compose.runtime.Composable
 import com.dev.lbsuhack.feature.requests.domain.RequestAudience
 import com.dev.lbsuhack.feature.requests.store.requests.RequestDialog
-import java.time.OffsetDateTime
 
 @Composable
 internal fun RequestsDialogHost(
@@ -12,7 +11,6 @@ internal fun RequestsDialogHost(
     isSubmitting: Boolean,
     onDismiss: () -> Unit,
     onChangeReason: (String) -> Unit,
-    onChangeStartsAt: (OffsetDateTime) -> Unit,
     onConfirmApprove: () -> Unit,
     onConfirmDecline: () -> Unit,
 ) {
@@ -24,7 +22,6 @@ internal fun RequestsDialogHost(
             audience = audience,
             isSubmitting = isSubmitting,
             onDismiss = onDismiss,
-            onChangeStartsAt = onChangeStartsAt,
             onConfirm = onConfirmApprove,
         )
 

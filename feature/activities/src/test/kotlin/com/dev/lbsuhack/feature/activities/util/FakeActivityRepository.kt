@@ -36,6 +36,7 @@ class FakeActivityRepository(
     var voteCalls = 0
     var unvoteCalls = 0
     var likeCalls = 0
+    var dislikeCalls = 0
     var unlikeCalls = 0
 
     private val activities = MutableStateFlow(initialActivities)
@@ -84,13 +85,18 @@ class FakeActivityRepository(
     override suspend fun like(eventId: String): DomainResult<ActivityProposal> {
         likeCalls++
         likeResult?.let { return it }
-        return change(eventId) { it.copy(likesCount = it.likesCount + 1, likedByMe = true) }
+        return change(eventId) { it.withReaction(1) }
+    }
+
+    override suspend fun dislike(eventId: String): DomainResult<ActivityProposal> {
+        dislikeCalls++
+        return change(eventId) { it.withReaction(-1) }
     }
 
     override suspend fun unlike(eventId: String): DomainResult<ActivityProposal> {
         unlikeCalls++
         unlikeResult?.let { return it }
-        return change(eventId) { it.copy(likesCount = (it.likesCount - 1).coerceAtLeast(0), likedByMe = false) }
+        return change(eventId) { it.withReaction(0) }
     }
 
     var probabilityResult: DomainResult<Double> = DomainResult.Success(0.58)
@@ -104,16 +110,28 @@ class FakeActivityRepository(
         return probabilityResult
     }
 
+    var lastMaxParticipants: Int? = null
+    var deleteResult: DomainResult<Unit> = DomainResult.Success(Unit)
+    val deletedIds = mutableListOf<String>()
+
+    override suspend fun delete(eventId: String): DomainResult<Unit> {
+        deletedIds += eventId
+        if (deleteResult is DomainResult.Success) activities.value = activities.value.filterNot { it.id == eventId }
+        return deleteResult
+    }
+
     override suspend fun createEvent(
         name: String,
         category: ActivityCategory,
         description: String,
         scope: ActivityScope,
         voteThreshold: Int,
-        startsAt: String?,
+        startsAt: String,
+        maxParticipants: Int?,
     ): DomainResult<ActivityProposal> {
         createCalls++
         lastStartsAt = startsAt
+        lastMaxParticipants = maxParticipants
         createResult?.let { return it }
         val proposal = ActivityProposal(
             id = CREATED_ID,

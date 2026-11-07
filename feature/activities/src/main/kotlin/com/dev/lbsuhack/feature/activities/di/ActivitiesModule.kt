@@ -1,5 +1,6 @@
 package com.dev.lbsuhack.feature.activities.di
 
+import com.dev.lbsuhack.core.domain.session.SessionClearHook
 import com.dev.lbsuhack.core.navigation.api.NavigationInstaller
 import com.dev.lbsuhack.feature.activities.data.ActivityPhotoSource
 import org.koin.core.qualifier.named
@@ -18,17 +19,18 @@ import kotlinx.coroutines.Dispatchers
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.bind
+import org.koin.dsl.binds
 import org.koin.dsl.module
 
 val activitiesModule = module {
-    single<ActivityRepository> {
+    single {
         ActivityRepositoryImpl(
             httpClient = get(),
             ioDispatcher = Dispatchers.IO,
             observeSession = get(),
             imageSource = AndroidActivityImageSource(androidContext().contentResolver),
         )
-    }
+    } binds arrayOf(ActivityRepository::class, SessionClearHook::class)
 
     single { ActivityPhotoSource(httpClient = get(named("unauthenticatedHttpClient"))) }
 

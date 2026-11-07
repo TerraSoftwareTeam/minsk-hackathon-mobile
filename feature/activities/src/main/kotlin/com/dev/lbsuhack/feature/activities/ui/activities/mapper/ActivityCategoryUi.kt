@@ -20,7 +20,6 @@ internal fun ActivityCategory.icon(): ImageVector = when (this) {
     ActivityCategory.CULTURAL -> Icons.Outlined.Museum
     ActivityCategory.CREATIVE -> Icons.Outlined.Palette
     ActivityCategory.EDUCATIONAL -> Icons.Outlined.Computer
-    ActivityCategory.VOLUNTEER -> Icons.Outlined.AutoAwesome
     ActivityCategory.ENVIRONMENTAL -> Icons.Outlined.CalendarMonth
     ActivityCategory.TOURISM -> Icons.Outlined.LocationOn
     ActivityCategory.ENTERTAINMENT -> Icons.Outlined.Movie
@@ -33,7 +32,6 @@ internal fun ActivityCategory.labelRes(): Int = when (this) {
     ActivityCategory.CULTURAL -> R.string.activities_filter_cultural
     ActivityCategory.CREATIVE -> R.string.activities_filter_creative
     ActivityCategory.EDUCATIONAL -> R.string.activities_filter_educational
-    ActivityCategory.VOLUNTEER -> R.string.activities_filter_volunteer
     ActivityCategory.ENVIRONMENTAL -> R.string.activities_filter_environmental
     ActivityCategory.TOURISM -> R.string.activities_filter_tourism
     ActivityCategory.ENTERTAINMENT -> R.string.activities_filter_entertainment

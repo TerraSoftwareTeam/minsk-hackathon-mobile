@@ -51,6 +51,73 @@ class ActivitiesStoreTest {
     ).create()
 
     @Test
+    fun ratingSwitchesBetweenDislikeLikeAndNoReaction() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore()
+        store.accept(ActivitiesStore.Intent.StartPolling)
+        runCurrent()
+        store.accept(ActivitiesStore.Intent.Dislike("act-2"))
+        runCurrent()
+        assertEquals(-1, store.state.activities.first { it.id == "act-2" }.likesCount)
+        assertTrue(store.state.activities.first { it.id == "act-2" }.dislikedByMe)
+        store.accept(ActivitiesStore.Intent.Dislike("act-2"))
+        runCurrent()
+        assertEquals(1, activityRepository.dislikeCalls)
+
+        store.accept(ActivitiesStore.Intent.Like("act-2"))
+        runCurrent()
+        assertEquals(1, store.state.activities.first { it.id == "act-2" }.likesCount)
+        assertTrue(store.state.activities.first { it.id == "act-2" }.likedByMe)
+        assertFalse(store.state.activities.first { it.id == "act-2" }.dislikedByMe)
+        store.accept(ActivitiesStore.Intent.Dislike("act-2"))
+        runCurrent()
+        assertEquals(-1, store.state.activities.first { it.id == "act-2" }.likesCount)
+        assertFalse(store.state.activities.first { it.id == "act-2" }.likedByMe)
+        assertTrue(store.state.activities.first { it.id == "act-2" }.dislikedByMe)
+        store.accept(ActivitiesStore.Intent.Unlike("act-2"))
+        runCurrent()
+        assertEquals(0, store.state.activities.first { it.id == "act-2" }.likesCount)
+        assertFalse(store.state.activities.first { it.id == "act-2" }.likedByMe)
+        assertFalse(store.state.activities.first { it.id == "act-2" }.dislikedByMe)
+        store.dispose()
+    }
+
+    @Test
+    fun ratingActionsAreUnavailableDuringBothModerationStages() = runTest(mainDispatcherRule.testDispatcher) {
+        for (status in listOf(ActivityStatus.ON_MODERATION, ActivityStatus.ON_ADMIN_MODERATION)) {
+            activityRepository.replace(listOf(TestFixtures.otherProposal.copy(status = status, likedByMe = true)))
+            val store = createStore()
+            store.accept(ActivitiesStore.Intent.StartPolling)
+            runCurrent()
+            store.accept(ActivitiesStore.Intent.Like("act-2"))
+            store.accept(ActivitiesStore.Intent.Dislike("act-2"))
+            store.accept(ActivitiesStore.Intent.Unlike("act-2"))
+            runCurrent()
+            assertEquals(0, activityRepository.likeCalls)
+            assertEquals(0, activityRepository.dislikeCalls)
+            assertEquals(0, activityRepository.unlikeCalls)
+            store.dispose()
+        }
+    }
+
+    @Test
+    fun returningToCachedActivitiesRefreshesWithoutFlashingTheLoadingIndicator() = runTest(mainDispatcherRule.testDispatcher) {
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        activityRepository.refreshGate = gate
+        val store = createStore()
+        store.accept(ActivitiesStore.Intent.StartPolling)
+        runCurrent()
+
+        assertEquals(2, store.state.activities.size)
+        assertFalse(store.state.isLoading)
+        assertFalse(store.state.isInitialLoading)
+        gate.complete(Unit)
+        runCurrent()
+        assertEquals(2, store.state.activities.size)
+        assertFalse(store.state.isLoading)
+        store.dispose()
+    }
+
+    @Test
     fun pollingFillsStateWithActivitiesAndUser() = runTest(mainDispatcherRule.testDispatcher) {
         val store = createStore()
 
@@ -143,7 +210,7 @@ class ActivitiesStoreTest {
     }
 
     @Test
-    fun authorCannotVoteOnOwnProposal() = runTest(mainDispatcherRule.testDispatcher) {
+    fun authorCanJoinButCannotLeaveOwnProposal() = runTest(mainDispatcherRule.testDispatcher) {
         val store = createStore()
 
         store.accept(ActivitiesStore.Intent.StartPolling)
@@ -152,13 +219,36 @@ class ActivitiesStoreTest {
         store.accept(ActivitiesStore.Intent.Vote("act-1"))
         runCurrent()
 
-        assertEquals(0, activityRepository.voteCalls)
-        assertFalse(store.state.activities.first { it.id == "act-1" }.hasVoted)
+        assertEquals(1, activityRepository.voteCalls)
+        assertTrue(store.state.activities.first { it.id == "act-1" }.hasVoted)
+
+        store.accept(ActivitiesStore.Intent.Unvote("act-1"))
+        runCurrent()
+
+        assertEquals(0, activityRepository.unvoteCalls)
+        assertTrue(store.state.activities.first { it.id == "act-1" }.hasVoted)
         store.dispose()
     }
 
     @Test
-    fun authorCannotLikeOwnProposal() = runTest(mainDispatcherRule.testDispatcher) {
+    fun authorCannotLeaveAfterVotingEnds() = runTest(mainDispatcherRule.testDispatcher) {
+        activityRepository.replace(
+            listOf(TestFixtures.ownProposal.copy(status = ActivityStatus.FINALIZED, hasVoted = true)),
+        )
+        val store = createStore()
+
+        store.accept(ActivitiesStore.Intent.StartPolling)
+        runCurrent()
+        store.accept(ActivitiesStore.Intent.Unvote("act-1"))
+        runCurrent()
+
+        assertEquals(0, activityRepository.unvoteCalls)
+        assertTrue(store.state.activities.single().hasVoted)
+        store.dispose()
+    }
+
+    @Test
+    fun authorCanLikeAndUnlikeOwnProposal() = runTest(mainDispatcherRule.testDispatcher) {
         val store = createStore()
 
         store.accept(ActivitiesStore.Intent.StartPolling)
@@ -167,7 +257,16 @@ class ActivitiesStoreTest {
         store.accept(ActivitiesStore.Intent.Like("act-1"))
         runCurrent()
 
-        assertEquals(0, activityRepository.likeCalls)
+        assertEquals(1, activityRepository.likeCalls)
+        assertTrue(store.state.activities.first { it.id == "act-1" }.likedByMe)
+
+        store.accept(ActivitiesStore.Intent.Like("act-1"))
+        runCurrent()
+        assertEquals(1, activityRepository.likeCalls)
+
+        store.accept(ActivitiesStore.Intent.Unlike("act-1"))
+        runCurrent()
+        assertEquals(1, activityRepository.unlikeCalls)
         assertFalse(store.state.activities.first { it.id == "act-1" }.likedByMe)
         store.dispose()
     }

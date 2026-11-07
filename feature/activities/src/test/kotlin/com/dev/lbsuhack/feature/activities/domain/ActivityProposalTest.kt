@@ -24,6 +24,26 @@ class ActivityProposalTest {
     )
 
     @Test
+    fun reactionSwitchesAdjustScoreWithoutAccumulatingVotes() {
+        val transitions = listOf(
+            Triple(0, 0, 10), Triple(0, 1, 11), Triple(0, -1, 9),
+            Triple(1, 0, 9), Triple(1, 1, 10), Triple(1, -1, 8),
+            Triple(-1, 0, 11), Triple(-1, 1, 12), Triple(-1, -1, 10),
+        )
+        for ((previous, selected, expectedScore) in transitions) {
+            val initial = createProposal(ActivityStatus.ON_VOTE).copy(
+                likesCount = 10,
+                likedByMe = previous == 1,
+                dislikedByMe = previous == -1,
+            )
+            val updated = initial.withReaction(selected)
+            assertEquals(expectedScore, updated.likesCount)
+            assertEquals(selected == 1, updated.likedByMe)
+            assertEquals(selected == -1, updated.dislikedByMe)
+        }
+    }
+
+    @Test
     fun statusPermissionsTableMatchesSpecification() {
         val onModeration = createProposal(ActivityStatus.ON_MODERATION)
         assertFalse(onModeration.canChangeVote)
@@ -43,7 +63,7 @@ class ActivityProposalTest {
 
         val onAdminModeration = createProposal(ActivityStatus.ON_ADMIN_MODERATION)
         assertFalse(onAdminModeration.canChangeVote)
-        assertTrue(onAdminModeration.canLike)
+        assertFalse(onAdminModeration.canLike)
 
         val finalized = createProposal(ActivityStatus.FINALIZED)
         assertFalse(finalized.canChangeVote)

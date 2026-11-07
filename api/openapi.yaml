@@ -492,7 +492,7 @@ paths:
     get:
       description: Initiator, any teacher of the initiator's class, or admin.
       operationId: EventsController_findOne
-      parameters:
+      parameters: &id001
       - name: id
         required: true
         in: path
@@ -518,6 +518,27 @@ paths:
       security:
       - bearer: []
       summary: Get an event with all its data
+      tags:
+      - Events
+    delete:
+      description: 'Deletes the event. The author, or a teacher of the pupil author''s class: only while
+        pending and not past its deadline. An admin: any event'
+      operationId: EventsController_remove
+      parameters: *id001
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: Not allowed
+        '404':
+          description: Event not found
+        '409':
+          description: The event is already decided (or past its deadline)
+      security:
+      - bearer: []
+      summary: Delete an event
       tags:
       - Events
   /api/v1/events/{id}/approve:
@@ -599,8 +620,8 @@ paths:
       - Events
   /api/v1/events/{id}/admin/approve:
     post:
-      description: Admin only. ON_ADMIN_MODERATION -> FINALIZED. The admin sets the date (startsAt, in
-        the future); it cannot be changed afterwards.
+      description: 'Admin only. ON_ADMIN_MODERATION -> FINALIZED. No body: the date was chosen by the
+        author'
       operationId: EventsController_adminApprove
       parameters:
       - name: id
@@ -610,12 +631,6 @@ paths:
           format: uuid
           example: 3f2c9a4e-1b7d-4e8a-9c0f-2a6b5d7e8f90
           type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AdminApproveEventDto'
       responses:
         '200':
           description: ''
@@ -624,8 +639,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/EventResponseDto'
         '400':
-          description: 'Invalid id: must be a UUID, or startsAt is missing, has no timezone, or is not
-            in the future'
+          description: 'Invalid id: must be a UUID'
         '401':
           description: Missing or invalid bearer token
         '403':
@@ -844,11 +858,47 @@ paths:
       summary: Take the vote back (unsubscribe from the event)
       tags:
       - Events
+  /api/v1/events/{id}/dislike:
+    put:
+      description: 'Same rules as the like: pupil only, the event must be approved by
+        the teacher. One reaction per pupil per event: disliking again changes nothing,
+        disliking after a like switches it (+1 to -1). The dislike counts -1 in likesCount.'
+      operationId: EventsController_dislike
+      parameters:
+      - name: id
+        required: true
+        in: path
+        schema:
+          format: uuid
+          example: 3f2c9a4e-1b7d-4e8a-9c0f-2a6b5d7e8f90
+          type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventLikeResponseDto'
+        '400':
+          description: 'Invalid id: must be a UUID'
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: Caller is not a pupil
+        '404':
+          description: Event not found
+        '409':
+          description: Event is ON_MODERATION, DECLINED or EXPIRED
+      security:
+      - bearer: []
+      summary: Dislike an event (-1)
+      tags:
+      - Events
   /api/v1/events/{id}/like:
     put:
       description: 'Pupil only, any pupil: the event scope does not limit who likes. The event must be
-        approved by the teacher: ON_VOTE, ON_ADMIN_MODERATION, FINALIZED or DECLINED_BY_ADMIN. One like
-        per pupil per event: liking again changes nothing.'
+        approved by the teacher: ON_VOTE, ON_ADMIN_MODERATION, FINALIZED or DECLINED_BY_ADMIN. One reaction
+        per pupil per event: liking again changes nothing; liking after a dislike switches it (-1 to +1).'
       operationId: EventsController_like
       parameters:
       - name: id
@@ -881,7 +931,7 @@ paths:
       tags:
       - Events
     delete:
-      description: Pupil only, in any status of the event. Does nothing if the caller has not liked it.
+      description: 'Pupil only, in any status of the event. Removes the caller''s like (-1) or dislike (+1). Does nothing if there is none.'
       operationId: EventsController_unlike
       parameters:
       - name: id
@@ -908,7 +958,7 @@ paths:
           description: Event not found
       security:
       - bearer: []
-      summary: Take the like back (-1)
+      summary: Take the like or dislike back
       tags:
       - Events
   /api/v1/device-token:
@@ -1043,6 +1093,11 @@ components:
           - ADMIN
           example: PUPIL
           description: User role
+        exp:
+          type: integer
+          example: 120
+          minimum: 0
+          description: 'Pupil''s personal progress: experience points. Starts at 0'
       required:
       - id
       - schoolsById
@@ -1190,20 +1245,26 @@ components:
           example: 15
           minimum: 1
           maximum: 10000
-          description: 'Votes needed during ON_VOTE: they send a pupil or teacher event to admin moderation,
-            and make an admin event FINALIZED'
+          description: Minimum participants (votes) by the time voting closes; a pupil event needs at
+            least 2 (the organizer votes on creation)
         startsAt:
           type: string
           example: '2026-12-05T12:00:00+03:00'
           format: date-time
-          description: 'Admin only, and required for an admin: when the school event takes place, ISO
-            8601 date-time with a timezone (Z or ±hh:mm), in the future. It is also the voting deadline:
-            without enough votes by then the event becomes EXPIRED. Never changed afterwards. A pupil
-            or teacher must not send it: their date is set by the admin on approval'
+          description: 'Required for every role: when the event takes place, ISO 8601 with a timezone,
+            in the future. Teacher moderation and voting end 3 days before it, admin moderation when it
+            starts'
+        maxParticipants:
+          type: integer
+          example: 30
+          minimum: 1
+          maximum: 10000
+          description: Optional maximum participants, at least voteThreshold; omitted = unlimited
       required:
       - name
       - category
       - voteThreshold
+      - startsAt
     EventUserResponseDto:
       type: object
       properties:
@@ -1292,6 +1353,11 @@ components:
           example: 15
           description: 'Votes needed to leave ON_VOTE: to ON_ADMIN_MODERATION (pupil and teacher events),
             to FINALIZED (admin events)'
+        maxParticipants:
+          type: integer
+          example: 30
+          nullable: true
+          description: Maximum participants, null = unlimited
         startsAt:
           format: date-time
           type: string
@@ -1303,9 +1369,13 @@ components:
           format: date-time
           type: string
           example: '2026-12-06T10:00:00.000Z'
-          description: 'Computed. Pupil and teacher events: createdAt + 1 month (30 days), teacher moderation,
-            voting and the admin decision must finish by then. Admin events: startsAt, the votes must
-            reach voteThreshold by then. Otherwise the event becomes EXPIRED'
+          description: 'Computed: startsAt - 3 days. Teacher moderation and voting end then'
+        deadline:
+          type: string
+          format: date-time
+          nullable: true
+          description: 'When the current pending stage ends: votingClosesAt for ON_MODERATION/ON_VOTE,
+            startsAt for ON_ADMIN_MODERATION; null once decided'
         successProbability:
           type: number
           example: 0.66
@@ -1463,6 +1533,11 @@ components:
           example: 15
           description: 'Votes needed to leave ON_VOTE: to ON_ADMIN_MODERATION (pupil and teacher events),
             to FINALIZED (admin events)'
+        maxParticipants:
+          type: integer
+          example: 30
+          nullable: true
+          description: Maximum participants, null = unlimited
         startsAt:
           format: date-time
           type: string
@@ -1474,9 +1549,13 @@ components:
           format: date-time
           type: string
           example: '2026-12-06T10:00:00.000Z'
-          description: 'Computed. Pupil and teacher events: createdAt + 1 month (30 days), teacher moderation,
-            voting and the admin decision must finish by then. Admin events: startsAt, the votes must
-            reach voteThreshold by then. Otherwise the event becomes EXPIRED'
+          description: 'Computed: startsAt - 3 days. Teacher moderation and voting end then'
+        deadline:
+          type: string
+          format: date-time
+          nullable: true
+          description: 'When the current pending stage ends: votingClosesAt for ON_MODERATION/ON_VOTE,
+            startsAt for ON_ADMIN_MODERATION; null once decided'
         successProbability:
           type: number
           example: 0.66
@@ -1532,10 +1611,14 @@ components:
           type: boolean
           example: false
           description: Whether the caller has already voted
+        dislikedByMe:
+          type: boolean
+          default: false
+          description: Whether the caller has disliked the event (-1 in likesCount)
         likedByMe:
           type: boolean
           example: false
-          description: Whether the caller has liked the event (the count is likesCount)
+          description: Whether the caller has liked the event (+1 in likesCount)
       required:
       - id
       - name
@@ -1559,6 +1642,7 @@ components:
       - updatedAt
       - hasVoted
       - likedByMe
+      - dislikedByMe
     DeclineEventDto:
       type: object
       properties:
@@ -1568,17 +1652,6 @@ components:
           minLength: 1
           maxLength: 2000
           description: Optional reason shown to the pupil
-    AdminApproveEventDto:
-      type: object
-      properties:
-        startsAt:
-          type: string
-          example: '2026-12-05T12:00:00+03:00'
-          format: date-time
-          description: 'When the event takes place: ISO 8601 date-time with a timezone (Z or ±hh:mm),
-            in the future. Set once, on approval: nobody can change it afterwards'
-      required:
-      - startsAt
     EventVoteResponseDto:
       type: object
       properties:
@@ -1606,6 +1679,11 @@ components:
           - DECLINED_BY_ADMIN
           example: ON_VOTE
           description: 'Status after this vote: ON_ADMIN_MODERATION once the threshold is reached'
+        maxParticipants:
+          type: integer
+          example: 30
+          nullable: true
+          description: Maximum participants, null = unlimited
       required:
       - eventId
       - votesCount
@@ -1621,14 +1699,19 @@ components:
         liked:
           type: boolean
           example: true
-          description: true after PUT (like), false after DELETE (unlike)
+          description: true after PUT like, false after PUT dislike or DELETE
+        disliked:
+          type: boolean
+          default: false
+          description: true after PUT dislike, false after PUT like or DELETE
         likesCount:
           type: integer
           example: 12
-          description: Number of likes of the event
+          description: Likes minus dislikes of the event
       required:
       - eventId
       - liked
+      - disliked
       - likesCount
     RegisterDeviceTokenDto:
       type: object

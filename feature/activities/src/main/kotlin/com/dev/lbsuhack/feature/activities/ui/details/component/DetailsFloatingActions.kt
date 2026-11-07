@@ -34,9 +34,11 @@ internal fun DetailsFloatingActions(
     proposal: ActivityProposal,
     isAuthor: Boolean,
     canInteract: Boolean,
+    canVote: Boolean,
     onVote: () -> Unit,
     onUnvote: () -> Unit,
     onLike: () -> Unit,
+    onDislike: () -> Unit,
     onUnlike: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -72,18 +74,22 @@ internal fun DetailsFloatingActions(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                ActivityRating(
-                    likesCount = proposal.likesCount,
-                    likedByMe = proposal.likedByMe,
-                    enabled = canInteract && proposal.canLike,
-                    onLike = onLike,
-                    onUnlike = onUnlike,
-                    modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer, CircleShape),
-                )
+                if (proposal.canLike) {
+                    ActivityRating(
+                        likesCount = proposal.likesCount,
+                        likedByMe = proposal.likedByMe,
+                        dislikedByMe = proposal.dislikedByMe,
+                        enabled = canInteract && proposal.canLike,
+                        onLike = onLike,
+                        onDislike = onDislike,
+                        onUnlike = onUnlike,
+                        modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer, CircleShape),
+                    )
+                }
+
                 ActivityVoteButton(
                     proposal = proposal,
-                    isAuthor = isAuthor,
-                    canInteract = canInteract,
+                    canInteract = canVote,
                     onVote = onVote,
                     onUnvote = onUnvote,
                     modifier = Modifier.weight(1f).height(60.dp),
