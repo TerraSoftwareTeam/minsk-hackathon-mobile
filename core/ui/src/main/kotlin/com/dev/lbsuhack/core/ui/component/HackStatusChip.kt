@@ -30,7 +30,7 @@ enum class HackStatusEmphasis {
 @Composable
 fun HackStatusChip(
     text: String,
-    icon: ImageVector,
+    icon: ImageVector?,
     emphasis: HackStatusEmphasis,
     modifier: Modifier = Modifier,
 ) {
@@ -69,8 +69,10 @@ fun HackStatusChip(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
-        Icon(imageVector = icon, contentDescription = null, tint = content, modifier = Modifier.size(18.dp))
-        Spacer(modifier = Modifier.width(8.dp))
+        if (icon != null) {
+            Icon(imageVector = icon, contentDescription = null, tint = content, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+        }
         Text(
             text = text,
             style = MaterialTheme.typography.labelLarge,

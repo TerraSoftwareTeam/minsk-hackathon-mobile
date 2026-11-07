@@ -9,13 +9,14 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dev.lbsuhack.core.designsystem.theme.hack
 import com.dev.lbsuhack.core.ui.component.HackStatusChip
 import com.dev.lbsuhack.core.ui.component.HackStatusEmphasis
 import com.dev.lbsuhack.feature.activities.R
@@ -50,9 +51,10 @@ internal fun ActivityMetadata(
             )
         }
         if (isAuthor) {
+            HorizontalDivider(color = MaterialTheme.hack.gridLine)
             HackStatusChip(
                 text = stringResource(R.string.activity_author_tag),
-                icon = Icons.Outlined.Star,
+                icon = null,
                 emphasis = HackStatusEmphasis.ACTIVE,
                 modifier = Modifier.fillMaxWidth(),
             )
