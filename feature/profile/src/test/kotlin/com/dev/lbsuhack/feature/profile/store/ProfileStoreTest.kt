@@ -132,6 +132,20 @@ class ProfileStoreTest {
         }
 
     @Test
+    fun rapidDoubleToggleConvergesToTheLatestValue() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val store = createStore()
+
+            store.accept(ProfileStore.Intent.ToggleNotifications)
+            store.accept(ProfileStore.Intent.ToggleNotifications)
+            runCurrent()
+
+            assertTrue(store.state.notificationsEnabled)
+            assertTrue(notificationSettings.isEnabled.value)
+            store.dispose()
+        }
+
+    @Test
     fun toggleNotificationsKeepsTheStateAndPublishesMessageWhenTheOperationFails() =
         runTest(mainDispatcherRule.testDispatcher) {
             notificationSettings.succeeds = false

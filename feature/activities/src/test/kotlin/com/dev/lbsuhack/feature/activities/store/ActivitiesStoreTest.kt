@@ -8,6 +8,8 @@ import com.dev.lbsuhack.core.domain.DomainResult
 import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionState
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
+import com.dev.lbsuhack.feature.activities.domain.ActivityMutationFailure
+import com.dev.lbsuhack.feature.activities.domain.ActivityOperation
 import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
 import com.dev.lbsuhack.feature.activities.store.activities.ActivitiesStore
 import com.dev.lbsuhack.feature.activities.store.activities.ActivitiesStoreFactory
@@ -267,6 +269,41 @@ class ActivitiesStoreTest {
         assertEquals(0, store.state.activities.first { it.id == "act-2" }.likesCount)
         assertEquals(1, activityRepository.likeCalls)
         assertEquals(1, activityRepository.unlikeCalls)
+        store.dispose()
+    }
+
+    @Test
+    fun rapidVoteAndUnvoteEndsUpUnvoted() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore()
+
+        store.accept(ActivitiesStore.Intent.StartPolling)
+        runCurrent()
+
+        store.accept(ActivitiesStore.Intent.Vote("act-2"))
+        runCurrent()
+        assertTrue(store.state.activities.first { it.id == "act-2" }.hasVoted)
+
+        store.accept(ActivitiesStore.Intent.Unvote("act-2"))
+        runCurrent()
+        assertFalse(store.state.activities.first { it.id == "act-2" }.hasVoted)
+        assertEquals(1, activityRepository.voteCalls)
+        assertEquals(1, activityRepository.unvoteCalls)
+        store.dispose()
+    }
+
+    @Test
+    fun mutationFailureExposesError() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore()
+
+        store.accept(ActivitiesStore.Intent.StartPolling)
+        runCurrent()
+
+        activityRepository.emitMutationFailure(
+            ActivityMutationFailure("act-2", ActivityOperation.VOTE, DomainError.Network),
+        )
+        runCurrent()
+
+        assertNotNull(store.state.error)
         store.dispose()
     }
 

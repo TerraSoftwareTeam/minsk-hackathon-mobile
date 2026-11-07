@@ -26,8 +26,6 @@ interface ActivityDetailsStore :
         val loadState: ActivityLoadState = ActivityLoadState.Idle,
         val error: UiText? = null,
         val errorId: Long = 0L,
-        val isVoting: Boolean = false,
-        val isLiking: Boolean = false,
     ) {
         val isLoading: Boolean
             get() = loadState == ActivityLoadState.Loading

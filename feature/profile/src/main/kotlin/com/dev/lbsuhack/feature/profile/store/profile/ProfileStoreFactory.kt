@@ -21,6 +21,8 @@ import com.dev.lbsuhack.feature.profile.toUiText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class ProfileStoreFactory(
     private val storeFactory: StoreFactory,
@@ -69,7 +71,7 @@ class ProfileStoreFactory(
 
         private var loadJob: Job? = null
         private var editJob: Job? = null
-        private var toggleJob: Job? = null
+        private val toggleMutex = Mutex()
 
         override fun executeIntent(intent: ProfileStore.Intent) {
             when (intent) {
@@ -133,13 +135,15 @@ class ProfileStoreFactory(
         }
 
         private fun toggleNotifications() {
-            if (toggleJob?.isActive == true) return
-            toggleJob = scope.launch {
-                val enabled = !state().notificationsEnabled
-                if (setNotificationsEnabled(enabled)) {
-                    dispatch(Message.NotificationsChanged(enabled))
-                } else {
-                    publish(ProfileStore.Label.ShowMessage(UiText.Resource(R.string.profile_notifications_error)))
+            dispatch(Message.NotificationsChanged(!state().notificationsEnabled))
+            scope.launch {
+                toggleMutex.withLock {
+                    val target = state().notificationsEnabled
+                    if (setNotificationsEnabled(target)) return@withLock
+                    if (state().notificationsEnabled == target) {
+                        dispatch(Message.NotificationsChanged(!target))
+                        publish(ProfileStore.Label.ShowMessage(UiText.Resource(R.string.profile_notifications_error)))
+                    }
                 }
             }
         }

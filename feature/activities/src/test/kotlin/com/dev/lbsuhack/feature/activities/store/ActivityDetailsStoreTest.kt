@@ -5,6 +5,8 @@ import com.dev.lbsuhack.core.domain.DomainError
 import com.dev.lbsuhack.core.domain.DomainResult
 import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionState
+import com.dev.lbsuhack.feature.activities.domain.ActivityMutationFailure
+import com.dev.lbsuhack.feature.activities.domain.ActivityOperation
 import com.dev.lbsuhack.feature.activities.store.details.ActivityDetailsStore
 import com.dev.lbsuhack.feature.activities.store.details.ActivityDetailsStoreFactory
 import com.dev.lbsuhack.feature.activities.store.details.ActivityLoadState
@@ -140,6 +142,41 @@ class ActivityDetailsStoreTest {
 
         assertEquals(1, activityRepository.voteCalls)
         assertTrue(store.state.activity?.hasVoted == true)
+        store.dispose()
+    }
+
+    @Test
+    fun rapidVoteAndUnvoteEndsUpUnvoted() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore()
+
+        store.accept(ActivityDetailsStore.Intent.Load("act-2"))
+        runCurrent()
+
+        store.accept(ActivityDetailsStore.Intent.Vote)
+        runCurrent()
+        assertTrue(store.state.activity?.hasVoted == true)
+
+        store.accept(ActivityDetailsStore.Intent.Unvote)
+        runCurrent()
+        assertFalse(store.state.activity?.hasVoted == true)
+        assertEquals(1, activityRepository.voteCalls)
+        assertEquals(1, activityRepository.unvoteCalls)
+        store.dispose()
+    }
+
+    @Test
+    fun mutationFailureExposesError() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore()
+
+        store.accept(ActivityDetailsStore.Intent.Load("act-2"))
+        runCurrent()
+
+        activityRepository.emitMutationFailure(
+            ActivityMutationFailure("act-2", ActivityOperation.LIKE, DomainError.Network),
+        )
+        runCurrent()
+
+        assertNotNull(store.state.error)
         store.dispose()
     }
 

@@ -3,14 +3,7 @@ package com.dev.lbsuhack.feature.activities.store
 import com.dev.lbsuhack.core.domain.DomainError
 import com.dev.lbsuhack.core.localization.text.UiText
 import com.dev.lbsuhack.feature.activities.R
-
-internal enum class ActivityOperation {
-    CREATE,
-    VOTE,
-    LIKE,
-    DETAILS,
-    LIST,
-}
+import com.dev.lbsuhack.feature.activities.domain.ActivityOperation
 
 internal fun DomainError.toUiText(operation: ActivityOperation): UiText = when (this) {
     is DomainError.BusinessRule -> message?.let { UiText.Raw(it) } ?: UiText.Resource(R.string.activity_error_unknown)

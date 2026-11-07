@@ -1,9 +1,18 @@
 package com.dev.lbsuhack.feature.activities.domain
 
+import com.dev.lbsuhack.core.domain.DomainError
 import com.dev.lbsuhack.core.domain.DomainResult
 import kotlinx.coroutines.flow.Flow
 
+data class ActivityMutationFailure(
+    val eventId: String,
+    val operation: ActivityOperation,
+    val error: DomainError,
+)
+
 interface ActivityRepository {
+    val mutationFailures: Flow<ActivityMutationFailure>
+
     fun observeActivities(): Flow<List<ActivityProposal>>
     suspend fun refresh(): DomainResult<Unit>
     suspend fun getEventById(id: String): DomainResult<ActivityProposal>

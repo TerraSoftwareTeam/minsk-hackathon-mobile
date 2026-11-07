@@ -10,7 +10,7 @@ import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
 import com.dev.lbsuhack.feature.activities.domain.ActivityRepository
 import com.dev.lbsuhack.feature.activities.domain.ActivityScope
-import com.dev.lbsuhack.feature.activities.store.ActivityOperation
+import com.dev.lbsuhack.feature.activities.domain.ActivityOperation
 import com.dev.lbsuhack.feature.activities.store.toUiText
 import kotlinx.coroutines.launch
 

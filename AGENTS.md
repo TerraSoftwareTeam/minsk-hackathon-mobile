@@ -217,7 +217,8 @@ feature/<name>/src/main/kotlin/.../feature/<name>/
   domain/        models and repository interfaces (pure Kotlin, no use cases)
   presentation/  one subpackage per screen, ViewModel per screen
   store/         one subpackage per screen, Store contract and factory per screen
-  ui/            one subpackage per screen, Compose screens and components
+  ui/            one subpackage per screen (`<screen>/<Screen>Screen.kt`, `<screen>/component/`),
+                 optional feature-level shared UI in `ui/component/`
   navigation/    routes and NavigationInstaller
   di/            Koin module
 ```
@@ -225,6 +226,16 @@ feature/<name>/src/main/kotlin/.../feature/<name>/
 - Domain models must be pure Kotlin: no Android types, no `R`, no `UiText`.
 - `UiText` belongs to presentation/store state, not domain models.
 - UI must not contain business logic. Put it in the store or domain.
+- No monolithic UI files. Never dump multiple Composable functions, cards, forms,
+  pickers, banners, or dialogs into catch-all files (such as `*Components.kt`).
+- Decompose UI into single-concern files: each distinct component, section, card,
+  dialog, or sub-screen content view must live in its own dedicated file (one primary
+  Composable per file).
+- Screen UI structure: The screen entry Composable lives in
+  `ui/<screen>/<ScreenName>Screen.kt`. Subcomponents specific to that screen go into
+  `ui/<screen>/component/`, dialogs go into `ui/<screen>/dialog/` (or `ui/dialog/`),
+  and components reused across multiple screens within the feature go into
+  `ui/component/`.
 - Keep one public Koin module per feature: `val <name>Module = module { ... }`.
 - Use constructor injection. Do not use a service locator inside features.
 - One screen owns exactly one route, one `ViewModel`, and one `Store`. Stores
@@ -307,6 +318,9 @@ feature/<name>/src/main/kotlin/.../feature/<name>/
 - Components in `core:ui` take plain `String` text and callbacks, not
   `UiText`, `@StringRes`, domain models, or navigation. The caller owns
   localization and wiring.
+- Decompose screens into small, single-purpose components in dedicated files
+  under `ui/<screen>/component/`. Never bundle unrelated widgets into large
+  multi-component files.
 
 ### Design system and theming
 

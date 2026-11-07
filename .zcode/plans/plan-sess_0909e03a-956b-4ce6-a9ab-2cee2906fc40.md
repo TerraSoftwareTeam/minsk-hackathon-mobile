@@ -1,86 +1,84 @@
-# Исправление фичи profile: тумблер уведомлений и эффект нажатия
+# Оптимистичные обновления: кнопки голосования/лайка и тумблер уведомлений
 
 ## Context
 
-В профиле есть карточка-тумблер «Уведомления» (`NotificationsCard`). Две проблемы:
+Кнопки по всему приложению реагируют с задержкой, потому что UI обновляется только **после** ответа сети:
 
-1. **Тумблер ничего не делает.** Он меняет только локальный флаг в SharedPreferences (`profile_settings/notifications_enabled`), но не влияет на доставку пушей: токен устройства регистрируется на бэкенде (`POST/DELETE api/v1/device-token`) при логине в `PushTokenSync` независимо от флага. Эндпоинта «настроек уведомлений» в API нет — единственный реальный механизм вкл/выкл пушей это регистрация/дерегистрация device-token.
-2. **Корявый прямоугольный риппл.** `Row` в `NotificationsCard` имеет `Modifier.toggleable(...)` без `clip` — при нажатии подсветка выходит острым прямоугольником за скруглённые углы карточки (`ProfileCard` клипается `MaterialTheme.shapes.extraLarge`).
+- **feature:activities, список и детали** — `ActivityRepositoryImpl.mutate()` (строки 212–238): перед запросом ещё дергается `getEventById` (для PUPIL может вызвать полный `refresh()` = 2–3 round-trip), кэш обновляется только после ответа. Оба стора наблюдают `observeActivities()`, поэтому кнопка переворачивается на круг later. Стор-гуарды (`mutating` в списке, `voting`/`liking` в деталях) блокируют повторные нажатия до конца сети — быстрое «подписаться → отписаться» невозможно.
+- **feature:profile, тумблер уведомлений** — `ProfileStoreFactory.toggleNotifications()`: состояние меняется только после сетевого register/unregister device-token, гуард `toggleJob` блокирует перевыключение в полёте.
 
-**Решение (согласовано с пользователем):** тумблер реально вкл/выкл пуши через register/unregister device-token; флаг учитывается и при старте приложения. Эффект нажатия — скруглённый, внутри карточки.
+**Решение** — оптимистичные обновления с откатом и последовательной очередью сетевых операций:
+
+- Для activities — оптимистику делает **репозиторий** (единственный источник истины для обоих экранов): кэш переворачивается мгновенно, запрос уходит в фоновую очередь (по Mutex, порядок сохраняется), при неудаче — откат кэша + событие ошибки, которое сторы показывают снекбаром. Быстрое vote→unvote работает: каждая операция мгновенно переворачивает флаг, запросы исполняются по порядку, сервер сходится к последнему намерению.
+- Для уведомлений — оптимистику делает **стор** (UI-флаг): мгновенный `dispatch`, затем сеть «сходится к последнему значению» под Mutex; при неудаче — откат и снекбар.
 
 ## Изменения
 
-### 1. Контракт в core:domain (новые файлы)
+### 1. feature:activities — domain
 
-`core/domain/src/main/kotlin/com/dev/lbsuhack/core/domain/push/NotificationSettings.kt`:
+- Перенести `ActivityOperation` из `store/ActivityErrorText.kt` (там `internal enum`) в `domain/ActivityOperation.kt` — событие ошибки репозитория должно нести операцию для выбора текста снекбара.
+- В `domain/ActivityRepository.kt`: добавить
+  ```kotlin
+  data class ActivityMutationFailure(val eventId: String, val operation: ActivityOperation, val error: DomainError)
+  ```
+  и `val mutationFailures: Flow<ActivityMutationFailure>` в интерфейс.
+
+### 2. feature:activities — `ActivityRepositoryImpl.kt` (ядро фикса)
+
+- Добавить `mutationScope = CoroutineScope(SupervisorJob() + ioDispatcher)` и `MutableSharedFlow<ActivityMutationFailure>(extraBufferCapacity = 16)`.
+- `changeVote`/`changeLike` получают вторую трансформацию — флаговую, без ответа сервера:
+  - vote: `copy(hasVoted = true, votesCount = votesCount + 1, voters = voters + voterName)`;
+  - unvote: `copy(hasVoted = false, votesCount = (votesCount - 1).coerceAtLeast(0), voters = voters - voterName)`;
+  - like: `copy(likedByMe = true, likesCount = likesCount + 1)`; unlike — зеркально.
+- Новый `mutate`:
+  1. `prepareCache()`, `existing = getEventById(id)` (как сейчас; при тёплом кэше — мгновенно; Failure → вернуть Failure как сейчас).
+  2. Под `mutationMutex`: `mutations.incrementAndGet()`, применить флаговую трансформацию в кэш (`replaceOrAdd(optimistic)`) — оба экрана перерисуются мгновенно через `observeActivities()`.
+  3. Сразу вернуть `DomainResult.Success(optimistic)`.
+  4. `mutationScope.launch { mutationMutex.withLock { ... } }`: выполнить `safeCall { request() }`; затем под мьютексом: если текущий элемент кэша **не равен** optimistic (его перекрыла более новая операция) — ничего не писать; иначе при Success применить ответ сервера (`withVoteResult`/`withLikeResult`, как сейчас), при Error — **откат** к `existing` и `tryEmit(ActivityMutationFailure(...))`.
+  - Логика «применять только если кэш == мой optimistic» корректно обрабатывает очереди: vote→unvote даёт POST затем DELETE, финал = последний запрос; откат срабатывает только у последней операции цепочки, промежуточные сбои не дёргают UI.
+  - Инкремент `mutations` при optimistic-применении заодно защищает кэш от перезаписи параллельным `refresh()` (существующий механизм в `refresh()` строк 96–100, 138–142).
+
+### 3. feature:activities — сторы
+
+- `store/activities/ActivitiesStoreFactory.kt`: убрать гуард `mutating: MutableSet`; `act()` → `scope.launch { if (result is Failure) dispatch(Message.Failed(...)) }` (быстрый возврат). Добавить коллекцию `activityRepository.mutationFailures` → `dispatch(Message.Failed(error.toUiText(operation)))`. Существующие гуарды `hasVoted`/`likedByMe` теперь работают по оптимистичному состоянию = натуральный toggle.
+- `store/details/ActivityDetailsStoreFactory.kt`: то же в `act()`; удалить поля `voting`/`liking`, сообщения `VotingStarted/Finished/LikingStarted/Finished` и поля `isVoting`/`isLiking` из `ActivityDetailsStore.State` (UI их не потребляет — проверено). Добавить коллекцию `mutationFailures` → `Message.ActionFailed(...)`. Мгновенное обновление экрана деталей идёт через уже существующую подписку `observeActivities()` (строки 95–101).
+- Мапперы `withVoteResult`/`withLikeResult` (`data/EventMapper.kt`) не меняются.
+
+### 4. feature:profile — тумблер уведомлений
+
+`store/profile/ProfileStoreFactory.kt`, `toggleNotifications()`: убрать гуард `toggleJob`, сделать converge-to-latest:
 ```kotlin
-interface NotificationSettingsRepository {
-    val isEnabled: Flow<Boolean>
-    suspend fun setNotificationsEnabled(enabled: Boolean): Boolean
-}
-class ObserveNotificationsEnabledUseCase(private val repository: NotificationSettingsRepository) {
-    operator fun invoke(): Flow<Boolean> = repository.isEnabled
-}
-class SetNotificationsEnabledUseCase(private val repository: NotificationSettingsRepository) {
-    suspend operator fun invoke(enabled: Boolean): Boolean = repository.setNotificationsEnabled(enabled)
+private val toggleMutex = Mutex()
+
+private fun toggleNotifications() {
+    dispatch(Message.NotificationsChanged(!state().notificationsEnabled))  // мгновенный flip
+    scope.launch {
+        toggleMutex.withLock {
+            val target = state().notificationsEnabled
+            if (setNotificationsEnabled(target)) return@withLock
+            if (state().notificationsEnabled == target) {
+                dispatch(Message.NotificationsChanged(!target))
+                publish(ProfileStore.Label.ShowMessage(UiText.Resource(R.string.profile_notifications_error)))
+            }
+        }
+    }
 }
 ```
-
-`core/domain/src/main/kotlin/com/dev/lbsuhack/core/domain/push/PushTokenProvider.kt`:
-```kotlin
-interface PushTokenProvider {
-    suspend fun currentToken(): String?
-}
-```
-(реализация в app-модуле, где живёт Firebase — как `PushTokenSync` уже делает через `KolaNotificationManager.fetchPushToken`)
-
-### 2. Реализация в core:data
-
-Новый `core/data/src/main/kotlin/com/dev/lbsuhack/core/data/push/DefaultNotificationSettingsRepository.kt`:
-- Зависимости: `KeyValueStorage` (уже есть, строковый API), `PushTokenProvider`, `PushTokenRepository`, `CoroutineDispatcher = Dispatchers.IO`.
-- Флаг хранит в KeyValueStorage (`"notifications_enabled"` → `"true"/"false"`), `isEnabled` = `MutableStateFlow`, засеянный из хранилища.
-- `setNotificationsEnabled(true)`: взять токен у `PushTokenProvider` → `register(token)`; при успехе — сохранить флаг, обновить flow, вернуть `true`; иначе `false`.
-- `setNotificationsEnabled(false)`: аналогично через `unregister(token)`.
-- Регистрация в `core/data/di/DataModule.kt` (там уже регистрируются `PushTokenRepository` и его use cases): `single<NotificationSettingsRepository> { ... }` + `RegisterPushTokenUseCase`-подобные строки для двух новых use cases.
-
-### 3. app-модуль
-
-- Новый `app/src/main/kotlin/com/dev/lbsuhack/notification/KolaPushTokenProvider.kt`: `PushTokenProvider` поверх `KolaNotificationManager.fetchPushToken` (suspendCancellableCoroutine — тот же приём, что в `PushTokenSync.currentToken`).
-- `app/.../App.kt`: в `appModule` добавить `single<PushTokenProvider> { KolaPushTokenProvider() }`; в конструктор `PushTokenSync` добавить `notificationsEnabled = get()` (use case).
-- `app/.../notification/PushTokenSync.kt`: авто-регистрация токена гейтится флагом:
-  - `start()`: `combine(observeSession.state.map { (it as? SessionState.Authenticated)?.user?.id }.distinctUntilChanged(), notificationsEnabled())` — регистрировать токен только когда `userId != null && enabled`.
-  - `onNewToken(token)`: проверять `notificationsEnabled().first()` перед регистрацией.
-  - `beforeClear()` (логаут) — без изменений, unregister всегда.
-
-### 4. feature:profile
-
-- `domain/ProfileRepository.kt`: убрать `isNotificationsEnabled()` / `setNotificationsEnabled()`.
-- `data/ProfileRepositoryImpl.kt`: удалить `ProfilePreferences` и флаговые методы; контекст больше не нужен — убрать параметр `context` (и вторичный конструктор), обновить DI.
-- `store/profile/ProfileStoreFactory.kt`:
-  - конструктор: добавить `observeNotificationsEnabled: ObserveNotificationsEnabledUseCase`, `setNotificationsEnabled: SetNotificationsEnabledUseCase` (Koin подтянет через `singleOf(::ProfileStoreFactory)`);
-  - `load()` (два места, строки ~85 и ~103): вместо `profileRepository.isNotificationsEnabled()` → `observeNotificationsEnabled().first()`;
-  - `toggleNotifications()`: `val ok = setNotificationsEnabled(enabled)`; при `true` — `dispatch(Message.NotificationsChanged(enabled))`; при `false` — состояние не менять, опубликовать `Label.ShowMessage` с новой строкой `profile_notifications_error` («Не удалось изменить настройки уведомлений»).
-- `res/values/strings.xml`: добавить `profile_notifications_error`.
-- `di/ProfileModule.kt`: убрать `androidContext()` из `ProfileRepositoryImpl`.
-- `ui/profile/component/NotificationsCard.kt`: добавить `.clip(MaterialTheme.shapes.extraLarge)` перед `.toggleable(...)` на `Row` — риппл станет скруглённым и не выйдет за углы карточки.
+Быстрое двойное переключение → мгновенные flip'ы, один-два сетевых вызова по порядку, финал = последнее значение. Контракт `SetNotificationsEnabledUseCase` и `DefaultNotificationSettingsRepository` не меняются.
 
 ### 5. Тесты
 
-`feature/profile/src/test/.../store/ProfileStoreTest.kt`:
-- `FakeProfileRepository` — убрать флаговые методы.
-- Добавить `FakeNotificationSettingsRepository` (внутри теста): `MutableStateFlow<Boolean>`, переключаемая «успешность» операции; в `createStore()` передать реальные `ObserveNotificationsEnabledUseCase` / `SetNotificationsEnabledUseCase` над фейком.
-- Обновить тесты тумблера (~строка 117) и добавить тест: операция не удалась → состояние не изменилось + опубликован `Label.ShowMessage`.
+- `util/FakeActivityRepository.kt`: если `voteResult`/`unvoteResult`/... = Failure → применить optimistic-трансформацию к фейковому флоу, вернуть Success и эмитнуть `ActivityMutationFailure` (имитация нового контракта). Добавить `MutableSharedFlow` в фейк.
+- `ActivitiesStoreTest` / `ActivityDetailsStoreTest`: обновить failure-тесты (ошибка теперь асинхронная — через flow); добавить тесты: (а) vote→unvote подряд → финально `hasVoted = false`, (б) network-failure → состояние откатилось + ошибка в state (errorId bump).
+- `ProfileStoreTest`: существующие toggle-тесты проходят как есть (после `runCurrent`); добавить тест двойного переключения подряд → финальное значение = исходное, фейковый флаг сходится.
 
-## Ограничения по AGENTS.md
+## Ограничения
 
-- Никаких комментариев в коде, никаких новых зависимостей.
-- Команды только module-scoped: `:feature:profile:*`, `:core:data:*`, `:app:compileDebugKotlin`. Глобальный сбор не запускаю.
-- Контрактное изменение: `ProfileRepository` теряет два метода (меняется только внутри feature:profile + его тесты); новые интерфейсы в core:domain / core:data — в рамках правила «core repository consumed through narrow use cases».
+- Без новых зависимостей, без комментариев в коде. Только module-scoped команды (`:feature:activities:*`, `:feature:profile:*`). Глобальный сбор — интегратору.
+- UI-компоненты не меняются (перерисовка идёт от state/flow). Create-экран не трогаем (там честный прогресс и нужен серверный id).
 
 ## Верификация
 
-1. `./gradlew :feature:profile:testDebugUnitTest` — тесты store, включая новые сценарии тумблера.
-2. `./gradlew :feature:profile:compileDebugKotlin` и `./gradlew :core:data:compileDebugKotlin`.
-3. `./gradlew :app:compileDebugKotlin` — сборка app-модуля с изменённым `PushTokenSync`/`App.kt`.
-4. Ручная проверка пользователем: выключить тумблер при сети → пуши перестают приходить (DELETE device-token), при обрыве сети — переключатель не меняется, появляется снекбар с ошибкой; после перезапуска приложения с выключенным тумблером токен не регистрируется заново.
+1. `./gradlew :feature:activities:testDebugUnitTest :feature:profile:testDebugUnitTest` — все тесты зелёные.
+2. `./gradlew :feature:activities:compileDebugKotlin :feature:profile:compileDebugKotlin`.
+3. Ручная проверка: тап по стрелке/кнопке «Иду» — флаг и счётчик меняются мгновенно; быстрое «Иду → Отмена» подряд — корректный финал; самолётный режим — откат + снекбар; тумблер уведомлений — мгновенный Switch, при обрыве сети откат и снекбар.

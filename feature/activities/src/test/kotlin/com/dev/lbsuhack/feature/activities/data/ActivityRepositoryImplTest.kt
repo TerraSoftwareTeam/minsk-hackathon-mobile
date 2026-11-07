@@ -13,12 +13,15 @@ import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import com.dev.lbsuhack.core.network.client.AppHttpClientFactory
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class ActivityRepositoryImplTest {
 
     private val json = AppHttpClientFactory.defaultJson
@@ -422,6 +425,7 @@ class ActivityRepositoryImplTest {
             val repository = ActivityRepositoryImpl(
                 client,
                 observeSession = com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase(session),
+                ioDispatcher = StandardTestDispatcher(testScheduler),
             )
             repository.refresh()
             assertTrue(!repository.observeActivities().first().single().isMine)
@@ -438,6 +442,7 @@ class ActivityRepositoryImplTest {
             val unliked = (repository.unlike("e1") as com.dev.lbsuhack.core.domain.DomainResult.Success).value
             assertEquals(2, unliked.likesCount)
             assertTrue(!unliked.likedByMe)
+            advanceUntilIdle()
             assertEquals(1, repository.observeActivities().first().single().votesCount)
         }
         assertTrue("DELETE /api/v1/events/e1/vote" in calls)
@@ -618,6 +623,7 @@ class ActivityRepositoryImplTest {
             val repository = ActivityRepositoryImpl(
                 client,
                 observeSession = com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase(session),
+                ioDispatcher = StandardTestDispatcher(testScheduler),
             )
             repository.refresh()
             val voteDeferred = async { repository.vote("e-sync") }
@@ -626,6 +632,7 @@ class ActivityRepositoryImplTest {
             val likeRes = likeDeferred.await()
             assertTrue(voteRes is com.dev.lbsuhack.core.domain.DomainResult.Success)
             assertTrue(likeRes is com.dev.lbsuhack.core.domain.DomainResult.Success)
+            advanceUntilIdle()
             val finalItem = repository.observeActivities().first().first { it.id == "e-sync" }
             assertTrue(finalItem.hasVoted)
             assertTrue(finalItem.likedByMe)

@@ -12,7 +12,7 @@ import com.dev.lbsuhack.core.domain.session.SessionUser
 import com.dev.lbsuhack.core.localization.text.UiText
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.domain.ActivityRepository
-import com.dev.lbsuhack.feature.activities.store.ActivityOperation
+import com.dev.lbsuhack.feature.activities.domain.ActivityOperation
 import com.dev.lbsuhack.feature.activities.store.toUiText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -44,10 +44,6 @@ class ActivityDetailsStoreFactory(
         data object ActivityRemoved : Message
         data class ActionFailed(val error: UiText) : Message
         data class UserUpdated(val user: SessionUser?) : Message
-        data object VotingStarted : Message
-        data object VotingFinished : Message
-        data object LikingStarted : Message
-        data object LikingFinished : Message
     }
 
     private inner class ExecutorImpl :
@@ -58,8 +54,7 @@ class ActivityDetailsStoreFactory(
         private var sessionJob: Job? = null
         private var pollingJob: Job? = null
         private val refreshMutex = Mutex()
-        private var voting = false
-        private var liking = false
+        private var mutationFailuresObserved = false
 
         @Volatile
         private var activityInFeed = false
@@ -83,6 +78,7 @@ class ActivityDetailsStoreFactory(
 
         private fun load(activityId: String) {
             observeSession()
+            observeMutationFailures()
             loadJob?.cancel()
             loadJob = scope.launch {
                 dispatch(Message.Loading)
@@ -173,48 +169,47 @@ class ActivityDetailsStoreFactory(
             val activity = state().activity ?: return
             if (!state().canInteract) return
             if (!activity.canChangeVote || activity.hasVoted) return
-            act(isVote = true, ActivityOperation.VOTE) { activityRepository.vote(it) }
+            act(ActivityOperation.VOTE) { activityRepository.vote(it) }
         }
 
         private fun unvote() {
             val activity = state().activity ?: return
             if (!state().canInteract) return
             if (!activity.hasVoted) return
-            act(isVote = true, ActivityOperation.VOTE) { activityRepository.unvote(it) }
+            act(ActivityOperation.VOTE) { activityRepository.unvote(it) }
         }
 
         private fun like() {
             val activity = state().activity ?: return
             if (!state().canInteract || !activity.canLike || activity.likedByMe) return
-            act(isVote = false, ActivityOperation.LIKE) { activityRepository.like(it) }
+            act(ActivityOperation.LIKE) { activityRepository.like(it) }
         }
 
         private fun unlike() {
             val activity = state().activity ?: return
             if (!state().canInteract || !activity.canLike || !activity.likedByMe) return
-            act(isVote = false, ActivityOperation.LIKE) { activityRepository.unlike(it) }
+            act(ActivityOperation.LIKE) { activityRepository.unlike(it) }
         }
 
         private fun act(
-            isVote: Boolean,
             operation: ActivityOperation,
             action: suspend (String) -> DomainResult<ActivityProposal>,
         ) {
-            val activity = state().activity ?: return
-            if (isVote && voting) return
-            if (!isVote && liking) return
-            if (isVote) voting = true else liking = true
             dispatch(Message.ClearError)
-            dispatch(if (isVote) Message.VotingStarted else Message.LikingStarted)
             scope.launch {
-                try {
-                    when (val result = action(activity.id)) {
-                        is DomainResult.Success -> dispatch(Message.Loaded(result.value))
-                        is DomainResult.Failure -> dispatch(Message.ActionFailed(result.error.toUiText(operation)))
-                    }
-                } finally {
-                    dispatch(if (isVote) Message.VotingFinished else Message.LikingFinished)
-                    if (isVote) voting = false else liking = false
+                val result = action(state().activity?.id ?: return@launch)
+                if (result is DomainResult.Failure) {
+                    dispatch(Message.ActionFailed(result.error.toUiText(operation)))
+                }
+            }
+        }
+
+        private fun observeMutationFailures() {
+            if (mutationFailuresObserved) return
+            mutationFailuresObserved = true
+            scope.launch {
+                activityRepository.mutationFailures.collect { failure ->
+                    dispatch(Message.ActionFailed(failure.error.toUiText(failure.operation)))
                 }
             }
         }
@@ -230,10 +225,6 @@ class ActivityDetailsStoreFactory(
                 Message.ActivityRemoved -> copy(activity = null, loadState = ActivityLoadState.NotFound)
                 is Message.ActionFailed -> copy(error = msg.error, errorId = errorId + 1)
                 is Message.UserUpdated -> copy(currentUser = msg.user)
-                Message.VotingStarted -> copy(isVoting = true)
-                Message.VotingFinished -> copy(isVoting = false)
-                Message.LikingStarted -> copy(isLiking = true)
-                Message.LikingFinished -> copy(isLiking = false)
             }
     }
 }

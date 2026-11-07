@@ -13,7 +13,7 @@ import com.dev.lbsuhack.core.localization.text.UiText
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.domain.ActivityRepository
-import com.dev.lbsuhack.feature.activities.store.ActivityOperation
+import com.dev.lbsuhack.feature.activities.domain.ActivityOperation
 import com.dev.lbsuhack.feature.activities.store.toUiText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -52,10 +52,10 @@ class ActivitiesStoreFactory(
         CoroutineExecutor<ActivitiesStore.Intent, Nothing, ActivitiesStore.State, Message, ActivitiesStore.Label>() {
 
         private var observing = false
+        private var mutationFailuresObserved = false
         private var refreshJob: Job? = null
         private var pollingJob: Job? = null
         private val refreshMutex = Mutex()
-        private val mutating = mutableSetOf<String>()
 
         override fun executeIntent(intent: ActivitiesStore.Intent) {
             when (intent) {
@@ -86,6 +86,7 @@ class ActivitiesStoreFactory(
         private fun observe() {
             if (observing) return
             observing = true
+            observeMutationFailures()
             scope.launch {
                 observeSessionUseCase.state.collectLatest { sessionState ->
                     val user = (sessionState as? SessionState.Authenticated)?.user
@@ -178,16 +179,21 @@ class ActivitiesStoreFactory(
             operation: ActivityOperation,
             action: suspend (String) -> DomainResult<*>,
         ) {
-            if (!mutating.add(activityId)) return
             dispatch(Message.ClearError)
             scope.launch {
-                try {
-                    val result = action(activityId)
-                    if (result is DomainResult.Failure) {
-                        dispatch(Message.Failed(result.error.toUiText(operation)))
-                    }
-                } finally {
-                    mutating.remove(activityId)
+                val result = action(activityId)
+                if (result is DomainResult.Failure) {
+                    dispatch(Message.Failed(result.error.toUiText(operation)))
+                }
+            }
+        }
+
+        private fun observeMutationFailures() {
+            if (mutationFailuresObserved) return
+            mutationFailuresObserved = true
+            scope.launch {
+                activityRepository.mutationFailures.collect { failure ->
+                    dispatch(Message.Failed(failure.error.toUiText(failure.operation)))
                 }
             }
         }

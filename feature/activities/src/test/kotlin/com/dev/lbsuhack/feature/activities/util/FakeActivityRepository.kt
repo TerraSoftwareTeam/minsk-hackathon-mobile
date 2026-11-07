@@ -3,12 +3,16 @@ package com.dev.lbsuhack.feature.activities.util
 import com.dev.lbsuhack.core.domain.DomainError
 import com.dev.lbsuhack.core.domain.DomainResult
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
+import com.dev.lbsuhack.feature.activities.domain.ActivityMutationFailure
+import com.dev.lbsuhack.feature.activities.domain.ActivityOperation
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.domain.ActivityRepository
 import com.dev.lbsuhack.feature.activities.domain.ActivityScope
 import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
@@ -34,6 +38,10 @@ class FakeActivityRepository(
     var unlikeCalls = 0
 
     private val activities = MutableStateFlow(initialActivities)
+
+    private val failures = MutableSharedFlow<ActivityMutationFailure>(extraBufferCapacity = 16)
+
+    override val mutationFailures: Flow<ActivityMutationFailure> = failures.asSharedFlow()
 
     override fun observeActivities(): Flow<List<ActivityProposal>> = activities.asStateFlow()
 
@@ -66,7 +74,7 @@ class FakeActivityRepository(
     override suspend fun unvote(eventId: String): DomainResult<ActivityProposal> {
         unvoteCalls++
         unvoteResult?.let { return it }
-        return change(eventId) { it.copy(votesCount = it.votesCount - 1, hasVoted = false) }
+        return change(eventId) { it.copy(votesCount = (it.votesCount - 1).coerceAtLeast(0), hasVoted = false) }
     }
 
     override suspend fun like(eventId: String): DomainResult<ActivityProposal> {
@@ -78,7 +86,7 @@ class FakeActivityRepository(
     override suspend fun unlike(eventId: String): DomainResult<ActivityProposal> {
         unlikeCalls++
         unlikeResult?.let { return it }
-        return change(eventId) { it.copy(likesCount = it.likesCount - 1, likedByMe = false) }
+        return change(eventId) { it.copy(likesCount = (it.likesCount - 1).coerceAtLeast(0), likedByMe = false) }
     }
 
     override suspend fun createEvent(
@@ -109,6 +117,10 @@ class FakeActivityRepository(
 
     fun replace(activities: List<ActivityProposal>) {
         this.activities.value = activities
+    }
+
+    fun emitMutationFailure(failure: ActivityMutationFailure) {
+        failures.tryEmit(failure)
     }
 
     private fun change(eventId: String, transform: (ActivityProposal) -> ActivityProposal): DomainResult<ActivityProposal> {

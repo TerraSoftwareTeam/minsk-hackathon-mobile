@@ -6,7 +6,7 @@ import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
 import com.dev.lbsuhack.feature.activities.domain.ActivityScope
 import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
-import com.dev.lbsuhack.feature.activities.store.ActivityOperation
+import com.dev.lbsuhack.feature.activities.domain.ActivityOperation
 import com.dev.lbsuhack.feature.activities.store.activities.ActivityTab
 import com.dev.lbsuhack.feature.activities.store.toUiText
 import org.junit.Assert.assertEquals
