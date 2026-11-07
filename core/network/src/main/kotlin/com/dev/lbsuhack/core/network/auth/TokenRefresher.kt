@@ -4,7 +4,9 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -36,6 +38,7 @@ class TokenRefresher(
 
         return try {
             val response = unauthenticatedClientProvider().post(refreshPath) {
+                contentType(ContentType.Application.Json)
                 setBody(RefreshRequest(refreshToken = refreshToken))
             }
 

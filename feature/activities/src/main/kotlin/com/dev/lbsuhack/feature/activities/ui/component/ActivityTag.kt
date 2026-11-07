@@ -25,7 +25,7 @@ internal fun ActivityTag(text: String, modifier: Modifier = Modifier, icon: Imag
     Row(
         modifier = modifier
             .background(MaterialTheme.colorScheme.surfaceContainerHigh, shape)
-            .border(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f), shape)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)
             .padding(horizontal = 12.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,

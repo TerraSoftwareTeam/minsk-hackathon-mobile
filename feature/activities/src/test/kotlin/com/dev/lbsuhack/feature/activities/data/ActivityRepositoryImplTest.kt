@@ -11,6 +11,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import com.dev.lbsuhack.core.network.client.AppHttpClientFactory
@@ -281,6 +282,7 @@ class ActivityRepositoryImplTest {
             assertTrue(request.body is io.ktor.client.request.forms.MultiPartFormDataContent)
             respond(fixture, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
         }) {
+            expectSuccess = true
             install(ContentNegotiation) { json(json) }
         }.use { client ->
             val repository = ActivityRepositoryImpl(client, imageSource = ActivityImageSource {
@@ -348,6 +350,7 @@ class ActivityRepositoryImplTest {
             }
             respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
         }) {
+            expectSuccess = true
             install(ContentNegotiation) { json(json) }
         }.use { client ->
             val repository = ActivityRepositoryImpl(
@@ -413,6 +416,7 @@ class ActivityRepositoryImplTest {
             }
             respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
         }) {
+            expectSuccess = true
             install(ContentNegotiation) { json(json) }
         }.use { client ->
             val repository = ActivityRepositoryImpl(
@@ -439,5 +443,194 @@ class ActivityRepositoryImplTest {
         assertTrue("DELETE /api/v1/events/e1/vote" in calls)
         assertTrue("PUT /api/v1/events/e1/like" in calls)
         assertTrue("DELETE /api/v1/events/e1/like" in calls)
+    }
+
+    @Test
+    fun getEventByIdReturnsForbiddenOn403() = runTest {
+        HttpClient(MockEngine {
+            respond(
+                content = """{"message": "Forbidden"}""",
+                status = HttpStatusCode.Forbidden,
+                headers = headersOf(HttpHeaders.ContentType, "application/json"),
+            )
+        }) {
+            expectSuccess = true
+            install(ContentNegotiation) { json(json) }
+        }.use { client ->
+            val repository = ActivityRepositoryImpl(client)
+            val result = repository.getEventById("forbidden-id")
+            assertTrue(result is com.dev.lbsuhack.core.domain.DomainResult.Failure)
+            assertEquals(
+                com.dev.lbsuhack.core.domain.DomainError.Forbidden,
+                (result as com.dev.lbsuhack.core.domain.DomainResult.Failure).error,
+            )
+        }
+    }
+
+    @Test
+    fun getEventByIdPreservesVoterAndInitiatorStateOnDirectFetch() = runTest {
+        val eventJson = """
+            {
+              "id": "event-10", "name": "Олимпиада", "description": "По математике", "scope": "SCHOOL",
+              "category": "INTELLECTUAL", "status": "ON_VOTE", "declineReason": null, "voteThreshold": 20,
+              "startsAt": null, "votingClosesAt": "2026-12-01T00:00:00.000Z", "successProbability": 0.8,
+              "imageUrl": null, "likesCount": 5, "initiator": {"name": "Анна", "surname": "Иванова"},
+              "teacher": null, "voters": [{"name": "Анна", "surname": "Иванова"}, {"name": "Борис", "surname": "Петров"}],
+              "votesCount": 2, "createdAt": "2026-11-01T00:00:00.000Z", "updatedAt": "2026-11-01T00:00:00.000Z"
+            }
+        """.trimIndent()
+        val session = com.dev.lbsuhack.feature.activities.util.FakeSessionRepository(
+            com.dev.lbsuhack.core.domain.session.SessionState.Authenticated(
+                com.dev.lbsuhack.core.domain.session.SessionUser(
+                    id = "user-1", name = "Анна", surname = "Иванова", role = com.dev.lbsuhack.core.domain.model.UserRole.PUPIL,
+                ),
+            ),
+        )
+        HttpClient(MockEngine { request ->
+            when (request.url.encodedPath) {
+                "/api/v1/events/voting" -> respond("[]", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                "/api/v1/events/my" -> respond("[]", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                "/api/v1/events/event-10" -> respond(eventJson, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                else -> respond("Not found", HttpStatusCode.NotFound)
+            }
+        }) {
+            expectSuccess = true
+            install(ContentNegotiation) { json(json) }
+        }.use { client ->
+            val repository = ActivityRepositoryImpl(
+                client,
+                observeSession = com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase(session),
+            )
+            val result = repository.getEventById("event-10")
+            assertTrue(result is com.dev.lbsuhack.core.domain.DomainResult.Success)
+            val proposal = (result as com.dev.lbsuhack.core.domain.DomainResult.Success).value
+            assertTrue(proposal.isMine)
+            assertTrue(proposal.hasVoted)
+            assertEquals("event-10", proposal.id)
+        }
+    }
+
+    @Test
+    fun refreshKeepsCachedItemsWhenOneSourceFails() = runTest {
+        var failVoting = false
+        val votingEvent = """
+            {
+              "id": "v-1", "name": "Клуб", "description": null, "scope": "SCHOOL", "category": "OTHER",
+              "status": "ON_VOTE", "declineReason": null, "voteThreshold": 10, "startsAt": null,
+              "votingClosesAt": "2026-12-01T00:00:00.000Z", "successProbability": 0.5, "imageUrl": null,
+              "likesCount": 0, "initiator": {"name": "А", "surname": "Б"}, "teacher": null,
+              "voters": [], "votesCount": 0, "createdAt": "2026-11-01T00:00:00.000Z",
+              "updatedAt": "2026-11-01T00:00:00.000Z", "hasVoted": false, "likedByMe": false
+            }
+        """.trimIndent()
+        val myEvent = """
+            {
+              "id": "m-1", "name": "Моё событие", "description": null, "scope": "CLASS", "category": "SPORTS",
+              "status": "ON_VOTE", "declineReason": null, "voteThreshold": 10, "startsAt": null,
+              "votingClosesAt": "2026-12-01T00:00:00.000Z", "successProbability": 0.5, "imageUrl": null,
+              "likesCount": 0, "initiator": {"name": "Я", "surname": "Автор"}, "teacher": null,
+              "voters": [], "votesCount": 0, "createdAt": "2026-11-02T00:00:00.000Z",
+              "updatedAt": "2026-11-02T00:00:00.000Z", "hasVoted": false, "likedByMe": false
+            }
+        """.trimIndent()
+        val session = com.dev.lbsuhack.feature.activities.util.FakeSessionRepository(
+            com.dev.lbsuhack.core.domain.session.SessionState.Authenticated(
+                com.dev.lbsuhack.core.domain.session.SessionUser(
+                    id = "me", name = "Я", surname = "Автор", role = com.dev.lbsuhack.core.domain.model.UserRole.PUPIL,
+                ),
+            ),
+        )
+        HttpClient(MockEngine { request ->
+            val headers = headersOf(HttpHeaders.ContentType, "application/json")
+            when (request.url.encodedPath) {
+                "/api/v1/events/voting" -> {
+                    if (failVoting) {
+                        respond("Server error", HttpStatusCode.InternalServerError)
+                    } else {
+                        respond("[$votingEvent]", HttpStatusCode.OK, headers)
+                    }
+                }
+                "/api/v1/events/my" -> respond("[$myEvent]", HttpStatusCode.OK, headers)
+                else -> respond("Not found", HttpStatusCode.NotFound)
+            }
+        }) {
+            expectSuccess = true
+            install(ContentNegotiation) { json(json) }
+        }.use { client ->
+            val repository = ActivityRepositoryImpl(
+                client,
+                observeSession = com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase(session),
+            )
+            val firstRefresh = repository.refresh()
+            assertTrue(firstRefresh is com.dev.lbsuhack.core.domain.DomainResult.Success)
+            assertEquals(2, repository.observeActivities().first().size)
+
+            failVoting = true
+            val secondRefresh = repository.refresh()
+            assertTrue(secondRefresh is com.dev.lbsuhack.core.domain.DomainResult.Failure)
+            val activities = repository.observeActivities().first()
+            assertEquals(2, activities.size)
+            assertTrue(activities.any { it.id == "v-1" })
+            assertTrue(activities.any { it.id == "m-1" })
+        }
+    }
+
+    @Test
+    fun concurrentVoteAndLikeExecuteSafely() = runTest {
+        val event = """
+            {
+              "id": "e-sync", "name": "Синхронизация", "description": null, "scope": "CLASS", "category": "SPORTS",
+              "status": "ON_VOTE", "declineReason": null, "voteThreshold": 10, "startsAt": null,
+              "votingClosesAt": "2026-12-01T00:00:00.000Z", "successProbability": 0.5, "imageUrl": null,
+              "likesCount": 1, "initiator": {"name": "А", "surname": "Б"}, "teacher": null,
+              "voters": [], "votesCount": 0, "createdAt": "2026-11-01T00:00:00.000Z",
+              "updatedAt": "2026-11-01T00:00:00.000Z", "hasVoted": false, "likedByMe": false
+            }
+        """.trimIndent()
+        val session = com.dev.lbsuhack.feature.activities.util.FakeSessionRepository(
+            com.dev.lbsuhack.core.domain.session.SessionState.Authenticated(
+                com.dev.lbsuhack.core.domain.session.SessionUser(
+                    id = "me", name = "Я", surname = "Ученик", role = com.dev.lbsuhack.core.domain.model.UserRole.PUPIL,
+                ),
+            ),
+        )
+        HttpClient(MockEngine { request ->
+            val headers = headersOf(HttpHeaders.ContentType, "application/json")
+            when (request.url.encodedPath) {
+                "/api/v1/events/voting" -> respond("[$event]", HttpStatusCode.OK, headers)
+                "/api/v1/events/my" -> respond("[]", HttpStatusCode.OK, headers)
+                "/api/v1/events/e-sync/vote" -> respond(
+                    """{"eventId": "e-sync", "votesCount": 1, "voteThreshold": 10, "status": "ON_VOTE"}""",
+                    HttpStatusCode.OK,
+                    headers,
+                )
+                "/api/v1/events/e-sync/like" -> respond(
+                    """{"eventId": "e-sync", "liked": true, "likesCount": 2}""",
+                    HttpStatusCode.OK,
+                    headers,
+                )
+                else -> respond("Not found", HttpStatusCode.NotFound)
+            }
+        }) {
+            expectSuccess = true
+            install(ContentNegotiation) { json(json) }
+        }.use { client ->
+            val repository = ActivityRepositoryImpl(
+                client,
+                observeSession = com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase(session),
+            )
+            repository.refresh()
+            val voteDeferred = async { repository.vote("e-sync") }
+            val likeDeferred = async { repository.like("e-sync") }
+            val voteRes = voteDeferred.await()
+            val likeRes = likeDeferred.await()
+            assertTrue(voteRes is com.dev.lbsuhack.core.domain.DomainResult.Success)
+            assertTrue(likeRes is com.dev.lbsuhack.core.domain.DomainResult.Success)
+            val finalItem = repository.observeActivities().first().first { it.id == "e-sync" }
+            assertTrue(finalItem.hasVoted)
+            assertTrue(finalItem.likedByMe)
+            assertEquals(1, finalItem.votesCount)
+            assertEquals(2, finalItem.likesCount)
+        }
     }
 }

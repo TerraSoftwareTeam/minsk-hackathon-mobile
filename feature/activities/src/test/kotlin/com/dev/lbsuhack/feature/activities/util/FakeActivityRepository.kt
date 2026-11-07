@@ -18,11 +18,24 @@ class FakeActivityRepository(
 
     var refreshResult: DomainResult<Unit> = DomainResult.Success(Unit)
     var createResult: DomainResult<ActivityProposal>? = null
+    var getEventResult: DomainResult<ActivityProposal>? = null
+    var photoResult: DomainResult<ActivityProposal>? = null
+    var voteResult: DomainResult<ActivityProposal>? = null
+    var unvoteResult: DomainResult<ActivityProposal>? = null
+    var likeResult: DomainResult<ActivityProposal>? = null
+    var unlikeResult: DomainResult<ActivityProposal>? = null
+
+    var refreshCalls = 0
+    var createCalls = 0
+    var photoCalls = 0
+    var voteCalls = 0
+    var unvoteCalls = 0
+    var likeCalls = 0
+    var unlikeCalls = 0
+
     private val activities = MutableStateFlow(initialActivities)
 
     override fun observeActivities(): Flow<List<ActivityProposal>> = activities.asStateFlow()
-
-    var refreshCalls = 0
 
     override suspend fun refresh(): DomainResult<Unit> {
         refreshCalls++
@@ -30,6 +43,7 @@ class FakeActivityRepository(
     }
 
     override suspend fun getEventById(id: String): DomainResult<ActivityProposal> {
+        getEventResult?.let { return it }
         val found = activities.value.find { it.id == id }
         return if (found != null) {
             DomainResult.Success(found)
@@ -38,60 +52,33 @@ class FakeActivityRepository(
         }
     }
 
-    var photoResult: DomainResult<ActivityProposal>? = null
-    var createCalls = 0
-    var photoCalls = 0
-
     override suspend fun uploadPhoto(eventId: String, photoUri: String): DomainResult<ActivityProposal> {
         photoCalls++
         return photoResult ?: getEventById(eventId)
     }
 
     override suspend fun vote(eventId: String): DomainResult<ActivityProposal> {
-        var updated: ActivityProposal? = null
-        activities.update { list ->
-            list.map { item ->
-                if (item.id == eventId) {
-                    val next = item.copy(
-                        votesCount = item.votesCount + 1,
-                        hasVoted = true,
-                    )
-                    updated = next
-                    next
-                } else {
-                    item
-                }
-            }
-        }
-        return updated?.let { DomainResult.Success(it) }
-            ?: DomainResult.Failure(DomainError.NotFound)
+        voteCalls++
+        voteResult?.let { return it }
+        return change(eventId) { it.copy(votesCount = it.votesCount + 1, hasVoted = true) }
     }
-
-    var unvoteCalls = 0
-    var likeCalls = 0
-    var unlikeCalls = 0
 
     override suspend fun unvote(eventId: String): DomainResult<ActivityProposal> {
         unvoteCalls++
+        unvoteResult?.let { return it }
         return change(eventId) { it.copy(votesCount = it.votesCount - 1, hasVoted = false) }
     }
 
     override suspend fun like(eventId: String): DomainResult<ActivityProposal> {
         likeCalls++
+        likeResult?.let { return it }
         return change(eventId) { it.copy(likesCount = it.likesCount + 1, likedByMe = true) }
     }
 
     override suspend fun unlike(eventId: String): DomainResult<ActivityProposal> {
         unlikeCalls++
+        unlikeResult?.let { return it }
         return change(eventId) { it.copy(likesCount = it.likesCount - 1, likedByMe = false) }
-    }
-
-    private fun change(eventId: String, transform: (ActivityProposal) -> ActivityProposal): DomainResult<ActivityProposal> {
-        var updated: ActivityProposal? = null
-        activities.update { list ->
-            list.map { item -> if (item.id == eventId) transform(item).also { updated = it } else item }
-        }
-        return updated?.let { DomainResult.Success(it) } ?: DomainResult.Failure(DomainError.NotFound)
     }
 
     override suspend fun createEvent(
@@ -104,7 +91,7 @@ class FakeActivityRepository(
         createCalls++
         createResult?.let { return it }
         val proposal = ActivityProposal(
-            id = "created-id",
+            id = CREATED_ID,
             title = name,
             description = description,
             category = category,
@@ -113,11 +100,26 @@ class FakeActivityRepository(
             voteThreshold = voteThreshold,
             votesCount = 0,
             hasVoted = false,
-            authorId = "101",
             authorName = "Никита Ковалев",
-            authorClass = "10-А",
+            isMine = true,
         )
         activities.update { listOf(proposal) + it }
         return DomainResult.Success(proposal)
+    }
+
+    fun replace(activities: List<ActivityProposal>) {
+        this.activities.value = activities
+    }
+
+    private fun change(eventId: String, transform: (ActivityProposal) -> ActivityProposal): DomainResult<ActivityProposal> {
+        var updated: ActivityProposal? = null
+        activities.update { list ->
+            list.map { item -> if (item.id == eventId) transform(item).also { updated = it } else item }
+        }
+        return updated?.let { DomainResult.Success(it) } ?: DomainResult.Failure(DomainError.NotFound)
+    }
+
+    companion object {
+        const val CREATED_ID = "created-id"
     }
 }

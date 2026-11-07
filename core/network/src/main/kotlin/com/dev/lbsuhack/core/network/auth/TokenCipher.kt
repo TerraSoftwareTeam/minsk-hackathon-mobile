@@ -8,7 +8,14 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
-internal class TokenCipher {
+interface TokenCipher {
+
+    fun encrypt(plaintext: ByteArray): ByteArray
+
+    fun decrypt(payload: ByteArray): ByteArray
+}
+
+internal class KeystoreTokenCipher : TokenCipher {
 
     private val keyStore: KeyStore by lazy {
         KeyStore.getInstance(KEYSTORE_PROVIDER).apply {
@@ -16,7 +23,7 @@ internal class TokenCipher {
         }
     }
 
-    fun encrypt(plaintext: ByteArray): ByteArray {
+    override fun encrypt(plaintext: ByteArray): ByteArray {
         val cipher = Cipher.getInstance(TRANSFORMATION)
 
         cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
@@ -30,7 +37,7 @@ internal class TokenCipher {
         return byteArrayOf(FORMAT_VERSION) + iv + ciphertext
     }
 
-    fun decrypt(payload: ByteArray): ByteArray {
+    override fun decrypt(payload: ByteArray): ByteArray {
         require(payload.size >= 1 + IV_SIZE + TAG_SIZE_BYTES) {
             "Invalid encrypted token payload"
         }

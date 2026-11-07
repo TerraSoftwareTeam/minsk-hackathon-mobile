@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":core:localization"))
     implementation(project(":core:navigation"))
     implementation(project(":core:network"))
+    implementation(project(":core:ui"))
 
     implementation(libs.coroutines.core)
     implementation(libs.zxing.core)

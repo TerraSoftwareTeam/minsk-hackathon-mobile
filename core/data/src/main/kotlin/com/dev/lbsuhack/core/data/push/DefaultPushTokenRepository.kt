@@ -1,7 +1,7 @@
 package com.dev.lbsuhack.core.data.push
 
-import android.content.Context
 import android.util.Log
+import com.dev.lbsuhack.core.data.KeyValueStorage
 import com.dev.lbsuhack.core.domain.push.PushTokenRepository
 import com.dev.lbsuhack.core.network.auth.TokenStorage
 import com.dev.lbsuhack.core.network.generated.model.DeleteDeviceTokenDto
@@ -22,13 +22,11 @@ import kotlinx.coroutines.withContext
 import java.util.UUID
 
 class DefaultPushTokenRepository(
-    context: Context,
+    private val storage: KeyValueStorage,
     private val httpClient: HttpClient,
     private val tokenStorage: TokenStorage,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : PushTokenRepository {
-
-    private val preferences = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     override suspend fun register(token: String): Boolean = send("register") { accessToken ->
         httpClient.post(PATH) {
@@ -70,14 +68,13 @@ class DefaultPushTokenRepository(
     }
 
     private fun deviceId(): String =
-        preferences.getString(KEY_DEVICE_ID, null) ?: UUID.randomUUID().toString().also {
-            preferences.edit().putString(KEY_DEVICE_ID, it).apply()
+        storage.getString(KEY_DEVICE_ID) ?: UUID.randomUUID().toString().also {
+            storage.putString(KEY_DEVICE_ID, it)
         }
 
     private companion object {
         const val TAG = "PushTokenRepository"
         const val PATH = "api/v1/device-token"
-        const val PREFS_NAME = "push_device"
         const val KEY_DEVICE_ID = "device_id"
     }
 }

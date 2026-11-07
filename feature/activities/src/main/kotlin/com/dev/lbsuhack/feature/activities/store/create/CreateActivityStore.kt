@@ -5,6 +5,12 @@ import com.dev.lbsuhack.core.localization.text.UiText
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
 import com.dev.lbsuhack.feature.activities.domain.ActivityScope
 
+enum class CreationState {
+    EDITING,
+    CREATED,
+    PHOTO_PENDING,
+}
+
 interface CreateActivityStore :
     Store<CreateActivityStore.Intent, CreateActivityStore.State, CreateActivityStore.Label> {
 
@@ -14,10 +20,6 @@ interface CreateActivityStore :
         data class ChangeDescription(val description: String) : Intent
         data class ChangeScope(val scope: ActivityScope) : Intent
         data class ChangeVoteThreshold(val threshold: Int) : Intent
-        data class ChangeTargetClass(val targetClass: String) : Intent
-        data class ChangeMinParticipants(val min: Int) : Intent
-        data class ChangeMaxParticipants(val max: Int) : Intent
-        data class ChangePreferences(val preferences: String) : Intent
         data class ChangePhoto(val photoUri: String?) : Intent
         data object Submit : Intent
         data object DismissError : Intent
@@ -29,15 +31,19 @@ interface CreateActivityStore :
         val description: String = "",
         val scope: ActivityScope = ActivityScope.CLASS,
         val voteThreshold: Int = 15,
-        val targetClass: String = "8–11 классы",
-        val minParticipants: Int = 4,
-        val maxParticipants: Int = 12,
-        val preferenceNotes: String = "",
         val photoUri: String? = null,
         val createdActivityId: String? = null,
+        val creationState: CreationState = CreationState.EDITING,
         val isSubmitting: Boolean = false,
         val error: UiText? = null,
-    )
+        val errorId: Long = 0L,
+    ) {
+        val canEdit: Boolean
+            get() = creationState == CreationState.EDITING
+
+        val canRetryPhoto: Boolean
+            get() = creationState == CreationState.PHOTO_PENDING
+    }
 
     sealed interface Label {
         data class Created(val activityId: String) : Label

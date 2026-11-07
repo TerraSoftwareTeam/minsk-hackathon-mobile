@@ -36,7 +36,7 @@ object AppHttpClientFactory {
         }
     }
 
-    private val logLevel = if (BuildConfig.DEBUG) LogLevel.HEADERS else LogLevel.NONE
+    private val logLevel = if (BuildConfig.DEBUG) LogLevel.ALL else LogLevel.NONE
     private val httpLogger = object : Logger {
         override fun log(message: String) {
             Log.d("HttpClient", message)

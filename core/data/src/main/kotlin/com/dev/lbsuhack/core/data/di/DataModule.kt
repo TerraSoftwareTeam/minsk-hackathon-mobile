@@ -1,5 +1,6 @@
 package com.dev.lbsuhack.core.data.di
 
+import com.dev.lbsuhack.core.data.PrefsKeyValueStorage
 import com.dev.lbsuhack.core.data.push.DefaultPushTokenRepository
 import com.dev.lbsuhack.core.data.session.DefaultSessionRepository
 import com.dev.lbsuhack.core.domain.push.PushTokenRepository
@@ -26,7 +27,7 @@ import org.koin.dsl.module
 val dataModule = module {
     single {
         DefaultSessionRepository(
-            context = androidContext(),
+            storage = PrefsKeyValueStorage(androidContext(), "user_session"),
             tokenStorage = get<TokenStorage>(),
             ioDispatcher = Dispatchers.IO,
             clearHooks = { getAll<SessionClearHook>() },
@@ -35,7 +36,7 @@ val dataModule = module {
 
     single {
         DefaultPushTokenRepository(
-            context = androidContext(),
+            storage = PrefsKeyValueStorage(androidContext(), "push_device"),
             httpClient = get(named("unauthenticatedHttpClient")),
             tokenStorage = get(),
             ioDispatcher = Dispatchers.IO,
@@ -47,7 +48,7 @@ val dataModule = module {
 
     single {
         DefaultUserRepository(
-            context = androidContext(),
+            storage = PrefsKeyValueStorage(androidContext(), "cached_user_profile"),
             httpClient = get(),
             sessionRepository = get(),
             ioDispatcher = Dispatchers.IO,
