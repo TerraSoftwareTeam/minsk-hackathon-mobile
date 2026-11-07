@@ -31,8 +31,73 @@ Always keep the leading colon for the merged coverage report: bare
 Reports land in `build/reports/kover/` and are git-ignored. Coverage is
 informational, there is no minimum threshold that fails the build.
 
-Do not run two Gradle builds in the same checkout at the same time. Use one
-git worktree per parallel agent.
+A command is local when it names a module (`:feature:<name>`, `:core:<name>`)
+and global when it does not. Local commands are safe to run while other
+agents work. Global commands are covered by "Parallel work" below.
+
+## Parallel work
+
+Assume other agents are working in this repository at the same time. Work so
+that your edits and commands cannot break theirs.
+
+### Isolation
+
+- Use one git worktree per parallel agent. Two agents must never edit the
+  same checkout or run Gradle in each other's worktree.
+- Worktrees keep source and `build/` separate but share the Gradle user home
+  and dependency caches. Parallel Gradle runs are acceptable only because of
+  that separation, and only when they are module-scoped.
+- Never create, move, or remove a worktree that belongs to another agent.
+
+### Command scope
+
+Classify every Gradle command before running it.
+
+Local, allowed while other agents work:
+
+- `./gradlew :feature:<name>:testDebugUnitTest`
+- `./gradlew :core:<name>:testDebugUnitTest`
+- `./gradlew :feature:<name>:compileDebugKotlin`
+- `./gradlew :core:<name>:compileDebugKotlin`
+- `./gradlew :<module>:clean`, only for a module you built yourself
+
+Global, reserved for the integrator or a checkout with no other active agent:
+
+- `./gradlew assembleDebug` and `./gradlew build`
+- `./gradlew testDebugUnitTest` without a module prefix
+- `./gradlew lintDebug`
+- `./gradlew clean`
+- `./gradlew :koverHtmlReport` and `./gradlew :koverXmlReport`
+- `./gradlew --stop`, daemon restarts, and Gradle JVM setting changes
+
+A module agent runs only the tasks of the module it owns. Do not run a global
+command as a final sanity check: the integrator does that after the handoff.
+If a global run seems required, report it in the handoff instead of running
+it.
+
+### Shared state
+
+- Do not stop, kill, or reconfigure Gradle daemons. `--stop` kills builds
+  other agents may be running; `--no-daemon` only makes every later command
+  slower.
+- Do not delete `build/` or `.gradle/` of a module you did not build in this
+  session. Clean only the module you own, and only when stale output is the
+  suspected cause.
+- Do not run `git clean`, `git stash`, `git checkout -- .`, `git reset
+  --hard`, `git rebase`, or any other command that discards uncommitted
+  work. Keep history operations inside your own worktree and your own
+  commits.
+
+### When a build fails
+
+- A lock, "file in use", "another Gradle instance", or a suddenly unresolved
+  reference usually means another agent is building or editing. Retry the
+  same module command once.
+- Do not "fix" the failure by cleaning the project, stopping the daemon, or
+  deleting caches. Do not disable tests, lint, or code generation to make it
+  pass.
+- If the retry fails too, stop and report the exact command and output. The
+  integrator resolves cross-agent collisions.
 
 ## Module map
 
@@ -107,6 +172,11 @@ Do not edit:
 - `api/openapi.yaml`
 - `.gitignore`
 
+Run only local commands for the module you own,
+`:feature:<name>:testDebugUnitTest` and `:feature:<name>:compileDebugKotlin`.
+Global builds, the full test suite, lint, and coverage are the integrator's
+job.
+
 If a change outside your area is required, stop and report the exact file,
 line, and change needed. Do not make it yourself.
 
@@ -119,7 +189,9 @@ The integrator owns all shared files and performs the final wiring:
 - adds the feature Koin module in `App.kt`
 - adds the module to the Kover aggregation in the root `build.gradle.kts`
 - resolves dependency/catalog changes
-- runs the full build before merging
+- runs the full build before merging, alone, after the module agents have
+  handed off and stopped building
+- owns every global command and is the only role that runs one
 
 ## Architecture rules
 
@@ -290,12 +362,14 @@ A feature agent must hand off:
 3. The Koin module name and the DI file path.
 4. The `NavigationInstaller` and the navigation layer (`auth` or `global`).
 5. The routes it owns.
-6. The test command that passes.
+6. The module test command that passes, for example
+   `./gradlew :feature:<name>:testDebugUnitTest`.
 7. Any shared contract or dependency the integrator must add.
 
 The integrator then adds the registration lines (`settings.gradle.kts`,
 `app/build.gradle.kts`, `App.kt`, and `kover(project(...))` in the root
-`build.gradle.kts`) and runs the full build.
+`build.gradle.kts`) and runs the full build once the module agents have
+stopped building.
 
 ## Current known deviations
 
@@ -320,7 +394,9 @@ Do not copy these patterns into new code:
 - Network tests use Ktor `MockEngine`.
 - Test business logic and store behavior, not Compose rendering, unless the
   task explicitly asks for UI tests.
-- A feature is not done until its module tests pass.
+- A feature is not done until its module tests pass. Run the module task
+  (`:feature:<name>:testDebugUnitTest`), not the full suite; the integrator
+  runs the full suite before merging.
 - Coverage uses Kover and is aggregated in the root project. Composable UI,
   DI modules, `BuildConfig`, palette files, and generated OpenAPI code are
   excluded on purpose, so the percentage reflects testable logic.
@@ -332,12 +408,17 @@ Do not copy these patterns into new code:
 
 Before reporting completion:
 
-- `./gradlew :feature:<name>:testDebugUnitTest` passes.
+- `./gradlew :<module>:testDebugUnitTest` passes for the module you changed.
+- Only module-scoped commands were run. A global build, full test suite,
+  lint, or coverage run is not part of a module handoff.
 - No files outside the allowed paths were changed.
 - No new dependency was added without approval.
 - No generated file was edited manually.
 - No secret, keystore, build output, or local properties file was added.
-- The report lists the commands run and their results.
+- Other agents' worktrees, `build/` directories, and uncommitted changes were
+  left untouched.
+- The report lists the commands run, whether each was local or global, and
+  their results.
 
 ## Conflict policy
 
@@ -347,3 +428,8 @@ Before reporting completion:
 - Do not refactor unrelated code, rename public APIs, or fix legacy issues
   globally unless the task explicitly asks for it.
 - Keep changes small and local to the assigned feature.
+- If a file changes unexpectedly, assume another agent is working and stop
+  before overwriting it. Do not resolve a cross-agent edit with a reset or a
+  force checkout.
+- If a local command fails because of a concurrent build or edit, do not
+  escalate to a global command or a clean. Report the collision.
