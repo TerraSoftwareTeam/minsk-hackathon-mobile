@@ -1,4 +1,4 @@
-# Kola — Шестой школьный день 🎓✨
+# Kola — Шестой школьный день
 
 <p align="center">
   <img src="https://img.shields.io/badge/Kotlin-2.3.21-7F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin" />
@@ -13,83 +13,108 @@
 
 ---
 
-## 💡 О проекте
+## О проекте
 
-**Kola** — это мобильное приложение для белорусских школ, превращающая «шестой школьный день» (субботние мероприятия) в прозрачный, увлекательный и демократичный процесс:
+**Kola** — это мобильное приложение для белорусских школ, превращающее «шестой школьный день» (субботние мероприятия) в прозрачный, увлекательный и демократичный процесс:
 
 1. **Ученики** предлагают собственные инициативы (турниры по настольным играм, хакатоны, экологические рейды, волейбол, кинолектории).
 2. **Классные руководители** проверяют и направляют инициативы своего класса.
 3. **Школьники** голосуют («Я иду!») и в реальном времени собирают необходимый кворум.
 4. **Администрация школы** выделяет кабинеты, спортзалы, актовые залы и утверждает проведение.
-5. **Участники** мгновенно присоединяются к мероприятию и подтверждают явку по **QR-коду** с помощью Google ML Kit.
+5. **Участники** мгновенно присоединяются к мероприятию и подтверждают явку по QR-коду с помощью Google ML Kit.
 
-Проект глубоко интегрирован с единым образовательным порталом **Schools.by** для синхронизации классов и проверки прав доступа.
+Проект интегрирован с единым образовательным порталом **Schools.by** для синхронизации классов и проверки прав доступа.
 
 ---
 
-## 🎬 Визуальная витрина фичей на разных этапах
+## Визуальная витрина интерфейсов на разных этапах
 
-Ниже представлена наглядная схема того, как инициатива проходит путь от черновика до проведения, и как выглядит интерфейс для разных ролей:
+Интерфейс приложения адаптирован под ключевые роли пользователей:
 
 <table align="center">
   <tr>
-    <th width="33%" align="center">📱 Ученик: Создание и сбор голосов</th>
-    <th width="33%" align="center">👨‍🏫 Учитель: Модерация заявки</th>
-    <th width="33%" align="center">🏛 Администрация: Утверждение</th>
+    <th width="33%" align="center">Ученик: Лента и голосование</th>
+    <th width="33%" align="center">Учитель: Модерация заявки</th>
+    <th width="33%" align="center">Организатор: Кабинет управления</th>
   </tr>
   <tr>
     <td align="center">
-      <!-- Замените на documentation/assets/gifs/activity-create.webp после записи скринкаста -->
-      <img src="https://placehold.co/360x640/121212/00E5FF?text=1.+Create+%26+Vote\n(Student+Flow)" width="100%" alt="Создание мероприятия" style="border-radius: 12px; border: 1px solid #333;" />
+      <img src="documentation/assets/feed-page.jpg" width="100%" alt="Лента мероприятий ученика" style="border-radius: 14px; border: 1px solid #333;" />
     </td>
     <td align="center">
-      <!-- Замените на documentation/assets/gifs/teacher-moderation.webp после записи скринкаста -->
-      <img src="https://placehold.co/360x640/121212/FFB300?text=2.+Teacher+Review\n(Moderate+Flow)" width="100%" alt="Модерация заявки учителем" style="border-radius: 12px; border: 1px solid #333;" />
+      <img src="documentation/assets/requests-students-teacher.jpg" width="100%" alt="Модерация заявки классным руководителем" style="border-radius: 14px; border: 1px solid #333;" />
     </td>
     <td align="center">
-      <!-- Замените на documentation/assets/gifs/admin-approval.webp после записи скринкаста -->
-      <img src="https://placehold.co/360x640/121212/00E676?text=3.+Admin+Approval\n(Finalize+Flow)" width="100%" alt="Утверждение дирекцией" style="border-radius: 12px; border: 1px solid #333;" />
+      <img src="documentation/assets/organizer-profile.jpg" width="100%" alt="Панель организатора школы" style="border-radius: 14px; border: 1px solid #333;" />
     </td>
   </tr>
   <tr>
-    <td><sub>Выбор 1 из 10 категорий, загрузка обложки, выбор охвата (класс / параллель / школа) и порога кворума.</sub></td>
-    <td><sub>Проверка заявки ученика своего класса, одобрение или возврат на доработку с обязательным комментарием.</sub></td>
-    <td><sub>Проверка готовности кворума, выбор кабинета или спортзала, назначение точного времени проведения.</sub></td>
+    <td><sub>Выбор категорий, просмотр статуса голосования, индикатор шанса состояться и кнопка «Я иду!».</sub></td>
+    <td><sub>Список заявок класса «На модерации», таймер на принятие решения, кнопки «Одобрить» и «Отклонить».</sub></td>
+    <td><sub>Разделы согласования кворума, общешкольные мероприятия и управление уведомлениями.</sub></td>
   </tr>
 </table>
 
-### Интерактивные демо ключевых сценариев:
+### Подробный обзор экранов приложения
 
 <details>
-<summary><b>🔥 1. Этап сбора голосов и прогресс кворума (Нажмите, чтобы развернуть)</b></summary>
+<summary><b>1. Лента мероприятий и открытое голосование учеников (развернуть)</b></summary>
 <br>
 
 <p align="center">
-  <img src="https://placehold.co/360x480/121212/00E5FF?text=Voting+Quorum+Demo" width="300" style="border-radius: 12px; border: 1px solid #333;" alt="Демо голосования" />
+  <img src="documentation/assets/feed-page.jpg" width="320" style="border-radius: 16px; border: 1px solid #333;" alt="Экран ленты мероприятий" />
 </p>
 
-* В карточке отображается динамический прогресс кворума: $\text{votesCount} / \text{voteThreshold}$.
-* Одноклассники нажимают кнопку **«Я иду!»**, аватары участников появляются в реальном времени.
-* По достижении порога заявка автоматически отправляется на согласование администрации.
+* **Фильтрация и вкладки**: быстрое переключение между разделами «Все», «Я иду» и «Мои заявки», а также выбор категорий (Спорт, Творчество, IT, Интеллект).
+* **Информативная карточка инициативы**: содержит подтвержденное время проведения, порог кворума участников («Минимум 15») и дедлайн голосования.
+* **Предиктивный индикатор**: блок «Шанс состояться» рассчитывает вероятность успешного сбора участников на основе текущей динамики.
+* **Быстрые действия**: мгновенная подача голоса кнопкой «Я иду!», голосование за рейтинг инициативы и кнопка сканирования QR-кода на месте сбора.
 </details>
 
 <details>
-<summary><b>📷 2. Мгновенный переход к мероприятию по QR-коду (Нажмите, чтобы развернуть)</b></summary>
+<summary><b>2. Модерация заявок классным руководителем (развернуть)</b></summary>
 <br>
 
 <p align="center">
-  <img src="https://placehold.co/360x480/121212/D500F9?text=QR+Code+Scanner+Demo" width="300" style="border-radius: 12px; border: 1px solid #333;" alt="Демо QR-сканера" />
+  <img src="documentation/assets/requests-students-teacher.jpg" width="320" style="border-radius: 16px; border: 1px solid #333;" alt="Экран модерации учителем" />
 </p>
 
-* Каждое утвержденное мероприятие содержит встроенный QR-код схемы `kola://activity/{id}`.
-* Встроенный сканер Google ML Kit Barcode Scanner открывает мероприятие за 0.3 секунды без запроса системных разрешений.
+* **Входящая очередь класса**: отображаются все инициативы учеников со статусом «На модерации».
+* **Контроль сроков**: таймер обратного отсчета предупреждает о дате автоматической отмены заявки, если решение не принято вовремя.
+* **Принятие решения**: учитель в один клик одобряет инициативу для старта открытого голосования либо возвращает на доработку с обязательным комментарием.
+</details>
+
+<details>
+<summary><b>3. Профиль пользователя и персональные настройки (развернуть)</b></summary>
+<br>
+
+<p align="center">
+  <img src="documentation/assets/user-profile.jpg" width="320" style="border-radius: 16px; border: 1px solid #333;" alt="Профиль ученика" />
+</p>
+
+* **Идентификация учащегося**: отображение имени, привязанного класса (11М) и школы через шлюз Schools.by.
+* **Управление push-уведомлениями**: мгновенный тумблер для включения и выключения оповещений о смене статусов мероприятий.
+* **Параметры приложения**: быстрый переход в настройки темы оформления (темная, светлая, системная), языка интерфейса и безопасный выход из аккаунта.
+</details>
+
+<details>
+<summary><b>4. Панель организатора школы и согласование ресурсов (развернуть)</b></summary>
+<br>
+
+<p align="center">
+  <img src="documentation/assets/organizer-profile.jpg" width="320" style="border-radius: 16px; border: 1px solid #333;" alt="Кабинет организатора" />
+</p>
+
+* **Координация шестого школьного дня**: доступ к списку инициатив, набравших необходимый кворум участников и готовых к согласованию.
+* **Управление площадками**: распределение спортзалов, актовых залов и специализированных кабинетов.
+* **Общешкольные события**: мониторинг всех утвержденных мероприятий школы на субботу.
 </details>
 
 ---
 
-## 🏗 Архитектура приложения
+## Архитектура приложения
 
-Приложение разработано по строгим канонам **Clean Architecture** с однонаправленным потоком данных **MVIKotlin** и разделением на изолированные Gradle-модули.
+Приложение разработано по Clean Architecture с однонаправленным потоком данных MVIKotlin и разделением на изолированные Gradle-модули.
 
 ```mermaid
 graph TD
@@ -112,45 +137,45 @@ graph TD
 * **MVIKotlin**: Каждый экран управляется изолированным Store с чистым циклом `Intent -> Executor -> Message -> Reducer -> State -> UI` и `Label` для однократных событий.
 * **Jetpack Navigation 3**: Полная типобезопасность навигации на этапе компиляции через `@Serializable NavKey`.
 * **Session Gate**: Динамическое переключение между гостевым `AuthHost` и авторизованным `GlobalHost` с изоляцией бэкстека и отсутствием утечек данных.
-* **Криптография**: Токены аутентификации хранятся в защищенном хранилище `EncryptedTokenStorage` с аппаратным шифрованием **AES-256 GCM** в Android Keystore.
+* **Криптография**: Токены аутентификации хранятся в защищенном хранилище `EncryptedTokenStorage` с аппаратным шифрованием AES-256 GCM в Android Keystore.
 
 ---
 
-## 📚 Техническая документация (`documentation/`)
+## Документация (`documentation/`)
 
-Вся подробная техническая документация разделена по отдельным тематическим файлам:
+Подробная документация проекта:
 
-* 🗺 [**`documentation/USER_JOURNEY.md`**](./documentation/USER_JOURNEY.md) — Дорожная карта пользователя, 5 шагов воронки инициатив, сценарии ролей и наглядный пайплайн.
-* ⚙️ [**`documentation/FEATURES_SPEC.md`**](./documentation/FEATURES_SPEC.md) — Инженерная спецификация фичей, MVI-сторы, доменные модели и контракты компонентов.
-* 🏗 [**`documentation/ARCHITECTURE.md`**](./documentation/ARCHITECTURE.md) — Архитектурный манифест, MVI-паттерн, граф модулей и внедрение зависимостей через Koin.
-* 🧭 [**`documentation/NAVIGATION_AND_LAYERS.md`**](./documentation/NAVIGATION_AND_LAYERS.md) — Маршрутизация в Navigation 3, система слоев и глубокие ссылки.
-* 🎨 [**`documentation/DESIGN_SYSTEM_AND_UI.md`**](./documentation/DESIGN_SYSTEM_AND_UI.md) — Токены HackExtras (glow, danger, success), типографика, компоненты и правила чистой верстки.
-* 🌐 [**`documentation/NETWORK_AND_API.md`**](./documentation/NETWORK_AND_API.md) — Спецификация REST API OpenAPI 3.0, Ktor Client и парсер Schools.by.
-* 🔔 [**`documentation/NOTIFICATIONS_AND_DEEPLINKS.md`**](./documentation/NOTIFICATIONS_AND_DEEPLINKS.md) — Push-уведомления Firebase FCM и QR-сканер Google ML Kit.
+* [**`documentation/USER_JOURNEY.md`**](./documentation/USER_JOURNEY.md) — Дорожная карта пользователя, 5 шагов воронки инициатив, сценарии ролей и наглядный пайплайн.
+* [**`documentation/FEATURES_SPEC.md`**](./documentation/FEATURES_SPEC.md) — Инженерная спецификация фичей, MVI-сторы, доменные модели и контракты компонентов.
+* [**`documentation/ARCHITECTURE.md`**](./documentation/ARCHITECTURE.md) — Архитектурный манифест, MVI-паттерн, граф модулей и внедрение зависимостей через Koin.
+* [**`documentation/NAVIGATION_AND_LAYERS.md`**](./documentation/NAVIGATION_AND_LAYERS.md) — Маршрутизация в Navigation 3, система слоев и глубокие ссылки.
+* [**`documentation/DESIGN_SYSTEM_AND_UI.md`**](./documentation/DESIGN_SYSTEM_AND_UI.md) — Токены HackExtras (glow, danger, success), типографика, компоненты и правила верстки.
+* [**`documentation/NETWORK_AND_API.md`**](./documentation/NETWORK_AND_API.md) — Спецификация REST API OpenAPI 3.0, Ktor Client и парсер Schools.by.
+* [**`documentation/NOTIFICATIONS_AND_DEEPLINKS.md`**](./documentation/NOTIFICATIONS_AND_DEEPLINKS.md) — Push-уведомления Firebase FCM и QR-сканер Google ML Kit.
 
 ---
 
-## 🛠 Технический стек
+## Технический стек
 
 | Категория | Библиотека / Технология | Версия | Обоснование выбора |
 | :--- | :--- | :---: | :--- |
-| **Language** | Kotlin | `2.3.21` | Современный язык со строгой типизацией и корутинами |
-| **UI Framework** | Jetpack Compose + Material 3 | `2026.05.01` | Декларативный UI без XML, кастомная тема HackTheme |
+| **Language** | Kotlin | `2.3.21` | Язык со строгой типизацией и корутинами |
+| **UI Framework** | Jetpack Compose + Material 3 | `2026.05.01` | Декларативный UI без XML, тема HackTheme |
 | **Navigation** | Jetpack Navigation 3 | `1.0.0` | Типобезопасные ключи навигации `@Serializable NavKey` |
 | **Architecture** | MVIKotlin | `4.4.0` | Предсказуемый однонаправленный поток данных (UDF) |
-| **DI** | Koin | `4.2.1` | Легковесное и быстрое внедрение зависимостей без кодогенерации |
+| **DI** | Koin | `4.2.1` | Легковесное внедрение зависимостей |
 | **Networking** | Ktor Client | `3.0.3` | Асинхронный HTTP-клиент с кастомным AuthPlugin |
-| **Serialization** | kotlinx.serialization | `1.11.0` | Быстрая компиляторная сериализация JSON |
+| **Serialization** | kotlinx.serialization | `1.11.0` | Компиляторная сериализация JSON |
 | **API Contract** | OpenAPI 3.0 Generator | `7.12.0` | Генерация DTO и сетевых интерфейсов из спецификации |
 | **Security** | AndroidX Security Crypto | `1.1.0` | Аппаратное шифрование токенов AES-256 GCM |
-| **Push** | Firebase Cloud Messaging (FCM) | `35.1.0` | Мгновенные оповещения о смене статусов заявок |
-| **QR Engine** | Google ML Kit + ZXing | `16.1.0` / `3.5.4` | Быстрое распознавание камерой и генерация QR-кодов |
+| **Push** | Firebase Cloud Messaging (FCM) | `35.1.0` | Оповещения о смене статусов заявок |
+| **QR Engine** | Google ML Kit + ZXing | `16.1.0` / `3.5.4` | Распознавание камерой и генерация QR-кодов |
 | **Testing** | Turbine + JUnit + MockEngine | `1.2.0` | Реактивное тестирование Flow и сторов в изоляции |
-| **Coverage** | Kotlinx Kover | `0.9.11` | Объединенные отчеты о покрытии кода тестами |
+| **Coverage** | Kotlinx Kover | `0.9.11` | Отчеты о покрытии кода тестами |
 
 ---
 
-## 🚀 Быстрый старт и запуск
+## Быстрый старт и запуск
 
 ### Требования к окружению:
 * **JDK**: 17 или 21
@@ -181,4 +206,4 @@ cd lbsuhack
 ./gradlew testDebugUnitTest
 ./gradlew :koverHtmlReport
 ```
-*HTML-отчет о покрытии будет доступен в: `build/reports/kover/html/index.html`.*
+*HTML-отчет о покрытии: `build/reports/kover/html/index.html`.*

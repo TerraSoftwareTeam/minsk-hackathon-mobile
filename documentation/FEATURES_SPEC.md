@@ -23,6 +23,48 @@ feature/<name>/src/main/kotlin/.../feature/<name>/
   di/            Публичный модуль Koin: val <name>Module = module { ... }
 ```
 
+---
+
+## 2. Модуль авторизации и шлюза Schools.by (`feature:auth`)
+
+### 2.1. Интеграция со сторонним сервисом Schools.by
+Модуль обеспечивает вход учащихся и преподавателей через парсинг веб-сессии платформы Schools.by:
+
+* **`SchoolsByRemoteDataSource`**: Выполняет HTTP-запрос к форме аутентификации `https://schools.by/login`, извлекая токены сессии (`csrftoken`, `sessionid`).
+* **`SchoolsByProfileParser`**: Парсит HTML личного кабинета, извлекая:
+  - Идентификатор пользователя в системе Schools.by (`schoolsById`).
+  - ФИО и наименование школы (`schoolName`).
+  - Назначенную роль (`PUPIL` / `TEACHER` / `ORGANIZATOR`).
+  - Список привязанных классов (для ученика — его класс; для учителя — классы классного руководства).
+* **`AuthUserMapper`**: Преобразует спарсенные данные в доменную модель `User` и регистрирует сессию на бэкенде Kola через `/api/v1/auth/register`.
+
+### 2.2. Архитектура состояний: `LoginStore`
+Управление процессом входа построено на конечном автомате шагов:
+
+```kotlin
+sealed interface LoginStep {
+    data object Credentials : LoginStep
+    data class ClassSelection(
+        val availableClasses: List<SchoolClass>,
+    ) : LoginStep
+}
+
+data class LoginState(
+    val step: LoginStep = LoginStep.Credentials,
+    val loginInput: String = "",
+    val passwordInput: String = "",
+    val selectedClass: SchoolClass? = null,
+    val isLoading: Boolean = false,
+    val error: UiText? = null,
+    val isDemoBannerVisible: Boolean = true,
+)
+```
+
+* **Intents**: `UpdateLogin`, `UpdatePassword`, `SelectClass`, `SubmitCredentials`, `SubmitClass`, `UseDemoAccount(role)`.
+* **Labels**: `LoginStore.Label.LoggedIn(sessionUser)` приводит к вызову `SaveSessionUseCase` и переключает приложение в авторизованную зону.
+
+---
+
 ## 3. Модуль мероприятий и активностей (`feature:activities`)
 
 ### 3.1. Доменная модель `ActivityProposal`
@@ -52,7 +94,6 @@ data class ActivityProposal(
     val likedByMe: Boolean = false,
     val isMine: Boolean = false,
 ) {
-    // Вычисляемые бизнес-свойства:
     val isQuorumReached: Boolean get() = votesCount >= voteThreshold
     val progress: Float get() = if (voteThreshold > 0) (votesCount.toFloat() / voteThreshold).coerceIn(0f, 1f) else 0f
     val canChangeVote: Boolean get() = status == ActivityStatus.ON_VOTE
@@ -141,7 +182,7 @@ data class ReviewRequest(
 ### 5.1. Управление темой оформления
 * `ThemeController` из `core:designsystem` управляет режимом `AppThemeMode` (`SYSTEM`, `LIGHT`, `DARK`).
 * Выбор сохраняется в `KeyValueStorage` через `ThemePreferences`.
-* `ThemeModeSelector` рендерит компактные радио-карточки с немедленной сменой палитры `HackTheme`.
+* `ThemeModeSelector` рендерит компактные радио-карточки со сменой палитры `HackTheme`.
 
 ### 5.2. Управление локализацией
 * Контроллер `LanguageController` из `core:localization` переключает язык на уровне системных конфигураций приложения без перезапуска процесса:
@@ -162,12 +203,12 @@ data class ReviewRequest(
 
 | Функция / Эндпоинт | JWT Scopes | PUPIL | TEACHER | ORGANIZATOR |
 | :--- | :--- | :---: | :---: | :---: |
-| `POST /api/v1/events` | `events:create` | ✅ | ❌ | ❌ |
-| `POST /api/v1/events/{id}/image` | `events:upload` | ✅ | ❌ | ❌ |
-| `POST /api/v1/events/{id}/vote` | `events:vote` | ✅ | ❌ | ❌ |
-| `POST /api/v1/events/{id}/approve` | `moderation:teacher` | ❌ | ✅ | ❌ |
-| `POST /api/v1/events/{id}/decline` | `moderation:teacher` | ❌ | ✅ | ❌ |
-| `POST /api/v1/events/{id}/admin/approve` | `moderation:admin` | ❌ | ❌ | ✅ |
-| `POST /api/v1/events/{id}/admin/decline` | `moderation:admin` | ❌ | ❌ | ✅ |
-| `POST /api/v1/device-token` | `push:manage` | ✅ | ✅ | ✅ |
-| `GET /api/v1/events` | `events:read` | ✅ | ✅ | ✅ |
+| `POST /api/v1/events` | `events:create` | + | - | - |
+| `POST /api/v1/events/{id}/image` | `events:upload` | + | - | - |
+| `POST /api/v1/events/{id}/vote` | `events:vote` | + | - | - |
+| `POST /api/v1/events/{id}/approve` | `moderation:teacher` | - | + | - |
+| `POST /api/v1/events/{id}/decline` | `moderation:teacher` | - | + | - |
+| `POST /api/v1/events/{id}/admin/approve` | `moderation:admin` | - | - | + |
+| `POST /api/v1/events/{id}/admin/decline` | `moderation:admin` | - | - | + |
+| `POST /api/v1/device-token` | `push:manage` | + | + | + |
+| `GET /api/v1/events` | `events:read` | + | + | + |

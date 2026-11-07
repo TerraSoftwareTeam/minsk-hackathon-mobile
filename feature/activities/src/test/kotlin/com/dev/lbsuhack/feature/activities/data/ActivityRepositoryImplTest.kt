@@ -544,21 +544,24 @@ class ActivityRepositoryImplTest {
                 ),
             ),
         )
-        HttpClient(MockEngine { request ->
-            calls += "${request.method.value} ${request.url.encodedPath}"
-            val body = when (request.url.encodedPath) {
-                "/api/v1/events/voting" -> "[$event]"
-                "/api/v1/events/my" -> "[]"
-                "/api/v1/events/e1/vote" -> """{"eventId": "e1", "votesCount": 1, "voteThreshold": 10, "status": "ON_VOTE"}"""
-                "/api/v1/events/e1/like" -> if (request.method.value == "PUT") {
-                    """{"eventId": "e1", "liked": true, "likesCount": 3}"""
-                } else {
-                    """{"eventId": "e1", "liked": false, "likesCount": 2}"""
+        HttpClient(MockEngine(io.ktor.client.engine.mock.MockEngineConfig().apply {
+            dispatcher = StandardTestDispatcher(testScheduler)
+            addHandler { request ->
+                calls += "${request.method.value} ${request.url.encodedPath}"
+                val body = when (request.url.encodedPath) {
+                    "/api/v1/events/voting" -> "[$event]"
+                    "/api/v1/events/my" -> "[]"
+                    "/api/v1/events/e1/vote" -> """{"eventId": "e1", "votesCount": 1, "voteThreshold": 10, "status": "ON_VOTE"}"""
+                    "/api/v1/events/e1/like" -> if (request.method.value == "PUT") {
+                        """{"eventId": "e1", "liked": true, "likesCount": 3}"""
+                    } else {
+                        """{"eventId": "e1", "liked": false, "likesCount": 2}"""
+                    }
+                    else -> error("unexpected ${request.url.encodedPath}")
                 }
-                else -> error("unexpected ${request.url.encodedPath}")
+                respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
             }
-            respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
-        }) {
+        })) {
             expectSuccess = true
             install(ContentNegotiation) { json(json) }
         }.use { client ->
@@ -584,10 +587,10 @@ class ActivityRepositoryImplTest {
             assertTrue(!unliked.likedByMe)
             advanceUntilIdle()
             assertEquals(1, repository.observeActivities().first().single().votesCount)
+            assertTrue("DELETE /api/v1/events/e1/vote" in calls)
+            assertTrue("PUT /api/v1/events/e1/like" in calls)
+            assertTrue("DELETE /api/v1/events/e1/like" in calls)
         }
-        assertTrue("DELETE /api/v1/events/e1/vote" in calls)
-        assertTrue("PUT /api/v1/events/e1/like" in calls)
-        assertTrue("DELETE /api/v1/events/e1/like" in calls)
     }
 
     @Test
@@ -739,24 +742,27 @@ class ActivityRepositoryImplTest {
                 ),
             ),
         )
-        HttpClient(MockEngine { request ->
-            val headers = headersOf(HttpHeaders.ContentType, "application/json")
-            when (request.url.encodedPath) {
-                "/api/v1/events/voting" -> respond("[$event]", HttpStatusCode.OK, headers)
-                "/api/v1/events/my" -> respond("[]", HttpStatusCode.OK, headers)
-                "/api/v1/events/e-sync/vote" -> respond(
-                    """{"eventId": "e-sync", "votesCount": 1, "voteThreshold": 10, "status": "ON_VOTE"}""",
-                    HttpStatusCode.OK,
-                    headers,
-                )
-                "/api/v1/events/e-sync/like" -> respond(
-                    """{"eventId": "e-sync", "liked": true, "likesCount": 2}""",
-                    HttpStatusCode.OK,
-                    headers,
-                )
-                else -> respond("Not found", HttpStatusCode.NotFound)
+        HttpClient(MockEngine(io.ktor.client.engine.mock.MockEngineConfig().apply {
+            dispatcher = StandardTestDispatcher(testScheduler)
+            addHandler { request ->
+                val headers = headersOf(HttpHeaders.ContentType, "application/json")
+                when (request.url.encodedPath) {
+                    "/api/v1/events/voting" -> respond("[$event]", HttpStatusCode.OK, headers)
+                    "/api/v1/events/my" -> respond("[]", HttpStatusCode.OK, headers)
+                    "/api/v1/events/e-sync/vote" -> respond(
+                        """{"eventId": "e-sync", "votesCount": 1, "voteThreshold": 10, "status": "ON_VOTE"}""",
+                        HttpStatusCode.OK,
+                        headers,
+                    )
+                    "/api/v1/events/e-sync/like" -> respond(
+                        """{"eventId": "e-sync", "liked": true, "likesCount": 2}""",
+                        HttpStatusCode.OK,
+                        headers,
+                    )
+                    else -> respond("Not found", HttpStatusCode.NotFound)
+                }
             }
-        }) {
+        })) {
             expectSuccess = true
             install(ContentNegotiation) { json(json) }
         }.use { client ->
