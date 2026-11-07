@@ -10,6 +10,7 @@ import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.statement.bodyAsText
 import java.io.IOException
+import java.nio.channels.UnresolvedAddressException
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -43,6 +44,9 @@ suspend inline fun <T> safeCall(crossinline block: suspend () -> T): NetworkResu
         NetworkResult.Error(NetworkError.Timeout)
     } catch (e: SocketTimeoutException) {
         NetworkResult.Error(NetworkError.Timeout)
+    } catch (e: UnresolvedAddressException) {
+        Log.e("HttpClient", "Host unreachable: ${e.message}")
+        NetworkResult.Error(NetworkError.NoInternet)
     } catch (e: IOException) {
         Log.e("HttpClient", "Network IO error: ${e.message}", e)
         NetworkResult.Error(NetworkError.NoInternet)

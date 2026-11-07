@@ -39,6 +39,7 @@ import com.dev.lbsuhack.core.navigation.event.AppEventBus
 import com.dev.lbsuhack.core.navigation.layer.NavigationLayer
 import com.dev.lbsuhack.feature.activities.navigation.ActivityDetailsRoute
 import com.dev.lbsuhack.feature.activities.navigation.ActivitiesRoute
+import com.dev.lbsuhack.feature.activities.navigation.CreateActivityRoute
 import com.dev.lbsuhack.feature.auth.navigation.AuthLoginRoute
 import com.dev.lbsuhack.feature.profile.navigation.ProfileRoute
 import com.dev.lbsuhack.feature.requests.navigation.RequestsRoute
@@ -106,6 +107,14 @@ fun AppRootScreen(
 
                             override fun openRequests(role: UserRole) {
                                 if (role == user.role && role != UserRole.PUPIL) navigator.navigate(RequestsRoute(role))
+                            }
+
+                            override fun openCreateActivity() {
+                                navigator.navigate(CreateActivityRoute)
+                            }
+
+                            override fun openActivities() {
+                                navigator.navigate(ActivitiesRoute)
                             }
                         }
                     },
@@ -190,6 +199,8 @@ private fun AppNavHost(
 private object EmptyAppNavigation : AppNavigation {
     override fun openProfile() = Unit
     override fun openRequests(role: UserRole) = Unit
+    override fun openCreateActivity() = Unit
+    override fun openActivities() = Unit
 }
 
 private const val AUTH_HOST_KEY = "auth-host"

@@ -10,10 +10,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,25 +27,29 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.localization.text.UiText
 import com.dev.lbsuhack.core.localization.text.resolve
+import com.dev.lbsuhack.core.ui.component.HackEmptyState
+import com.dev.lbsuhack.core.ui.component.HackLoading
 import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.presentation.activities.ActivitiesViewModel
 import com.dev.lbsuhack.feature.activities.store.activities.ActivitiesStore
-import com.dev.lbsuhack.core.ui.component.HackEmptyState
-import com.dev.lbsuhack.core.ui.component.HackLoading
 import com.dev.lbsuhack.feature.activities.ui.activities.component.ActivitiesBottomActions
 import com.dev.lbsuhack.feature.activities.ui.activities.component.ActivitiesTopBar
 import com.dev.lbsuhack.feature.activities.ui.activities.component.ActivityCard
+import com.dev.lbsuhack.feature.activities.ui.activities.component.rememberHideOnScrollState
 import com.dev.lbsuhack.feature.activities.ui.common.FloatingActionsBackdrop
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActivitiesScreen(
     onOpenDetails: (activityId: String) -> Unit,
@@ -54,8 +63,10 @@ fun ActivitiesScreen(
     val context = LocalContext.current
     val retry = stringResource(R.string.activities_retry)
     var scanError by remember { mutableStateOf<UiText?>(null) }
+    val filtersOnScroll = rememberHideOnScrollState()
 
     LaunchedEffect(state.errorId) {
+        if (state.activities.isEmpty()) return@LaunchedEffect
         state.error?.let {
             val result = snackbar.showSnackbar(it.resolve(context), actionLabel = retry)
             if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
@@ -96,6 +107,7 @@ fun ActivitiesScreen(
                 onSelectCategory = { viewModel.accept(ActivitiesStore.Intent.SelectCategory(it)) },
                 onSelectTab = { viewModel.accept(ActivitiesStore.Intent.SelectTab(it)) },
                 onOpenProfile = { viewModel.accept(ActivitiesStore.Intent.ClickProfile) },
+                filtersVisible = filtersOnScroll.isVisible,
             )
         },
     ) { padding ->
@@ -104,43 +116,77 @@ fun ActivitiesScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            when {
-                state.isLoading && state.activities.isEmpty() -> {
-                    HackLoading()
-                }
+            PullToRefreshBox(
+                isRefreshing = state.isLoading && state.activities.isNotEmpty(),
+                onRefresh = { viewModel.accept(ActivitiesStore.Intent.Refresh) },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(filtersOnScroll.connection),
+            ) {
+                when {
+                    state.isInitialLoading -> {
+                        HackLoading()
+                    }
 
-                state.filteredActivities.isEmpty() -> {
-                    HackEmptyState(
-                        title = stringResource(R.string.activities_empty_title),
-                        description = stringResource(R.string.activities_empty_desc),
-                        icon = Icons.Outlined.CalendarMonth,
-                        modifier = Modifier.align(Alignment.Center),
-                    )
-                }
+                    state.activities.isEmpty() && state.error != null -> {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            item(key = LOAD_ERROR_KEY) {
+                                HackEmptyState(
+                                    title = stringResource(R.string.activities_load_error_title),
+                                    description = state.error?.resolve(context),
+                                    icon = Icons.Outlined.CloudOff,
+                                    modifier = Modifier.fillParentMaxSize(),
+                                    action = {
+                                        Button(
+                                            onClick = { viewModel.accept(ActivitiesStore.Intent.Refresh) },
+                                            shape = MaterialTheme.shapes.medium,
+                                        ) {
+                                            Text(text = retry, fontWeight = FontWeight.Bold)
+                                        }
+                                    },
+                                )
+                            }
+                        }
+                    }
 
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 112.dp),
-                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
-                    ) {
-                        items(
-                            items = state.filteredActivities,
-                            key = { it.id },
-                        ) { proposal ->
-                            ActivityCard(
-                                proposal = proposal,
-                                isAuthor = state.isAuthorOf(proposal),
-                                onClick = {
-                                    viewModel.accept(ActivitiesStore.Intent.ClickActivity(proposal.id))
-                                },
-                                canInteract = state.canInteract,
-                                canLike = state.canLikeIn(proposal),
-                                onVote = { viewModel.accept(ActivitiesStore.Intent.Vote(proposal.id)) },
-                                onUnvote = { viewModel.accept(ActivitiesStore.Intent.Unvote(proposal.id)) },
-                                onLike = { viewModel.accept(ActivitiesStore.Intent.Like(proposal.id)) },
-                                onUnlike = { viewModel.accept(ActivitiesStore.Intent.Unlike(proposal.id)) },
-                            )
+                    state.filteredActivities.isEmpty() -> {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            item(key = EMPTY_STATE_KEY) {
+                                HackEmptyState(
+                                    title = stringResource(R.string.activities_empty_title),
+                                    description = stringResource(R.string.activities_empty_desc),
+                                    icon = Icons.Outlined.CalendarMonth,
+                                    modifier = Modifier.fillParentMaxSize(),
+                                )
+                            }
+                        }
+                    }
+
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 112.dp),
+                            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
+                        ) {
+                            items(
+                                items = state.filteredActivities,
+                                key = { it.id },
+                            ) { proposal ->
+                                ActivityCard(
+                                    proposal = proposal,
+                                    isAuthor = state.isAuthorOf(proposal),
+                                    onClick = {
+                                        viewModel.accept(ActivitiesStore.Intent.ClickActivity(proposal.id))
+                                    },
+                                    canInteract = state.canInteract,
+                                    canLike = state.canLikeIn(proposal),
+                                    onVote = { viewModel.accept(ActivitiesStore.Intent.Vote(proposal.id)) },
+                                    onUnvote = { viewModel.accept(ActivitiesStore.Intent.Unvote(proposal.id)) },
+                                    onLike = { viewModel.accept(ActivitiesStore.Intent.Like(proposal.id)) },
+                                    onUnlike = { viewModel.accept(ActivitiesStore.Intent.Unlike(proposal.id)) },
+                                    modifier = Modifier.animateItem(),
+                                )
+                            }
                         }
                     }
                 }
@@ -158,3 +204,6 @@ fun ActivitiesScreen(
         }
     }
 }
+
+private const val EMPTY_STATE_KEY = "activities-empty"
+private const val LOAD_ERROR_KEY = "activities-load-error"

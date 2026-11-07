@@ -59,14 +59,7 @@ class EventReviewRequestRepositoryTest {
             "class": "10A",
             "role": "PUPIL"
           },
-          "teacher": {
-            "id": "teacher-1",
-            "schoolsById": "school-2",
-            "name": "Петр",
-            "surname": "Петров",
-            "class": null,
-            "role": "TEACHER"
-          },
+          "createdByRole": "PUPIL", "moderators": [{"name": "Петр", "surname": "Петров"}],
           "createdAt": "2026-11-06T00:00:00.000Z",
           "updatedAt": "2026-11-06T00:00:00.000Z",
           "voters": [{"name": "Пётр", "surname": "Петров"}], "votesCount": 1, "likesCount": 0
@@ -172,6 +165,31 @@ class EventReviewRequestRepositoryTest {
         val updated = (result as DomainResult.Success).value
         assertEquals(ReviewStatus.APPROVED, updated.status)
         assertEquals(ReviewStatus.APPROVED, repository.observeRequests().firstValue().first().status)
+    }
+
+    @Test
+    fun refreshKeepsRequestsProcessedInThisSession() = runTest {
+        var moderationList = "[${eventJson("e-1", "ON_MODERATION")}]"
+        val repository = createRepository { request ->
+            when {
+                request.url.encodedPath == "/api/v1/events/moderation" -> okResponse(moderationList)
+
+                request.method == HttpMethod.Post &&
+                    request.url.encodedPath == "/api/v1/events/e-1/approve" ->
+                    okResponse(eventJson("e-1", "ON_VOTE"))
+
+                else -> respond("Not found", HttpStatusCode.NotFound)
+            }
+        }
+        repository.refresh(RequestAudience.TEACHER)
+        repository.approve("e-1", RequestAudience.TEACHER)
+        moderationList = "[${eventJson("e-2", "ON_MODERATION")}]"
+
+        repository.refresh(RequestAudience.TEACHER)
+        val requests = repository.observeRequests().firstValue()
+
+        assertEquals(listOf("e-2", "e-1"), requests.map { it.id })
+        assertEquals(ReviewStatus.APPROVED, requests.last().status)
     }
 
     @Test

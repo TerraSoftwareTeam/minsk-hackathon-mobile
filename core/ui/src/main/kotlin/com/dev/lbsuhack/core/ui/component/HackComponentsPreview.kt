@@ -71,6 +71,16 @@ private fun SharedUiShowcase() {
             HackFieldLabel("Field label")
             HackPrimaryButton(text = "Continue", onClick = {})
             HackPrimaryButton(text = "Loading", onClick = {}, loading = true)
+            HackDotsLoader(color = MaterialTheme.colorScheme.primary)
+            HackChanceMeter(title = "Chance to happen", percent = 58, levelText = "medium")
+            HackChanceMeter(
+                title = "Chance to happen",
+                percent = 82,
+                levelText = "high",
+                prominent = true,
+                description = "Similar events in this category usually happen.",
+                footnote = "Estimated from past events of the same category",
+            )
             Box(
                 modifier = Modifier
                     .fillMaxWidth()

@@ -18,6 +18,7 @@ import com.dev.lbsuhack.feature.activities.store.toUiText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -32,7 +33,9 @@ class ActivitiesStoreFactory(
         object : ActivitiesStore,
             Store<ActivitiesStore.Intent, ActivitiesStore.State, ActivitiesStore.Label> by storeFactory.create(
                 name = "ActivitiesStore",
-                initialState = ActivitiesStore.State(),
+                initialState = ActivitiesStore.State(
+                    currentUser = (observeSessionUseCase.state.value as? SessionState.Authenticated)?.user,
+                ),
                 executorFactory = ::ExecutorImpl,
                 reducer = ReducerImpl,
             ) {}
@@ -75,12 +78,7 @@ class ActivitiesStoreFactory(
         }
 
         private fun openCreate() {
-            val role = state().currentUser?.role
-            if (role == UserRole.PUPIL) {
-                publish(ActivitiesStore.Label.OpenCreate)
-            } else if (role != null) {
-                publish(ActivitiesStore.Label.OpenRequests(role))
-            }
+            if (state().currentUser != null) publish(ActivitiesStore.Label.OpenCreate)
         }
 
         private fun observe() {
@@ -130,6 +128,7 @@ class ActivitiesStoreFactory(
                 if (!silent) dispatch(Message.Loading)
                 when (val result = activityRepository.refresh()) {
                     is DomainResult.Success -> {
+                        dispatch(Message.ActivitiesLoaded(activityRepository.observeActivities().first()))
                         dispatch(Message.Loaded)
                         return true
                     }
@@ -204,9 +203,12 @@ class ActivitiesStoreFactory(
             when (msg) {
                 Message.ClearError -> copy(error = null)
                 Message.Loading -> copy(isLoading = true, error = null)
-                Message.Loaded -> copy(isLoading = false, error = null)
+                Message.Loaded -> copy(isLoading = false, hasLoaded = true, error = null)
                 is Message.Failed -> copy(isLoading = false, error = msg.error, errorId = errorId + 1)
-                is Message.ActivitiesLoaded -> copy(activities = msg.activities, isLoading = false)
+                is Message.ActivitiesLoaded -> copy(
+                    activities = msg.activities,
+                    hasLoaded = hasLoaded || msg.activities.isNotEmpty(),
+                )
                 is Message.UserUpdated -> copy(currentUser = msg.user)
                 is Message.CategorySelected -> copy(selectedCategory = msg.category)
                 is Message.TabSelected -> copy(selectedTab = msg.tab)

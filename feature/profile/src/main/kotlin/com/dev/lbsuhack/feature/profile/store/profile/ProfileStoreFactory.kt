@@ -10,7 +10,9 @@ import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.domain.push.ObserveNotificationsEnabledUseCase
 import com.dev.lbsuhack.core.domain.push.SetNotificationsEnabledUseCase
 import com.dev.lbsuhack.core.domain.session.ClearSessionUseCase
+import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SaveSessionUseCase
+import com.dev.lbsuhack.core.domain.session.SessionState
 import com.dev.lbsuhack.core.domain.session.SessionUser
 import com.dev.lbsuhack.core.domain.user.GetCurrentUserUseCase
 import com.dev.lbsuhack.core.domain.user.UpdateUserCacheUseCase
@@ -33,13 +35,14 @@ class ProfileStoreFactory(
     private val updateUserCache: UpdateUserCacheUseCase,
     private val saveSession: SaveSessionUseCase,
     private val clearSession: ClearSessionUseCase,
+    private val observeSession: ObserveSessionUseCase,
 ) {
 
     fun create(): ProfileStore =
         object : ProfileStore,
             Store<ProfileStore.Intent, ProfileStore.State, ProfileStore.Label> by storeFactory.create(
                 name = "ProfileStore",
-                initialState = ProfileStore.State(),
+                initialState = initialState(),
                 executorFactory = ::ExecutorImpl,
                 reducer = ReducerImpl,
             ) {}
@@ -64,6 +67,8 @@ class ProfileStoreFactory(
         data object Saving : Message
         data object SavingFinished : Message
         data object SavingSucceeded : Message
+        data object LoggingOut : Message
+        data object LoggedOut : Message
     }
 
     private inner class ExecutorImpl :
@@ -90,7 +95,8 @@ class ProfileStoreFactory(
             loadJob?.cancel()
             loadJob = scope.launch {
                 dispatch(Message.LoadingStarted)
-                val initialNotifications = if (state().hasUser) state().notificationsEnabled else observeNotificationsEnabled().first()
+                dispatch(Message.NotificationsChanged(observeNotificationsEnabled().first()))
+                val initialNotifications = state().notificationsEnabled
                 val initialSaved = if (state().hasUser) state().savedCount else profileRepository.savedCount()
                 val cached = (getCurrentUser(forceRefresh = false) as? DomainResult.Success)?.value
                 if (cached != null) {
@@ -221,8 +227,14 @@ class ProfileStoreFactory(
         }
 
         private fun logout() {
+            if (state().isLoggingOut) return
+            dispatch(Message.LoggingOut)
             scope.launch {
-                clearSession()
+                try {
+                    clearSession()
+                } finally {
+                    dispatch(Message.LoggedOut)
+                }
             }
         }
     }
@@ -251,7 +263,24 @@ class ProfileStoreFactory(
             Message.Saving -> copy(isSaving = true)
             Message.SavingFinished -> copy(isSaving = false)
             Message.SavingSucceeded -> copy(dialog = null, isSaving = false)
+            Message.LoggingOut -> copy(isLoggingOut = true)
+            Message.LoggedOut -> copy(isLoggingOut = false)
         }
+    }
+
+    private fun initialState(): ProfileStore.State {
+        val user = (observeSession.state.value as? SessionState.Authenticated)?.user ?: return ProfileStore.State()
+        return ProfileStore.State(
+            fullName = listOfNotNull(
+                user.name.takeIf { it.isNotBlank() },
+                user.surname?.takeIf { it.isNotBlank() },
+            ).joinToString(" "),
+            pupilClass = if (user.role == UserRole.PUPIL) user.pupilClass.orEmpty() else "",
+            schoolName = user.schoolName.orEmpty(),
+            role = user.role,
+            isLoading = false,
+            hasUser = true,
+        )
     }
 
     private fun User.displayName(): String = listOfNotNull(

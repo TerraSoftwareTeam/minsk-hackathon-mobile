@@ -8,9 +8,9 @@
     <string name="profile_saved_title">Saved</string>
     <string name="profile_saved_empty">Nothing here yet. Save activities from the feed.</string>
     <string name="profile_open_settings">Settings</string>
-    <string name="profile_requests">Requests</string>
-    <string name="profile_requests_teacher">Publications</string>
-    <string name="profile_requests_admin">Events</string>
+    <string name="profile_requests">Events</string>
+    <string name="profile_requests_teacher">Pupil requests</string>
+    <string name="profile_requests_admin">Approvals</string>
     <string name="profile_logout">Sign out</string>
     <string name="profile_logout_confirm_title">Sign out?</string>
     <string name="profile_logout_confirm_desc">You will need to sign in again to return.</string>
@@ -50,4 +50,6 @@
     <string name="profile_error_load_title">Failed to load profile</string>
     <string name="profile_error_load_desc">Could not load profile data. Check your connection and try again.</string>
     <string name="profile_name_unknown">—</string>
+    <string name="profile_create_activity">Create an event</string>
+    <string name="profile_my_activities">My events</string>
 </resources>

@@ -18,6 +18,8 @@ val LocalNavigator = staticCompositionLocalOf<Navigator> {
 interface AppNavigation {
     fun openProfile()
     fun openRequests(role: UserRole)
+    fun openCreateActivity()
+    fun openActivities()
 }
 
 val LocalAppNavigation = staticCompositionLocalOf<AppNavigation> {

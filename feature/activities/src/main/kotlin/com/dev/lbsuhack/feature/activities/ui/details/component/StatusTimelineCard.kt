@@ -29,27 +29,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.dev.lbsuhack.feature.activities.R
+import com.dev.lbsuhack.feature.activities.domain.ActivityOrigin
 import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
 
 @Composable
-internal fun StatusTimelineCard(status: ActivityStatus, modifier: Modifier = Modifier) {
-    val activeStep = when (status) {
-        ActivityStatus.ON_MODERATION -> 1
-        ActivityStatus.ON_VOTE -> 2
-        ActivityStatus.ON_ADMIN_MODERATION -> 3
-        ActivityStatus.FINALIZED -> 4
-        ActivityStatus.DECLINED,
-        ActivityStatus.DECLINED_BY_ADMIN,
-        ActivityStatus.EXPIRED -> 0
-    }
-    val steps = listOf(
-        R.string.details_step_created_short,
-        R.string.details_step_moderated_short,
-        R.string.details_step_recruiting_short,
-        R.string.details_step_pending_short,
-        R.string.details_step_approved_short,
-    )
-
+internal fun StatusTimelineCard(
+    status: ActivityStatus,
+    origin: ActivityOrigin,
+    modifier: Modifier = Modifier,
+) {
+    val steps = timelineSteps(origin)
+    val activeStep = steps.indexOfFirst { status in it.statuses }.coerceAtLeast(0)
+        .let { index -> if (status.isTerminalFailure()) 0 else index }
     val completedConnection = MaterialTheme.colorScheme.onSurface
     val pendingConnection = MaterialTheme.colorScheme.outline
 
@@ -93,7 +84,8 @@ internal fun StatusTimelineCard(status: ActivityStatus, modifier: Modifier = Mod
                 },
             verticalAlignment = Alignment.Top,
         ) {
-            steps.forEachIndexed { index, stepTitle ->
+            steps.forEachIndexed { index, step ->
+                val stepTitle = step.titleRes
                 val isCompleted = index <= activeStep
                 val isCurrent = index == activeStep
 
@@ -154,3 +146,21 @@ internal fun StatusTimelineCard(status: ActivityStatus, modifier: Modifier = Mod
         }
     }
 }
+
+private data class TimelineStep(val titleRes: Int, val statuses: Set<ActivityStatus>)
+
+private fun timelineSteps(origin: ActivityOrigin): List<TimelineStep> {
+    val created = TimelineStep(R.string.details_step_created_short, emptySet())
+    val teacher = TimelineStep(R.string.details_step_moderated_short, setOf(ActivityStatus.ON_MODERATION))
+    val votes = TimelineStep(R.string.details_step_recruiting_short, setOf(ActivityStatus.ON_VOTE))
+    val school = TimelineStep(R.string.details_step_pending_short, setOf(ActivityStatus.ON_ADMIN_MODERATION))
+    val done = TimelineStep(R.string.details_step_approved_short, setOf(ActivityStatus.FINALIZED))
+    return when (origin) {
+        ActivityOrigin.PUPIL -> listOf(created, teacher, votes, school, done)
+        ActivityOrigin.TEACHER -> listOf(created, votes, school, done)
+        ActivityOrigin.SCHOOL -> listOf(created, votes, done)
+    }
+}
+
+private fun ActivityStatus.isTerminalFailure(): Boolean =
+    this == ActivityStatus.DECLINED || this == ActivityStatus.DECLINED_BY_ADMIN || this == ActivityStatus.EXPIRED

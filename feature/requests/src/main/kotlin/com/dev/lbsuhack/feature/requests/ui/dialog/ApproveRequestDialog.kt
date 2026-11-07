@@ -2,12 +2,11 @@ package com.dev.lbsuhack.feature.requests.ui.dialog
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -16,9 +15,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.dev.lbsuhack.core.localization.R as LocalizationR
+import com.dev.lbsuhack.core.ui.component.HackButtonContent
 import com.dev.lbsuhack.feature.requests.R
 import com.dev.lbsuhack.feature.requests.domain.RequestAudience
 import com.dev.lbsuhack.feature.requests.store.requests.RequestDialog
+import com.dev.lbsuhack.feature.requests.ui.component.RequestChanceMeter
 import com.dev.lbsuhack.feature.requests.ui.component.RequestDateTimeField
 import java.time.OffsetDateTime
 
@@ -81,20 +83,22 @@ internal fun ApproveRequestDialog(
                         )
                     }
                 }
+                if (dialog.isChanceLoading || dialog.chance != null) {
+                    RequestChanceMeter(
+                        probability = dialog.chance.takeUnless { dialog.isChanceLoading },
+                        title = stringResource(
+                            if (startsAt != null) LocalizationR.string.chance_for_date else LocalizationR.string.chance_title,
+                        ),
+                    )
+                }
             }
         },
         confirmButton = {
             Button(
-                onClick = onConfirm,
-                enabled = !isSubmitting,
+                onClick = { if (!isSubmitting) onConfirm() },
                 shape = MaterialTheme.shapes.medium,
             ) {
-                if (isSubmitting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                } else {
+                HackButtonContent(loading = isSubmitting) {
                     Text(
                         text = stringResource(R.string.requests_action_approve),
                         fontWeight = FontWeight.Bold,
@@ -104,6 +108,7 @@ internal fun ApproveRequestDialog(
         },
         dismissButton = {
             TextButton(
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
                 onClick = onDismiss,
                 enabled = !isSubmitting,
             ) {

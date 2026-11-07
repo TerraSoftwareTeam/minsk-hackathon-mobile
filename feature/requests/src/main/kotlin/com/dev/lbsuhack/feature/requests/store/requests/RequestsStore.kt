@@ -30,6 +30,8 @@ sealed interface RequestDialog {
         override val title: String,
         val startsAt: OffsetDateTime? = null,
         val hasDateError: Boolean = false,
+        val chance: Double? = null,
+        val isChanceLoading: Boolean = false,
     ) : RequestDialog
 
     data class Decline(
@@ -51,6 +53,8 @@ interface RequestsStore : Store<RequestsStore.Intent, RequestsStore.State, Reque
         data class Load(val role: UserRole) : Intent
         data object Refresh : Intent
         data object Pause : Intent
+        data object StartPolling : Intent
+        data object StopPolling : Intent
         data class SelectTab(val tab: RequestsTab) : Intent
         data class ClickApprove(val requestId: String) : Intent
         data class ClickDecline(val requestId: String) : Intent

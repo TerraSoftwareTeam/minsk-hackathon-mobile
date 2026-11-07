@@ -32,6 +32,7 @@ interface ProfileStore : Store<ProfileStore.Intent, ProfileStore.State, ProfileS
         val dialog: ProfileEditDialog? = null,
         val isLoading: Boolean = true,
         val isSaving: Boolean = false,
+        val isLoggingOut: Boolean = false,
         val isError: Boolean = false,
         val hasUser: Boolean = false,
     ) {

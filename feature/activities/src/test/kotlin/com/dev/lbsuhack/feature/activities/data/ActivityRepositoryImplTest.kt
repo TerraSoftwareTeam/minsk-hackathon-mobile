@@ -55,14 +55,7 @@ class ActivityRepositoryImplTest {
                                   "class": "10A",
                                   "role": "PUPIL"
                                 },
-                                "teacher": {
-                                  "id": "2",
-                                  "schoolsById": "school-2",
-                                  "name": "Петр",
-                                  "surname": "Петров",
-                                  "class": "10A",
-                                  "role": "TEACHER"
-                                },
+                                "createdByRole": "PUPIL", "moderators": [{"name": "Петр", "surname": "Петров"}],
                                 "createdAt": "2026-11-06T00:00:00.000Z",
                                 "updatedAt": "2026-11-06T00:00:00.000Z",
                                 "votesCount": 5,
@@ -131,14 +124,7 @@ class ActivityRepositoryImplTest {
                                   "class": "10A",
                                   "role": "PUPIL"
                                 },
-                                "teacher": {
-                                  "id": "2",
-                                  "schoolsById": "school-2",
-                                  "name": "Петр",
-                                  "surname": "Петров",
-                                  "class": "10A",
-                                  "role": "TEACHER"
-                                },
+                                "createdByRole": "PUPIL", "moderators": [{"name": "Петр", "surname": "Петров"}],
                                 "createdAt": "2026-11-06T00:00:00.000Z",
                                 "updatedAt": "2026-11-06T00:00:00.000Z",
                                 "voters": [{"name": "Пётр", "surname": "Петров"}], "likesCount": 0,
@@ -203,14 +189,7 @@ class ActivityRepositoryImplTest {
                             "class": "10A",
                             "role": "PUPIL"
                           },
-                          "teacher": {
-                            "id": "2",
-                            "schoolsById": "school-2",
-                            "name": "Петр",
-                            "surname": "Петров",
-                            "class": "10A",
-                            "role": "TEACHER"
-                          },
+                          "createdByRole": "PUPIL", "moderators": [{"name": "Петр", "surname": "Петров"}],
                           "createdAt": "2026-11-06T00:00:00.000Z",
                           "updatedAt": "2026-11-06T00:00:00.000Z",
                           "voters": [{"name": "Пётр", "surname": "Петров"}], "votesCount": 1, "likesCount": 0
@@ -265,14 +244,7 @@ class ActivityRepositoryImplTest {
                                   "class": "10A",
                                   "role": "PUPIL"
                                 },
-                                "teacher": {
-                                  "id": "2",
-                                  "schoolsById": "school-2",
-                                  "name": "Петр",
-                                  "surname": "Петров",
-                                  "class": "10A",
-                                  "role": "TEACHER"
-                                },
+                                "createdByRole": "PUPIL", "moderators": [{"name": "Петр", "surname": "Петров"}],
                                 "createdAt": "2026-11-06T00:00:00.000Z",
                                 "updatedAt": "2026-11-06T00:00:00.000Z",
                                 "voters": [{"name": "Пётр", "surname": "Петров"}], "likesCount": 0,
@@ -297,11 +269,32 @@ class ActivityRepositoryImplTest {
     }
 
     @Test
+    fun previewProbabilitySendsCategoryAndUtcStart() = runTest {
+        var seen: io.ktor.http.Url? = null
+        HttpClient(MockEngine { request ->
+            seen = request.url
+            respond("{\"successProbability\": 0.5461}", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+        }) {
+            install(ContentNegotiation) { json(json) }
+        }.use { client ->
+            val result = ActivityRepositoryImpl(client).previewSuccessProbability(
+                com.dev.lbsuhack.feature.activities.domain.ActivityCategory.SPORTS,
+                java.time.OffsetDateTime.parse("2026-12-05T12:00:00+03:00"),
+            )
+
+            assertEquals(0.5461, (result as com.dev.lbsuhack.core.domain.DomainResult.Success).value, 0.00001)
+            assertEquals("/api/v1/events/probability", seen?.encodedPath)
+            assertEquals("SPORTS", seen?.parameters?.get("category"))
+            assertEquals("2026-12-05T09:00:00Z", seen?.parameters?.get("startsAt"))
+        }
+    }
+
+    @Test
     fun mainFeedUsesRoleAppropriateEndpoint() = runTest {
         val roles = mapOf(
             com.dev.lbsuhack.core.domain.model.UserRole.PUPIL to listOf("/api/v1/events/my", "/api/v1/events/voting"),
-            com.dev.lbsuhack.core.domain.model.UserRole.TEACHER to listOf("/api/v1/events/voting"),
-            com.dev.lbsuhack.core.domain.model.UserRole.ORGANIZATOR to listOf("/api/v1/events/admin-moderation"),
+            com.dev.lbsuhack.core.domain.model.UserRole.TEACHER to listOf("/api/v1/events/my"),
+            com.dev.lbsuhack.core.domain.model.UserRole.ORGANIZATOR to listOf("/api/v1/events/my"),
         )
         for ((role, path) in roles) {
             val requests = java.util.concurrent.CopyOnWriteArrayList<String>()
@@ -333,7 +326,7 @@ class ActivityRepositoryImplTest {
               "votingClosesAt": "2026-12-06T10:00:00.000Z", "successProbability": 0.5, "imageUrl": null,
               "voters": [{"name": "Пётр", "surname": "Петров"}], "votesCount": 1, "likesCount": 0,
               "initiator": {"id": "me", "schoolsById": "s-me", "name": "Иван", "surname": "Иванов", "class": "10A", "role": "PUPIL"},
-              "teacher": null,
+              "createdByRole": "PUPIL", "moderators": [],
               "createdAt": "2026-11-06T10:00:00.000Z", "updatedAt": "2026-11-06T10:00:00.000Z",
               "votesCount": $votes, "hasVoted": false, "likedByMe": false
             }
@@ -391,7 +384,7 @@ class ActivityRepositoryImplTest {
               "id": "e1", "name": "Поход", "description": null, "scope": "CLASS", "category": "TOURISM",
               "status": "ON_VOTE", "declineReason": null, "voteThreshold": 10, "startsAt": null,
               "votingClosesAt": "2026-12-06T10:00:00.000Z", "successProbability": 0.5, "imageUrl": null,
-              "likesCount": 2, "initiator": {"name": "Аня", "surname": "Смирнова"}, "teacher": null,
+              "likesCount": 2, "initiator": {"name": "Аня", "surname": "Смирнова"}, "createdByRole": "PUPIL", "moderators": [],
               "voters": [{"name": "Иван", "surname": "Иванов"}, {"name": "Пётр", "surname": "Петров"}],
               "votesCount": 2, "createdAt": "2026-11-06T10:00:00.000Z", "updatedAt": "2026-11-06T10:00:00.000Z",
               "hasVoted": true, "likedByMe": false
@@ -480,7 +473,7 @@ class ActivityRepositoryImplTest {
               "category": "INTELLECTUAL", "status": "ON_VOTE", "declineReason": null, "voteThreshold": 20,
               "startsAt": null, "votingClosesAt": "2026-12-01T00:00:00.000Z", "successProbability": 0.8,
               "imageUrl": null, "likesCount": 5, "initiator": {"name": "Анна", "surname": "Иванова"},
-              "teacher": null, "voters": [{"name": "Анна", "surname": "Иванова"}, {"name": "Борис", "surname": "Петров"}],
+              "createdByRole": "PUPIL", "moderators": [], "voters": [{"name": "Анна", "surname": "Иванова"}, {"name": "Борис", "surname": "Петров"}],
               "votesCount": 2, "createdAt": "2026-11-01T00:00:00.000Z", "updatedAt": "2026-11-01T00:00:00.000Z"
             }
         """.trimIndent()
@@ -523,7 +516,7 @@ class ActivityRepositoryImplTest {
               "id": "v-1", "name": "Клуб", "description": null, "scope": "SCHOOL", "category": "OTHER",
               "status": "ON_VOTE", "declineReason": null, "voteThreshold": 10, "startsAt": null,
               "votingClosesAt": "2026-12-01T00:00:00.000Z", "successProbability": 0.5, "imageUrl": null,
-              "likesCount": 0, "initiator": {"name": "А", "surname": "Б"}, "teacher": null,
+              "likesCount": 0, "initiator": {"name": "А", "surname": "Б"}, "createdByRole": "PUPIL", "moderators": [],
               "voters": [], "votesCount": 0, "createdAt": "2026-11-01T00:00:00.000Z",
               "updatedAt": "2026-11-01T00:00:00.000Z", "hasVoted": false, "likedByMe": false
             }
@@ -533,7 +526,7 @@ class ActivityRepositoryImplTest {
               "id": "m-1", "name": "Моё событие", "description": null, "scope": "CLASS", "category": "SPORTS",
               "status": "ON_VOTE", "declineReason": null, "voteThreshold": 10, "startsAt": null,
               "votingClosesAt": "2026-12-01T00:00:00.000Z", "successProbability": 0.5, "imageUrl": null,
-              "likesCount": 0, "initiator": {"name": "Я", "surname": "Автор"}, "teacher": null,
+              "likesCount": 0, "initiator": {"name": "Я", "surname": "Автор"}, "createdByRole": "PUPIL", "moderators": [],
               "voters": [], "votesCount": 0, "createdAt": "2026-11-02T00:00:00.000Z",
               "updatedAt": "2026-11-02T00:00:00.000Z", "hasVoted": false, "likedByMe": false
             }
@@ -587,7 +580,7 @@ class ActivityRepositoryImplTest {
               "id": "e-sync", "name": "Синхронизация", "description": null, "scope": "CLASS", "category": "SPORTS",
               "status": "ON_VOTE", "declineReason": null, "voteThreshold": 10, "startsAt": null,
               "votingClosesAt": "2026-12-01T00:00:00.000Z", "successProbability": 0.5, "imageUrl": null,
-              "likesCount": 1, "initiator": {"name": "А", "surname": "Б"}, "teacher": null,
+              "likesCount": 1, "initiator": {"name": "А", "surname": "Б"}, "createdByRole": "PUPIL", "moderators": [],
               "voters": [], "votesCount": 0, "createdAt": "2026-11-01T00:00:00.000Z",
               "updatedAt": "2026-11-01T00:00:00.000Z", "hasVoted": false, "likedByMe": false
             }

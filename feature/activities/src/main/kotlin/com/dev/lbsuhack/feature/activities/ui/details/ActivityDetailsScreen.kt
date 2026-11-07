@@ -37,6 +37,7 @@ import com.dev.lbsuhack.feature.activities.ui.details.component.DetailsFloatingA
 import com.dev.lbsuhack.feature.activities.ui.details.component.DetailsStateView
 import com.dev.lbsuhack.feature.activities.ui.details.component.ParticipantsCard
 import com.dev.lbsuhack.feature.activities.ui.details.component.StatusTimelineCard
+import com.dev.lbsuhack.feature.activities.ui.details.component.SuccessChanceCard
 import com.dev.lbsuhack.feature.activities.ui.details.component.VotingStatusCard
 import org.koin.androidx.compose.koinViewModel
 
@@ -108,11 +109,15 @@ fun ActivityDetailsScreen(
                         ActivityQrCard(activityId = proposal.id, title = proposal.title)
                     }
                     ActivityStatusNotice(proposal = proposal)
-                    StatusTimelineCard(status = proposal.status)
+                    StatusTimelineCard(status = proposal.status, origin = proposal.origin)
                     if (proposal.status == ActivityStatus.ON_VOTE ||
                         proposal.status == ActivityStatus.ON_ADMIN_MODERATION
                     ) {
                         VotingStatusCard(proposal = proposal)
+                    }
+                    val probability = proposal.successProbability
+                    if (proposal.showsChance && probability != null) {
+                        SuccessChanceCard(probability = probability)
                     }
                     ParticipantsCard(voters = proposal.voters)
                     Spacer(modifier = Modifier.height(144.dp))

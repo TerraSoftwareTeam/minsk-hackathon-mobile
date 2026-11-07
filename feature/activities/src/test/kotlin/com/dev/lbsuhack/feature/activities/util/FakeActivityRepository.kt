@@ -30,6 +30,7 @@ class FakeActivityRepository(
     var unlikeResult: DomainResult<ActivityProposal>? = null
 
     var refreshCalls = 0
+    var lastStartsAt: String? = null
     var createCalls = 0
     var photoCalls = 0
     var voteCalls = 0
@@ -45,8 +46,11 @@ class FakeActivityRepository(
 
     override fun observeActivities(): Flow<List<ActivityProposal>> = activities.asStateFlow()
 
+    var refreshGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+
     override suspend fun refresh(): DomainResult<Unit> {
         refreshCalls++
+        refreshGate?.await()
         return refreshResult
     }
 
@@ -89,14 +93,27 @@ class FakeActivityRepository(
         return change(eventId) { it.copy(likesCount = (it.likesCount - 1).coerceAtLeast(0), likedByMe = false) }
     }
 
+    var probabilityResult: DomainResult<Double> = DomainResult.Success(0.58)
+    var lastProbabilityRequest: Pair<ActivityCategory, java.time.OffsetDateTime?>? = null
+
+    override suspend fun previewSuccessProbability(
+        category: ActivityCategory,
+        startsAt: java.time.OffsetDateTime?,
+    ): DomainResult<Double> {
+        lastProbabilityRequest = category to startsAt
+        return probabilityResult
+    }
+
     override suspend fun createEvent(
         name: String,
         category: ActivityCategory,
         description: String,
         scope: ActivityScope,
         voteThreshold: Int,
+        startsAt: String?,
     ): DomainResult<ActivityProposal> {
         createCalls++
+        lastStartsAt = startsAt
         createResult?.let { return it }
         val proposal = ActivityProposal(
             id = CREATED_ID,

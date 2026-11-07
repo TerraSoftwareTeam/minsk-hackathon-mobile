@@ -10,12 +10,15 @@ import com.dev.lbsuhack.core.network.error.toDomain
 import com.dev.lbsuhack.core.network.generated.model.AdminApproveEventDto
 import com.dev.lbsuhack.core.network.generated.model.DeclineEventDto
 import com.dev.lbsuhack.core.network.generated.model.EventResponseDto
+import com.dev.lbsuhack.core.network.generated.model.ProbabilityResponseDto
 import com.dev.lbsuhack.feature.requests.domain.RequestAudience
 import com.dev.lbsuhack.feature.requests.domain.ReviewRequest
 import com.dev.lbsuhack.feature.requests.domain.ReviewRequestRepository
+import com.dev.lbsuhack.feature.requests.domain.isProcessed
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
@@ -69,7 +72,10 @@ class EventReviewRequestRepository(
             when (val result = safeCall { httpClient.get(audience.moderationPath()).body<List<EventResponseDto>>() }) {
                 is NetworkResult.Success -> {
                     if (sessionId() != requestOwner) return@withLock DomainResult.Failure(DomainError.Unauthorized)
-                    requestsFlow.value = result.data.map { it.toDomain(audience) }
+                    val fresh = result.data.map { it.toDomain(audience) }
+                    val freshIds = fresh.mapTo(HashSet()) { it.id }
+                    val processed = requestsFlow.value.filter { it.isProcessed && it.id !in freshIds }
+                    requestsFlow.value = fresh + processed
                     DomainResult.Success(Unit)
                 }
 
@@ -133,6 +139,22 @@ class EventReviewRequestRepository(
 
                 is NetworkResult.Error -> DomainResult.Failure(result.error.toDomain())
             }
+        }
+    }
+
+    override suspend fun previewSuccessProbability(
+        categoryKey: String,
+        startsAt: String?,
+    ): DomainResult<Double> = withContext(ioDispatcher) {
+        val result = safeCall {
+            httpClient.get("api/v1/events/probability") {
+                parameter("category", categoryKey)
+                startsAt?.let { parameter("startsAt", it) }
+            }.body<ProbabilityResponseDto>()
+        }
+        when (result) {
+            is NetworkResult.Success -> DomainResult.Success(result.data.successProbability.toDouble())
+            is NetworkResult.Error -> DomainResult.Failure(result.error.toDomain())
         }
     }
 

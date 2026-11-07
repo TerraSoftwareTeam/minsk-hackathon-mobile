@@ -3,4 +3,15 @@
     <string name="localization_language_system">Как в системе</string>
     <string name="localization_language_english">Английский</string>
     <string name="localization_language_russian">Русский</string>
+    <string name="chance_title">Шанс состояться</string>
+    <string name="chance_level_low">низкий</string>
+    <string name="chance_level_medium">средний</string>
+    <string name="chance_level_high">высокий</string>
+    <string name="chance_hint_low">Похожие мероприятия этой категории проходят редко. Хорошее описание и фото помогут собрать голоса.</string>
+    <string name="chance_hint_medium">Похожие мероприятия этой категории проходят примерно в половине случаев.</string>
+    <string name="chance_hint_high">Похожие мероприятия этой категории обычно проходят.</string>
+    <string name="chance_basis">Оценка по прошедшим мероприятиям той же категории</string>
+    <string name="chance_preview_title">Прогноз</string>
+    <string name="chance_preview_loading">Считаем прогноз…</string>
+    <string name="chance_for_date">Шанс с этой датой</string>
 </resources>

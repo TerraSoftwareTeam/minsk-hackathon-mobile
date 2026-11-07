@@ -109,7 +109,7 @@ class BackendIntegrationTest {
             install(ContentNegotiation) { json(AppHttpClientFactory.defaultJson) }
         }.use { client ->
             val result = AuthRepositoryImpl(schoolsRepository, client, tokens, users).login("user", "password", UserRole.PUPIL)
-            val expected = """{"schoolsById":"3575208","name":"Иван","surname":"Иванов","class":"10A","role":"PUPIL"}"""
+            val expected = """{"schoolsById":"3575208","name":"Иван","surname":"Иванов","class":"10А","role":"PUPIL"}"""
             assertEquals(AppHttpClientFactory.defaultJson.parseToJsonElement(expected), registrationBody)
             val session = (result as DomainResult.Success).value
             assertEquals("Гимназия № 41", session.schoolName)

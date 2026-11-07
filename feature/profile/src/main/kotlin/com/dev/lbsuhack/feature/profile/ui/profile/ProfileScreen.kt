@@ -35,6 +35,8 @@ fun ProfileScreen(
     onBack: (() -> Unit)?,
     onOpenSettings: () -> Unit,
     onOpenRequests: (UserRole) -> Unit,
+    onCreateActivity: () -> Unit = {},
+    onOpenActivities: () -> Unit = {},
     viewModel: ProfileViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -55,13 +57,14 @@ fun ProfileScreen(
         }
     }
 
-    if (isLogoutDialogVisible) {
+    if (isLogoutDialogVisible || state.isLoggingOut) {
         LogoutConfirmDialog(
             onConfirm = {
                 isLogoutDialogVisible = false
                 viewModel.accept(ProfileStore.Intent.Logout)
             },
             onDismiss = { isLogoutDialogVisible = false },
+            isLoggingOut = state.isLoggingOut,
         )
     }
 
@@ -113,6 +116,8 @@ fun ProfileScreen(
                     state = state,
                     onEditClick = { viewModel.accept(ProfileStore.Intent.ClickEdit) },
                     onOpenRequests = onOpenRequests,
+                    onCreateActivity = onCreateActivity,
+                    onOpenActivities = onOpenActivities,
                     onToggleNotifications = { viewModel.accept(ProfileStore.Intent.ToggleNotifications) },
                     onOpenSettings = onOpenSettings,
                     onLogoutClick = { isLogoutDialogVisible = true },

@@ -1,6 +1,10 @@
 package com.dev.lbsuhack.feature.activities.ui.component
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -56,6 +60,7 @@ internal fun ActivityVoteButton(
                 onClick = onUnvote,
                 enabled = canCancel,
                 modifier = modifier,
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
                 shape = shape,
                 border = BorderStroke(
                     1.dp,
@@ -71,16 +76,22 @@ internal fun ActivityVoteButton(
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.activities_leave_action),
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                )
-                if (canCancel) {
+                Column(horizontalAlignment = Alignment.Start) {
                     Text(
-                        text = " · " + stringResource(R.string.activities_unvote_action),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = stringResource(R.string.activities_leave_action),
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
+                    if (canCancel) {
+                        Text(
+                            text = stringResource(R.string.activities_unvote_action),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             }
         }

@@ -16,10 +16,9 @@
     <string name="auth_surname">Фамилия</string>
     <string name="auth_surname_placeholder">Иванов</string>
     <string name="auth_class">Класс</string>
-    <string name="auth_class_grade">Параллель</string>
+    <string name="auth_class_grade">Класс</string>
     <string name="auth_class_letter">Буква</string>
     <string name="auth_class_not_selected">Не выбран</string>
-    <string name="auth_class_no_letter">Без буквы</string>
     <string name="auth_password">Пароль</string>
     <string name="auth_password_placeholder">••••••••</string>
 
@@ -32,7 +31,7 @@
 
     <string name="auth_error_validation">Введите логин и пароль Schools.by</string>
     <string name="auth_error_teacher_validation">Укажите фамилию и имя.</string>
-    <string name="auth_error_class_format">Выберите класс.</string>
+    <string name="auth_error_class_format">Выберите класс и букву.</string>
     <string name="auth_error_network">Сеть недоступна. Попробуйте ещё раз.</string>
     <string name="auth_error_credentials">Неверный логин или пароль Schools.by.</string>
     <string name="auth_error_forbidden">Доступ запрещён.</string>
@@ -43,4 +42,8 @@
 
     <string name="auth_password_show">Показать пароль</string>
     <string name="auth_password_hide">Скрыть пароль</string>
+    <string name="auth_pupil_method_schools_by">Schools.by</string>
+    <string name="auth_pupil_method_manual">Вручную</string>
+    <string name="auth_pupil_manual_hint">Нет доступа к schools.by? Укажите фамилию, имя и класс. Повторный вход с теми же данными откроет ваш аккаунт.</string>
+    <string name="auth_login_action_pupil_manual">Войти</string>
 </resources>

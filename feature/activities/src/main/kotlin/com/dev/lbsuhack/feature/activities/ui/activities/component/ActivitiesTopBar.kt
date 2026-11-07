@@ -1,5 +1,11 @@
 package com.dev.lbsuhack.feature.activities.ui.activities.component
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,6 +39,7 @@ internal fun ActivitiesTopBar(
     onSelectCategory: (ActivityCategory?) -> Unit,
     onSelectTab: (ActivityTab) -> Unit,
     onOpenProfile: () -> Unit,
+    filtersVisible: Boolean = true,
 ) {
     Column(
         modifier = Modifier
@@ -79,17 +86,28 @@ internal fun ActivitiesTopBar(
             HackAvatar(name = userName.orEmpty(), onClick = onOpenProfile)
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        ActivitiesFilters(
-            selectedCategory = selectedCategory,
-            selectedTab = selectedTab,
-            onSelectCategory = onSelectCategory,
-            onSelectTab = onSelectTab,
-        )
+        AnimatedVisibility(
+            visible = filtersVisible,
+            enter = expandVertically(animationSpec = tween(FILTERS_ANIMATION_MS), expandFrom = Alignment.Top) +
+                fadeIn(animationSpec = tween(FILTERS_ANIMATION_MS)),
+            exit = shrinkVertically(animationSpec = tween(FILTERS_ANIMATION_MS), shrinkTowards = Alignment.Top) +
+                fadeOut(animationSpec = tween(FILTERS_ANIMATION_MS)),
+        ) {
+            Column {
+                Spacer(modifier = Modifier.height(20.dp))
+                ActivitiesFilters(
+                    selectedCategory = selectedCategory,
+                    selectedTab = selectedTab,
+                    onSelectCategory = onSelectCategory,
+                    onSelectTab = onSelectTab,
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         HorizontalDivider(color = MaterialTheme.hack.gridLine)
     }
 }
+
+private const val FILTERS_ANIMATION_MS = 220

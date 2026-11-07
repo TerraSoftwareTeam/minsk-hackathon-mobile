@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class FakeReviewRequestRepository(
-    private val teacherQueue: List<ReviewRequest> = emptyList(),
+    var teacherQueue: List<ReviewRequest> = emptyList(),
     private val adminQueue: List<ReviewRequest> = emptyList(),
     var refreshResult: DomainResult<Unit> = DomainResult.Success(Unit),
     private val refreshDelayMillis: Long = 0L,
@@ -54,6 +54,17 @@ class FakeReviewRequestRepository(
         return updateRequest(requestId) {
             it.copy(status = ReviewStatus.DECLINED, declineReason = reason?.trim()?.ifBlank { null })
         }
+    }
+
+    var probabilityResult: DomainResult<Double> = DomainResult.Success(0.72)
+    val probabilityRequests = mutableListOf<Pair<String, String?>>()
+
+    override suspend fun previewSuccessProbability(
+        categoryKey: String,
+        startsAt: String?,
+    ): DomainResult<Double> {
+        probabilityRequests += categoryKey to startsAt
+        return probabilityResult
     }
 
     private fun updateRequest(

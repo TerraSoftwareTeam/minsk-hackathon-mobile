@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -32,11 +31,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.dev.lbsuhack.core.ui.component.HackButtonContent
 import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.ui.common.FloatingActionsBackdrop
 
 @Composable
-internal fun SubmitActivityActions(isSubmitting: Boolean, onSubmit: () -> Unit, modifier: Modifier = Modifier) {
+internal fun SubmitActivityActions(
+    submitText: String,
+    infoText: String,
+    isSubmitting: Boolean,
+    onSubmit: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     var showInfo by rememberSaveable { mutableStateOf(false) }
     Box(modifier = modifier.fillMaxWidth().height(180.dp)) {
         FloatingActionsBackdrop(modifier = Modifier.matchParentSize())
@@ -46,7 +52,7 @@ internal fun SubmitActivityActions(isSubmitting: Boolean, onSubmit: () -> Unit, 
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Button(
-                onClick = onSubmit,
+                onClick = { if (!isSubmitting) onSubmit() },
                 modifier = Modifier.weight(1f).height(72.dp),
                 shape = MaterialTheme.shapes.large,
                 colors = ButtonDefaults.buttonColors(
@@ -55,16 +61,10 @@ internal fun SubmitActivityActions(isSubmitting: Boolean, onSubmit: () -> Unit, 
                     disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp, disabledElevation = 6.dp),
-                enabled = !isSubmitting,
             ) {
-                if (isSubmitting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
+                HackButtonContent(loading = isSubmitting) {
                     Text(
-                        stringResource(R.string.create_activity_submit_action),
+                        submitText,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         maxLines = 2,
                         textAlign = TextAlign.Center,
@@ -107,12 +107,16 @@ internal fun SubmitActivityActions(isSubmitting: Boolean, onSubmit: () -> Unit, 
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
-                            stringResource(R.string.create_activity_moderation_note),
+                            infoText,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        TextButton(onClick = { showInfo = false }, modifier = Modifier.align(Alignment.End)) {
-                            Text(stringResource(R.string.create_activity_info_dismiss), color = MaterialTheme.colorScheme.primary)
+                        TextButton(
+                            onClick = { showInfo = false },
+                            modifier = Modifier.align(Alignment.End),
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+                        ) {
+                            Text(stringResource(R.string.create_activity_info_dismiss))
                         }
                     }
                 }

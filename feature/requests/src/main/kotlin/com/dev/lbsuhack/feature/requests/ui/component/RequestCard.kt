@@ -72,17 +72,25 @@ internal fun RequestCard(
             text = stringResource(R.string.requests_author_name_format, request.authorName),
         )
 
-        Spacer(modifier = Modifier.height(14.dp))
+        if (request.description.isNotBlank()) {
+            Spacer(modifier = Modifier.height(14.dp))
 
-        Text(
-            text = request.description,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+            Text(
+                text = request.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         RequestMetaPanel(request = request)
+
+        val probability = request.successProbability
+        if (request.isPending && probability != null) {
+            Spacer(modifier = Modifier.height(14.dp))
+            RequestChanceMeter(probability = probability, modifier = Modifier.padding(horizontal = 4.dp))
+        }
 
         request.declineReason?.let { reason ->
             RequestDeclineReason(reason = reason)

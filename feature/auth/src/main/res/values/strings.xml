@@ -16,10 +16,9 @@
     <string name="auth_surname">Surname</string>
     <string name="auth_surname_placeholder">Ivanov</string>
     <string name="auth_class">Class</string>
-    <string name="auth_class_grade">Grade</string>
+    <string name="auth_class_grade">Class</string>
     <string name="auth_class_letter">Letter</string>
     <string name="auth_class_not_selected">Not selected</string>
-    <string name="auth_class_no_letter">No letter</string>
     <string name="auth_password">Password</string>
     <string name="auth_password_placeholder">••••••••</string>
 
@@ -32,7 +31,7 @@
 
     <string name="auth_error_validation">Enter your Schools.by login and password</string>
     <string name="auth_error_teacher_validation">Enter your first name and surname.</string>
-    <string name="auth_error_class_format">Select a class.</string>
+    <string name="auth_error_class_format">Select the class and the letter.</string>
     <string name="auth_error_network">Network unavailable. Please try again.</string>
     <string name="auth_error_credentials">Incorrect Schools.by login or password.</string>
     <string name="auth_error_forbidden">Access denied.</string>
@@ -43,4 +42,8 @@
 
     <string name="auth_password_show">Show password</string>
     <string name="auth_password_hide">Hide password</string>
+    <string name="auth_pupil_method_schools_by">Schools.by</string>
+    <string name="auth_pupil_method_manual">Manually</string>
+    <string name="auth_pupil_manual_hint">No schools.by access? Enter your surname, name and class. Signing in again with the same details opens your account.</string>
+    <string name="auth_login_action_pupil_manual">Sign in</string>
 </resources>

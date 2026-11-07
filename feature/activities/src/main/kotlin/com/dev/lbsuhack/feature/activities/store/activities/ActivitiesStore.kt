@@ -41,6 +41,7 @@ interface ActivitiesStore : Store<ActivitiesStore.Intent, ActivitiesStore.State,
         val selectedTab: ActivityTab = ActivityTab.ALL,
         val currentUser: SessionUser? = null,
         val isLoading: Boolean = false,
+        val hasLoaded: Boolean = false,
         val error: UiText? = null,
         val errorId: Long = 0L,
     ) {
@@ -58,11 +59,14 @@ interface ActivitiesStore : Store<ActivitiesStore.Intent, ActivitiesStore.State,
                 matchesCategory && matchesTab
             }
 
+        val isInitialLoading: Boolean
+            get() = activities.isEmpty() && error == null && (!hasLoaded || isLoading)
+
         val canInteract: Boolean
             get() = currentUser?.role == UserRole.PUPIL
 
         val canCreate: Boolean
-            get() = currentUser?.role == UserRole.PUPIL
+            get() = currentUser != null
 
         val primaryActionLabel: UiText
             get() = if (canCreate) {

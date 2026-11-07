@@ -20,4 +20,9 @@ interface ReviewRequestRepository {
         reason: String?,
         audience: RequestAudience,
     ): DomainResult<ReviewRequest>
+
+    suspend fun previewSuccessProbability(
+        categoryKey: String,
+        startsAt: String?,
+    ): DomainResult<Double>
 }

@@ -53,7 +53,7 @@
     <string name="create_activity_desc_hint">Расскажите, что будет происходить, для кого и что нужно взять с собой</string>
     <string name="create_activity_scope_label">Для кого</string>
     <string name="create_activity_scope_class">Свой класс</string>
-    <string name="create_activity_scope_grade">Параллель</string>
+    <string name="create_activity_scope_grade">Все классы моего года</string>
     <string name="create_activity_scope_school">Вся школа</string>
     <string name="create_activity_threshold_label">Порог голосов</string>
     <string name="create_activity_submit_action">Отправить заявку</string>
@@ -136,7 +136,6 @@
     <string name="create_activity_submission_info">Как проходит подача заявки</string>
     <string name="create_activity_info_dismiss">Понятно</string>
     <string name="activities_retry">Повторить</string>
-    <string name="activity_created_by_me">Создано мной</string>
 
     <string name="activity_error_forbidden_create">Создавать мероприятия могут только ученики</string>
     <string name="activity_error_forbidden_vote">Голосовать могут только ученики</string>
@@ -148,4 +147,19 @@
     <string name="activity_error_validation">Проверьте правильность заполнения полей</string>
     <string name="activity_error_not_found">Мероприятие не найдено</string>
     <string name="activity_error_unknown">Что-то пошло не так. Попробуйте снова</string>
+    <string name="activities_load_error_title">Не удалось загрузить мероприятия</string>
+    <string name="activity_author_you">Вы</string>
+    <string name="create_activity_title_teacher">Мероприятие от учителя</string>
+    <string name="create_activity_title_school">Мероприятие от школы</string>
+    <string name="create_origin_teacher_title">Без модерации</string>
+    <string name="create_origin_teacher_desc">Мероприятие сразу откроется для голосования учеников. Когда наберётся порог голосов, администрация школы назначит дату.</string>
+    <string name="create_origin_school_title">Для всей школы</string>
+    <string name="create_origin_school_desc">Мероприятие сразу увидят все ученики. Если к дате проведения наберётся порог голосов, оно состоится автоматически, иначе будет отменено.</string>
+    <string name="create_activity_date_label">Дата проведения</string>
+    <string name="create_activity_date_hint">После публикации дату изменить нельзя. До неё идёт голосование.</string>
+    <string name="create_activity_error_date_in_past">Выберите дату проведения в будущем</string>
+    <string name="create_activity_publish_action">Опубликовать</string>
+    <string name="activity_origin_teacher">Учитель</string>
+    <string name="activity_origin_school">Школа</string>
+    <string name="details_school_recruiting_desc">Если к дате проведения наберётся порог голосов, мероприятие состоится. Иначе оно будет отменено.</string>
 </resources>

@@ -16,7 +16,7 @@ import com.dev.lbsuhack.core.network.generated.model.AuthResponseDto
 import com.dev.lbsuhack.core.network.generated.model.LoginDto
 import com.dev.lbsuhack.core.network.generated.model.RegisterDto
 import com.dev.lbsuhack.feature.auth.domain.AuthRepository
-import com.dev.lbsuhack.feature.auth.parseSchoolClass
+import com.dev.lbsuhack.feature.auth.normalizePupilClass
 import com.dev.lbsuhack.feature.auth.domain.repository.SchoolsByAuthRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -64,6 +64,21 @@ class AuthRepositoryImpl(
         name: String,
         surname: String,
         className: String,
+    ): DomainResult<SessionUser> = registerManually(schoolsById, name, surname, className, UserRole.TEACHER)
+
+    override suspend fun registerPupil(
+        schoolsById: String,
+        name: String,
+        surname: String,
+        className: String,
+    ): DomainResult<SessionUser> = registerManually(schoolsById, name, surname, className, UserRole.PUPIL)
+
+    private suspend fun registerManually(
+        schoolsById: String,
+        name: String,
+        surname: String,
+        className: String,
+        role: UserRole,
     ): DomainResult<SessionUser> = withContext(ioDispatcher) {
         if (schoolsById.isBlank() || name.isBlank() || surname.isBlank() || className.isBlank()) {
             return@withContext DomainResult.Failure(DomainError.Validation)
@@ -77,14 +92,14 @@ class AuthRepositoryImpl(
                         schoolsById = schoolsById,
                         name = name,
                         surname = surname,
-                        role = RegisterDto.Role.TEACHER,
+                        role = if (role == UserRole.TEACHER) RegisterDto.Role.TEACHER else RegisterDto.Role.PUPIL,
                         propertyClass = className,
                     ),
                 )
             }.body<AuthResponseDto>()
         }
             .toDomainResult()
-            .toSessionResult(expectedRole = UserRole.TEACHER)
+            .toSessionResult(expectedRole = role)
     }
 
     override suspend fun registerOrganizer(schoolsById: String): DomainResult<SessionUser> = withContext(ioDispatcher) {
@@ -116,7 +131,7 @@ class AuthRepositoryImpl(
     }
 
     private suspend fun registerPupil(user: User): NetworkResult<AuthResponseDto> {
-        val schoolClass = (user as? User.Pupil)?.pupilClass?.let(::parseSchoolClass)
+        val schoolClass = (user as? User.Pupil)?.pupilClass?.let(::normalizePupilClass)
         val missingFields = buildList {
             if (user.name.isBlank()) add("name")
             if (user.surname.isNullOrBlank()) add("surname")

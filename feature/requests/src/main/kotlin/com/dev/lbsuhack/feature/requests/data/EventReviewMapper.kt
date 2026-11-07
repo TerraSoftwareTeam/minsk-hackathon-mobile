@@ -26,6 +26,8 @@ fun EventResponseDto.toDomain(audience: RequestAudience): ReviewRequest {
         status = status.toDomain(),
         audience = audience,
         declineReason = declineReason,
+        categoryKey = category.value,
+        successProbability = successProbability.toDouble(),
     )
 }
 

@@ -20,4 +20,11 @@ interface AuthRepository {
         surname: String,
         className: String,
     ): DomainResult<SessionUser>
+
+    suspend fun registerPupil(
+        schoolsById: String,
+        name: String,
+        surname: String,
+        className: String,
+    ): DomainResult<SessionUser>
 }

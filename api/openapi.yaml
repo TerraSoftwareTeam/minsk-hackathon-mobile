@@ -35,8 +35,9 @@ paths:
       description: If a user with this schoolsById exists (ADMIN included), logs them in and ignores the
         other fields. Otherwise creates a new user from name, surname and role (required then); class
         is required for PUPIL/TEACHER and must be omitted for ADMIN. A pupil may register into a class
-        that has no teacher yet; their events wait without a teacher, and a new teacher of the class takes
-        all of them for moderation. Returns a JWT access token either way. Public endpoint, no auth required.
+        that has no teacher yet; their events wait for one, and every teacher of the class (also one who
+        registers later) moderates them. Returns a JWT access token either way. Public endpoint, no auth
+        required.
       operationId: AuthController_register
       parameters: []
       requestBody:
@@ -297,9 +298,21 @@ paths:
       - Users
   /api/v1/events:
     post:
-      description: 'Pupil only. The event gets status ON_MODERATION and is sent to the teacher of the
-        pupil''s class. It has no date: an admin sets startsAt on approval. votingClosesAt (createdAt
-        + 1 month) is computed: teacher moderation, voting and the admin decision must finish by then.'
+      description: 'Any role; the role picks the flow (createdByRole in the response).
+
+
+        PUPIL: status ON_MODERATION, moderated by every teacher of the pupil''s class (they all get a
+        push). No date: an admin sets startsAt on approval. votingClosesAt = createdAt + 1 month: teacher
+        moderation, voting and the admin decision must finish by then.
+
+
+        TEACHER (school event): no teacher moderation, status ON_VOTE at once; scope relative to the teacher''s
+        class. On voteThreshold votes -> ON_ADMIN_MODERATION, then the admin approves with a date or declines.
+        Same deadline: createdAt + 1 month.
+
+
+        ADMIN (school event): no moderation, scope SCHOOL, startsAt required (in the future). Status ON_VOTE;
+        on voteThreshold votes -> FINALIZED, otherwise EXPIRED at startsAt (votingClosesAt = startsAt).'
       operationId: EventsController_create
       parameters: []
       requestBody:
@@ -316,17 +329,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/EventResponseDto'
         '400':
-          description: Validation failed (incl. an unknown field such as startsAt), or the pupil's class
-            has no teacher
+          description: 'Validation failed (incl. an unknown field); startsAt sent by a pupil or teacher;
+            admin: startsAt missing or not in the future, or scope other than SCHOOL; pupil or teacher
+            without a class'
         '401':
           description: Missing or invalid bearer token
-        '403':
-          description: Caller is not a pupil
         '409':
           description: Event with this name already exists
       security:
       - bearer: []
-      summary: Create an event request
+      summary: Create an event
       tags:
       - Events
   /api/v1/events/probability:
@@ -383,8 +395,8 @@ paths:
       - Events
   /api/v1/events/moderation:
     get:
-      description: Teacher only. Events assigned to the caller with status ON_MODERATION, oldest first.
-        Events past their deadline (a month after creation) are hidden.
+      description: Teacher only. Events of pupils of the caller's class with status ON_MODERATION, oldest
+        first. Events past their deadline (a month after creation) are hidden.
       operationId: EventsController_findForModeration
       parameters: []
       responses:
@@ -407,8 +419,8 @@ paths:
       - Events
   /api/v1/events/my:
     get:
-      description: Pupil only. All events created by the caller, in any status, newest first, with the
-        vote count.
+      description: Any role. All events created by the caller, in any status, newest first, with the vote
+        count.
       operationId: EventsController_findMine
       parameters: []
       responses:
@@ -422,8 +434,6 @@ paths:
                   $ref: '#/components/schemas/VotingEventResponseDto'
         '401':
           description: Missing or invalid bearer token
-        '403':
-          description: Caller is not a pupil
       security:
       - bearer: []
       summary: Author's own events
@@ -480,7 +490,7 @@ paths:
       - Events
   /api/v1/events/{id}:
     get:
-      description: Initiator, assigned teacher or admin.
+      description: Initiator, any teacher of the initiator's class, or admin.
       operationId: EventsController_findOne
       parameters:
       - name: id
@@ -512,7 +522,7 @@ paths:
       - Events
   /api/v1/events/{id}/approve:
     post:
-      description: Assigned teacher only. ON_MODERATION -> ON_VOTE.
+      description: Any teacher of the author's class. ON_MODERATION -> ON_VOTE. The first decision wins.
       operationId: EventsController_approve
       parameters:
       - name: id
@@ -534,7 +544,7 @@ paths:
         '401':
           description: Missing or invalid bearer token
         '403':
-          description: Caller is not the assigned teacher
+          description: Caller is not a teacher of the author's class
         '404':
           description: Event not found
         '409':
@@ -547,7 +557,8 @@ paths:
       - Events
   /api/v1/events/{id}/decline:
     post:
-      description: Assigned teacher only. ON_MODERATION -> DECLINED, with an optional reason.
+      description: Any teacher of the author's class. ON_MODERATION -> DECLINED, with an optional reason.
+        The first decision wins.
       operationId: EventsController_decline
       parameters:
       - name: id
@@ -575,7 +586,7 @@ paths:
         '401':
           description: Missing or invalid bearer token
         '403':
-          description: Caller is not the assigned teacher
+          description: Caller is not a teacher of the author's class
         '404':
           description: Event not found
         '409':
@@ -761,10 +772,11 @@ paths:
       - Events
   /api/v1/events/{id}/vote:
     post:
-      description: 'Pupil only. The event must be ON_VOTE and voting must be open (until a month after
-        the event was created). One vote per pupil per event. Audience by scope, relative to the initiator''s
-        class: CLASS - same class, GRADE - same grade (first number of the class name), SCHOOL - any pupil.
-        The vote that reaches voteThreshold moves the event to ON_ADMIN_MODERATION.'
+      description: 'Pupil only. The event must be ON_VOTE and voting must be open (until votingClosesAt:
+        a month after the event was created, or startsAt of an admin event). One vote per pupil per event.
+        Audience by scope, relative to the initiator''s class: CLASS - same class, GRADE - same grade
+        (first number of the class name), SCHOOL - any pupil. The vote that reaches voteThreshold moves
+        the event to ON_ADMIN_MODERATION, or an admin event to FINALIZED.'
       operationId: EventsController_vote
       parameters:
       - name: id
@@ -790,7 +802,7 @@ paths:
         '404':
           description: Event not found
         '409':
-          description: Event is not on vote, voting has closed (a month after creation), or the pupil
+          description: Event is not on vote, voting has closed (votingClosesAt has passed), or the pupil
             has already voted
       security:
       - bearer: []
@@ -799,8 +811,8 @@ paths:
       - Events
     delete:
       description: 'Pupil only, and only the pupil who voted. The event must still be ON_VOTE and voting
-        must be open (until a month after the event was created): once the threshold has moved the event
-        to ON_ADMIN_MODERATION, its votes stay. The pupil can vote again afterwards.'
+        must be open (until votingClosesAt): once the threshold has moved the event on (ON_ADMIN_MODERATION
+        or FINALIZED), its votes stay. The pupil can vote again afterwards.'
       operationId: EventsController_unvote
       parameters:
       - name: id
@@ -1152,7 +1164,8 @@ components:
           - SCHOOL
           default: CLASS
           description: 'Who may vote, relative to the author''s class: CLASS - same class, GRADE - same
-            grade (first number of the class name), SCHOOL - any pupil'
+            grade (first number of the class name), SCHOOL - any pupil. Pupil and teacher: any, CLASS
+            by default. Admin: SCHOOL only, and by default (an admin has no class)'
         category:
           type: string
           enum:
@@ -1177,7 +1190,16 @@ components:
           example: 15
           minimum: 1
           maximum: 10000
-          description: Votes needed during ON_VOTE to send the event to admin moderation
+          description: 'Votes needed during ON_VOTE: they send a pupil or teacher event to admin moderation,
+            and make an admin event FINALIZED'
+        startsAt:
+          type: string
+          example: '2026-12-05T12:00:00+03:00'
+          format: date-time
+          description: 'Admin only, and required for an admin: when the school event takes place, ISO
+            8601 date-time with a timezone (Z or ±hh:mm), in the future. It is also the voting deadline:
+            without enough votes by then the event becomes EXPIRED. Never changed afterwards. A pupil
+            or teacher must not send it: their date is set by the admin on approval'
       required:
       - name
       - category
@@ -1246,9 +1268,20 @@ components:
           - FINALIZED
           - DECLINED_BY_ADMIN
           example: ON_MODERATION
-          description: 'ON_MODERATION (teacher) -> ON_VOTE (pupils) -> ON_ADMIN_MODERATION (admin) ->
-            FINALIZED. DECLINED / DECLINED_BY_ADMIN: rejected by the teacher / admin. EXPIRED: not decided
-            before its deadline'
+          description: 'Pupil event: ON_MODERATION (teacher) -> ON_VOTE (pupils) -> ON_ADMIN_MODERATION
+            (admin) -> FINALIZED. Teacher event: starts ON_VOTE, then the same (never ON_MODERATION or
+            DECLINED). Admin event: ON_VOTE -> FINALIZED when the votes reach voteThreshold, otherwise
+            EXPIRED at startsAt. DECLINED / DECLINED_BY_ADMIN: rejected by the teacher / admin. EXPIRED:
+            not decided before its deadline (votingClosesAt)'
+        createdByRole:
+          type: string
+          enum:
+          - PUPIL
+          - TEACHER
+          - ADMIN
+          example: PUPIL
+          description: Role of the initiator when the event was created, it picks the flow (see status).
+            TEACHER and ADMIN events are school events created by the staff
         declineReason:
           type: string
           example: null
@@ -1257,20 +1290,22 @@ components:
         voteThreshold:
           type: integer
           example: 15
-          description: Votes needed to move from ON_VOTE to ON_ADMIN_MODERATION
+          description: 'Votes needed to leave ON_VOTE: to ON_ADMIN_MODERATION (pupil and teacher events),
+            to FINALIZED (admin events)'
         startsAt:
           format: date-time
           type: string
           example: null
           nullable: true
-          description: 'When the event starts (UTC). Set by the admin on approval: null in every status
-            except FINALIZED'
+          description: 'When the event starts (UTC). Pupil and teacher events: set by the admin on approval,
+            null in every status except FINALIZED. Admin events: set on creation, present in every status'
         votingClosesAt:
           format: date-time
           type: string
           example: '2026-12-06T10:00:00.000Z'
-          description: 'Computed: createdAt + 1 month (30 days). Teacher moderation, voting and the admin
-            decision must finish by then, otherwise the event becomes EXPIRED'
+          description: 'Computed. Pupil and teacher events: createdAt + 1 month (30 days), teacher moderation,
+            voting and the admin decision must finish by then. Admin events: startsAt, the votes must
+            reach voteThreshold by then. Otherwise the event becomes EXPIRED'
         successProbability:
           type: number
           example: 0.66
@@ -1292,16 +1327,17 @@ components:
           description: Number of likes. Any pupil may like an event from ON_VOTE on, once, and take the
             like back
         initiator:
-          description: Pupil who created the event
+          description: 'Who created the event: a pupil, a teacher or an admin (see createdByRole)'
           allOf:
           - $ref: '#/components/schemas/EventUserResponseDto'
-        teacher:
-          nullable: true
-          description: 'Teacher who moderates the event. Null while the author''s class has no teacher:
-            the first teacher who registers into the class gets the event'
-          type: object
-          allOf:
-          - $ref: '#/components/schemas/EventUserResponseDto'
+        moderators:
+          description: 'Who may decide on the event now. ON_MODERATION: every teacher of the author''s
+            class (empty while the class has none: a teacher who registers into it moderates the event
+            at once). ON_ADMIN_MODERATION: every admin. Empty in every other status (admin events are
+            never moderated)'
+          type: array
+          items:
+            $ref: '#/components/schemas/EventUserResponseDto'
         voters:
           description: Pupils who voted for (signed up to) the event, in the order they voted
           type: array
@@ -1328,6 +1364,7 @@ components:
       - scope
       - category
       - status
+      - createdByRole
       - declineReason
       - voteThreshold
       - startsAt
@@ -1336,7 +1373,7 @@ components:
       - imageUrl
       - likesCount
       - initiator
-      - teacher
+      - moderators
       - voters
       - votesCount
       - createdAt
@@ -1402,9 +1439,20 @@ components:
           - FINALIZED
           - DECLINED_BY_ADMIN
           example: ON_MODERATION
-          description: 'ON_MODERATION (teacher) -> ON_VOTE (pupils) -> ON_ADMIN_MODERATION (admin) ->
-            FINALIZED. DECLINED / DECLINED_BY_ADMIN: rejected by the teacher / admin. EXPIRED: not decided
-            before its deadline'
+          description: 'Pupil event: ON_MODERATION (teacher) -> ON_VOTE (pupils) -> ON_ADMIN_MODERATION
+            (admin) -> FINALIZED. Teacher event: starts ON_VOTE, then the same (never ON_MODERATION or
+            DECLINED). Admin event: ON_VOTE -> FINALIZED when the votes reach voteThreshold, otherwise
+            EXPIRED at startsAt. DECLINED / DECLINED_BY_ADMIN: rejected by the teacher / admin. EXPIRED:
+            not decided before its deadline (votingClosesAt)'
+        createdByRole:
+          type: string
+          enum:
+          - PUPIL
+          - TEACHER
+          - ADMIN
+          example: PUPIL
+          description: Role of the initiator when the event was created, it picks the flow (see status).
+            TEACHER and ADMIN events are school events created by the staff
         declineReason:
           type: string
           example: null
@@ -1413,20 +1461,22 @@ components:
         voteThreshold:
           type: integer
           example: 15
-          description: Votes needed to move from ON_VOTE to ON_ADMIN_MODERATION
+          description: 'Votes needed to leave ON_VOTE: to ON_ADMIN_MODERATION (pupil and teacher events),
+            to FINALIZED (admin events)'
         startsAt:
           format: date-time
           type: string
           example: null
           nullable: true
-          description: 'When the event starts (UTC). Set by the admin on approval: null in every status
-            except FINALIZED'
+          description: 'When the event starts (UTC). Pupil and teacher events: set by the admin on approval,
+            null in every status except FINALIZED. Admin events: set on creation, present in every status'
         votingClosesAt:
           format: date-time
           type: string
           example: '2026-12-06T10:00:00.000Z'
-          description: 'Computed: createdAt + 1 month (30 days). Teacher moderation, voting and the admin
-            decision must finish by then, otherwise the event becomes EXPIRED'
+          description: 'Computed. Pupil and teacher events: createdAt + 1 month (30 days), teacher moderation,
+            voting and the admin decision must finish by then. Admin events: startsAt, the votes must
+            reach voteThreshold by then. Otherwise the event becomes EXPIRED'
         successProbability:
           type: number
           example: 0.66
@@ -1448,16 +1498,17 @@ components:
           description: Number of likes. Any pupil may like an event from ON_VOTE on, once, and take the
             like back
         initiator:
-          description: Pupil who created the event
+          description: 'Who created the event: a pupil, a teacher or an admin (see createdByRole)'
           allOf:
           - $ref: '#/components/schemas/EventUserResponseDto'
-        teacher:
-          nullable: true
-          description: 'Teacher who moderates the event. Null while the author''s class has no teacher:
-            the first teacher who registers into the class gets the event'
-          type: object
-          allOf:
-          - $ref: '#/components/schemas/EventUserResponseDto'
+        moderators:
+          description: 'Who may decide on the event now. ON_MODERATION: every teacher of the author''s
+            class (empty while the class has none: a teacher who registers into it moderates the event
+            at once). ON_ADMIN_MODERATION: every admin. Empty in every other status (admin events are
+            never moderated)'
+          type: array
+          items:
+            $ref: '#/components/schemas/EventUserResponseDto'
         voters:
           description: Pupils who voted for (signed up to) the event, in the order they voted
           type: array
@@ -1492,6 +1543,7 @@ components:
       - scope
       - category
       - status
+      - createdByRole
       - declineReason
       - voteThreshold
       - startsAt
@@ -1500,7 +1552,7 @@ components:
       - imageUrl
       - likesCount
       - initiator
-      - teacher
+      - moderators
       - voters
       - votesCount
       - createdAt

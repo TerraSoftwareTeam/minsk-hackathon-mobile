@@ -20,6 +20,8 @@ class ProfileNavigationInstaller : NavigationInstaller {
                     onBack = if (navigator.canGoBack) navigator::back else null,
                     onOpenSettings = { navigator.navigate(ProfileSettingsRoute) },
                     onOpenRequests = appNavigation::openRequests,
+                    onCreateActivity = appNavigation::openCreateActivity,
+                    onOpenActivities = appNavigation::openActivities,
                 )
             }
 

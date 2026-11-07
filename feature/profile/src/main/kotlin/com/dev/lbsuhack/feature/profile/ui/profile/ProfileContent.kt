@@ -30,6 +30,8 @@ fun ProfileContent(
     state: ProfileStore.State,
     onEditClick: () -> Unit,
     onOpenRequests: (UserRole) -> Unit,
+    onCreateActivity: () -> Unit,
+    onOpenActivities: () -> Unit,
     onToggleNotifications: () -> Unit,
     onOpenSettings: () -> Unit,
     onLogoutClick: () -> Unit,
@@ -53,6 +55,8 @@ fun ProfileContent(
             ProfileRequestsSection(
                 role = state.role,
                 onOpenRequests = onOpenRequests,
+                onCreateActivity = onCreateActivity,
+                onOpenActivities = onOpenActivities,
             )
         }
 

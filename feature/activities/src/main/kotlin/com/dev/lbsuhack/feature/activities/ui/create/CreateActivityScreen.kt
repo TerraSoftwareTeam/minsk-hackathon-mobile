@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
@@ -28,22 +30,28 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dev.lbsuhack.core.localization.R as LocalizationR
 import com.dev.lbsuhack.core.localization.text.resolve
 import com.dev.lbsuhack.core.ui.component.HackSectionLabel
 import com.dev.lbsuhack.core.ui.component.HackTopBar
 import com.dev.lbsuhack.feature.activities.R
+import com.dev.lbsuhack.feature.activities.domain.ActivityOrigin
 import com.dev.lbsuhack.feature.activities.domain.ActivityScope
 import com.dev.lbsuhack.feature.activities.presentation.create.CreateActivityViewModel
 import com.dev.lbsuhack.feature.activities.store.create.CreateActivityStore
 import com.dev.lbsuhack.feature.activities.store.create.CreationState
 import com.dev.lbsuhack.feature.activities.ui.activities.mapper.labelRes
+import com.dev.lbsuhack.feature.activities.ui.component.ActivityChanceMeter
+import com.dev.lbsuhack.feature.activities.ui.component.ActivityTag
 import com.dev.lbsuhack.feature.activities.ui.create.component.ActivityPhotoField
 import com.dev.lbsuhack.feature.activities.ui.create.component.CategorySelector
 import com.dev.lbsuhack.feature.activities.ui.create.component.CreateActivityCompletedState
+import com.dev.lbsuhack.feature.activities.ui.create.component.CreateOriginBanner
 import com.dev.lbsuhack.feature.activities.ui.create.component.FormSection
 import com.dev.lbsuhack.feature.activities.ui.create.component.FormTextField
 import com.dev.lbsuhack.feature.activities.ui.create.component.ParticipantCountRow
 import com.dev.lbsuhack.feature.activities.ui.create.component.PhotoPendingState
+import com.dev.lbsuhack.feature.activities.ui.create.component.SchoolDateField
 import com.dev.lbsuhack.feature.activities.ui.create.component.SubmitActivityActions
 import org.koin.androidx.compose.koinViewModel
 
@@ -77,7 +85,13 @@ fun CreateActivityScreen(
         snackbarHost = { SnackbarHost(snackbarHostState, modifier = Modifier.padding(bottom = 108.dp)) },
         topBar = {
             HackTopBar(
-                title = stringResource(R.string.create_activity_title),
+                title = stringResource(
+                    when (state.origin) {
+                        ActivityOrigin.PUPIL -> R.string.create_activity_title
+                        ActivityOrigin.TEACHER -> R.string.create_activity_title_teacher
+                        ActivityOrigin.SCHOOL -> R.string.create_activity_title_school
+                    },
+                ),
                 onBack = onBack,
             )
         },
@@ -97,6 +111,8 @@ fun CreateActivityScreen(
                             .padding(horizontal = 20.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
+                        CreateOriginBanner(origin = state.origin)
+
                         FormSection(title = stringResource(R.string.create_activity_main_section)) {
                             HackSectionLabel(text = stringResource(R.string.create_activity_category_label))
                             Spacer(modifier = Modifier.height(10.dp))
@@ -160,41 +176,80 @@ fun CreateActivityScreen(
 
                             Spacer(modifier = Modifier.height(20.dp))
 
+                            if (state.requiresDate) {
+                                val startsAt = state.startsAt
+                                if (startsAt != null) {
+                                    SchoolDateField(
+                                        startsAt = startsAt,
+                                        hasError = state.hasDateError,
+                                        enabled = state.canEdit && !state.isSubmitting,
+                                        onChange = { viewModel.accept(CreateActivityStore.Intent.ChangeStartsAt(it)) },
+                                    )
+                                    Spacer(modifier = Modifier.height(20.dp))
+                                }
+                            }
+
                             HackSectionLabel(text = stringResource(R.string.create_activity_scope_label))
                             Spacer(modifier = Modifier.height(10.dp))
 
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                ActivityScope.entries.forEach { scope ->
-                                    FilterChip(
-                                        selected = state.scope == scope,
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                            selectedLabelColor = MaterialTheme.colorScheme.onSurface,
-                                            selectedLeadingIconColor = MaterialTheme.colorScheme.onSurface,
-                                        ),
-                                        border = FilterChipDefaults.filterChipBorder(
-                                            enabled = state.canEdit && !state.isSubmitting,
+                            if (state.requiresDate) {
+                                ActivityTag(
+                                    text = stringResource(R.string.create_activity_scope_school),
+                                    icon = Icons.Outlined.Groups,
+                                )
+                            } else {
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    ActivityScope.entries.forEach { scope ->
+                                        FilterChip(
                                             selected = state.scope == scope,
-                                            borderColor = MaterialTheme.colorScheme.outlineVariant,
-                                            selectedBorderColor = MaterialTheme.colorScheme.onSurface,
-                                            selectedBorderWidth = 1.dp,
-                                        ),
-                                        enabled = state.canEdit && !state.isSubmitting,
-                                        onClick = { viewModel.accept(CreateActivityStore.Intent.ChangeScope(scope)) },
-                                        label = {
-                                            Text(stringResource(scope.labelRes()))
-                                        },
-                                    )
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                                selectedLabelColor = MaterialTheme.colorScheme.onSurface,
+                                                selectedLeadingIconColor = MaterialTheme.colorScheme.onSurface,
+                                            ),
+                                            border = FilterChipDefaults.filterChipBorder(
+                                                enabled = state.canEdit && !state.isSubmitting,
+                                                selected = state.scope == scope,
+                                                borderColor = MaterialTheme.colorScheme.outlineVariant,
+                                                selectedBorderColor = MaterialTheme.colorScheme.onSurface,
+                                                selectedBorderWidth = 1.dp,
+                                            ),
+                                            enabled = state.canEdit && !state.isSubmitting,
+                                            onClick = { viewModel.accept(CreateActivityStore.Intent.ChangeScope(scope)) },
+                                            label = {
+                                                Text(stringResource(scope.labelRes()))
+                                            },
+                                        )
+                                    }
                                 }
+                            }
+                        }
+
+                        if (state.isChanceLoading || state.chance != null) {
+                            FormSection(title = stringResource(LocalizationR.string.chance_preview_title)) {
+                                ActivityChanceMeter(
+                                    probability = state.chance.takeUnless { state.isChanceLoading },
+                                    prominent = true,
+                                )
                             }
                         }
 
                         Spacer(modifier = Modifier.height(112.dp))
                     }
                     SubmitActivityActions(
+                        submitText = stringResource(
+                            if (state.isStaff) R.string.create_activity_publish_action else R.string.create_activity_submit_action,
+                        ),
+                        infoText = stringResource(
+                            when (state.origin) {
+                                ActivityOrigin.PUPIL -> R.string.create_activity_moderation_note
+                                ActivityOrigin.TEACHER -> R.string.create_origin_teacher_desc
+                                ActivityOrigin.SCHOOL -> R.string.create_origin_school_desc
+                            },
+                        ),
                         isSubmitting = state.isSubmitting,
                         onSubmit = { viewModel.accept(CreateActivityStore.Intent.Submit) },
                         modifier = Modifier.align(Alignment.BottomCenter),

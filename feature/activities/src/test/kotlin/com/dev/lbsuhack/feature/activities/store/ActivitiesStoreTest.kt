@@ -64,6 +64,29 @@ class ActivitiesStoreTest {
     }
 
     @Test
+    fun emptyCacheBeforeTheFirstResponseIsLoadingNotEmpty() = runTest(mainDispatcherRule.testDispatcher) {
+        val repository = FakeActivityRepository(emptyList())
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        repository.refreshGate = gate
+        val store = ActivitiesStoreFactory(
+            storeFactory = DefaultStoreFactory(),
+            activityRepository = repository,
+            observeSessionUseCase = ObserveSessionUseCase(sessionRepository),
+        ).create()
+
+        assertEquals(TestFixtures.pupil, store.state.currentUser)
+        store.accept(ActivitiesStore.Intent.StartPolling)
+        runCurrent()
+        assertTrue(store.state.isInitialLoading)
+
+        gate.complete(Unit)
+        runCurrent()
+        assertFalse(store.state.isInitialLoading)
+        assertTrue(store.state.hasLoaded)
+        store.dispose()
+    }
+
+    @Test
     fun selectCategoryFiltersActivities() = runTest(mainDispatcherRule.testDispatcher) {
         val store = createStore()
 

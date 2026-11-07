@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,6 +23,7 @@ import com.dev.lbsuhack.feature.requests.store.requests.RequestsTab
 import com.dev.lbsuhack.feature.requests.ui.component.RequestCard
 import com.dev.lbsuhack.feature.requests.ui.labels.subtitleLabelRes
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun RequestsContent(
     audience: RequestAudience,
@@ -29,6 +32,7 @@ internal fun RequestsContent(
     onSelectTab: (RequestsTab) -> Unit,
     onApprove: (String) -> Unit,
     onDecline: (String) -> Unit,
+    onRefresh: () -> Unit,
 ) {
     Column(modifier = modifier) {
         Text(
@@ -46,31 +50,44 @@ internal fun RequestsContent(
 
         HorizontalDivider(color = MaterialTheme.hack.gridLine)
 
-        if (state.visibleRequests.isEmpty()) {
-            RequestsEmptyState(
-                tab = state.selectedTab,
-                audience = audience,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(32.dp),
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                items(
-                    items = state.visibleRequests,
-                    key = { it.id },
-                ) { request ->
-                    RequestCard(
-                        request = request,
-                        onApprove = { onApprove(request.id) },
-                        onDecline = { onDecline(request.id) },
-                    )
+        PullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = onRefresh,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            if (state.visibleRequests.isEmpty()) {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    item(key = EMPTY_STATE_KEY) {
+                        RequestsEmptyState(
+                            tab = state.selectedTab,
+                            audience = audience,
+                            modifier = Modifier
+                                .fillParentMaxSize()
+                                .padding(32.dp),
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    items(
+                        items = state.visibleRequests,
+                        key = { it.id },
+                    ) { request ->
+                        RequestCard(
+                            request = request,
+                            onApprove = { onApprove(request.id) },
+                            onDecline = { onDecline(request.id) },
+                            modifier = Modifier.animateItem(),
+                        )
+                    }
                 }
             }
         }
     }
 }
+
+private const val EMPTY_STATE_KEY = "requests-empty"

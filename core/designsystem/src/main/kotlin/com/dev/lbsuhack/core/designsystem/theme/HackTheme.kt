@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -42,7 +43,11 @@ fun HackTheme(
             colorScheme = if (isDark) DarkHackColorScheme else LightHackColorScheme,
             typography = HackTypography,
             shapes = HackShapes,
-            content = content,
+            content = {
+                CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
+                    content()
+                }
+            },
         )
     }
 }

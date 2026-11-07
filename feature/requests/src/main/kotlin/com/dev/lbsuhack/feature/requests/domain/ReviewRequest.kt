@@ -29,6 +29,8 @@ data class ReviewRequest(
     val votesCount: Int = 0,
     val voteThreshold: Int = 0,
     val likesCount: Int = 0,
+    val categoryKey: String = "",
+    val successProbability: Double? = null,
 )
 
 val ReviewRequest.isPending: Boolean

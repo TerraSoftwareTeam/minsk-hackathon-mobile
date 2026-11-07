@@ -2,10 +2,8 @@ package com.dev.lbsuhack.core.ui.component
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,7 +20,7 @@ fun HackPrimaryButton(
     loading: Boolean = false,
 ) {
     Button(
-        onClick = onClick,
+        onClick = { if (!loading) onClick() },
         modifier = modifier
             .fillMaxWidth()
             .height(54.dp),
@@ -30,14 +28,9 @@ fun HackPrimaryButton(
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
         ),
-        enabled = enabled && !loading,
+        enabled = enabled,
     ) {
-        if (loading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
-                color = MaterialTheme.colorScheme.onPrimary,
-            )
-        } else {
+        HackButtonContent(loading = loading) {
             Text(
                 text = text,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),

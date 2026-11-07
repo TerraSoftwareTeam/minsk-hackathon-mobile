@@ -13,9 +13,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dev.lbsuhack.feature.auth.R
+import com.dev.lbsuhack.feature.auth.SCHOOL_CLASS_LETTERS
 
 private val CLASS_GRADES = (1..11).map(Int::toString)
-private val CLASS_LETTERS = "АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЩЭЮЯ".map(Char::toString)
+private val CLASS_LETTERS = SCHOOL_CLASS_LETTERS.map(Char::toString)
 
 @Composable
 internal fun AuthClassPicker(
@@ -25,7 +26,6 @@ internal fun AuthClassPicker(
 ) {
     val grade = value.takeWhile(Char::isDigit)
     val letter = value.dropWhile(Char::isDigit)
-    val noLetter = stringResource(R.string.auth_class_no_letter)
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -52,8 +52,8 @@ internal fun AuthClassPicker(
             )
             ClassDropdown(
                 label = stringResource(R.string.auth_class_letter),
-                selected = if (grade.isNotEmpty() && letter.isEmpty()) noLetter else letter,
-                options = listOf(noLetter to "") + CLASS_LETTERS.map { it to it },
+                selected = letter,
+                options = CLASS_LETTERS.map { it to it },
                 onSelect = { onValueChange(grade + it) },
                 enabled = grade.isNotEmpty(),
                 modifier = Modifier.weight(1f),

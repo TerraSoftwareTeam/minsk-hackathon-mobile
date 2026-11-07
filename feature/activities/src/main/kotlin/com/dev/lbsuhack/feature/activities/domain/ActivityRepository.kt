@@ -21,11 +21,16 @@ interface ActivityRepository {
     suspend fun unvote(eventId: String): DomainResult<ActivityProposal>
     suspend fun like(eventId: String): DomainResult<ActivityProposal>
     suspend fun unlike(eventId: String): DomainResult<ActivityProposal>
+    suspend fun previewSuccessProbability(
+        category: ActivityCategory,
+        startsAt: java.time.OffsetDateTime? = null,
+    ): DomainResult<Double>
     suspend fun createEvent(
         name: String,
         category: ActivityCategory,
         description: String,
         scope: ActivityScope = ActivityScope.CLASS,
         voteThreshold: Int = 15,
+        startsAt: String? = null,
     ): DomainResult<ActivityProposal>
 }

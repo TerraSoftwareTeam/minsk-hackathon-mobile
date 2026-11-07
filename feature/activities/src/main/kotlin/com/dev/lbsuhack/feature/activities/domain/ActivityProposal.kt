@@ -22,7 +22,16 @@ data class ActivityProposal(
     val likesCount: Int = 0,
     val likedByMe: Boolean = false,
     val isMine: Boolean = false,
+    val origin: ActivityOrigin = ActivityOrigin.PUPIL,
+    val successProbability: Double? = null,
 ) {
+    val showsChance: Boolean
+        get() = successProbability != null && (
+            status == ActivityStatus.ON_MODERATION ||
+                status == ActivityStatus.ON_VOTE ||
+                status == ActivityStatus.ON_ADMIN_MODERATION
+            )
+
     val isQuorumReached: Boolean get() = votesCount >= voteThreshold
 
     val progress: Float

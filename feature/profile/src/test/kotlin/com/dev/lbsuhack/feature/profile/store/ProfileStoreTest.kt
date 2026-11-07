@@ -10,6 +10,7 @@ import com.dev.lbsuhack.core.domain.push.NotificationSettingsRepository
 import com.dev.lbsuhack.core.domain.push.ObserveNotificationsEnabledUseCase
 import com.dev.lbsuhack.core.domain.push.SetNotificationsEnabledUseCase
 import com.dev.lbsuhack.core.domain.session.ClearSessionUseCase
+import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SaveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionState
 import com.dev.lbsuhack.core.domain.session.SessionUser
@@ -76,6 +77,7 @@ class ProfileStoreTest {
             updateUserCache = UpdateUserCacheUseCase(userRepo),
             saveSession = SaveSessionUseCase(sessionRepository),
             clearSession = ClearSessionUseCase(sessionRepository),
+            observeSession = ObserveSessionUseCase(sessionRepository),
         ).create()
     }
 
@@ -173,6 +175,7 @@ class ProfileStoreTest {
             runCurrent()
 
             assertTrue(sessionRepository.cleared)
+            assertFalse(store.state.isLoggingOut)
             store.dispose()
         }
 
@@ -220,7 +223,7 @@ class ProfileStoreTest {
         }
 
     @Test
-    fun loadFailureWithoutCacheEntersErrorState() =
+    fun loadFailureWithoutCacheKeepsTheSessionProfile() =
         runTest(mainDispatcherRule.testDispatcher) {
             val repo = FakeUserRepository(null).apply { refreshFails = true }
             val store = createStore(repo = repo)
@@ -229,10 +232,20 @@ class ProfileStoreTest {
             runCurrent()
 
             assertFalse(store.state.isLoading)
-            assertTrue(store.state.isError)
-            assertFalse(store.state.hasUser)
+            assertFalse(store.state.isError)
+            assertTrue(store.state.hasUser)
             store.dispose()
         }
+
+    @Test
+    fun profileIsVisibleFromTheSessionBeforeLoading() {
+        val store = createStore()
+
+        assertTrue(store.state.hasUser)
+        assertFalse(store.state.isLoading)
+        assertTrue(store.state.fullName.isNotBlank())
+        store.dispose()
+    }
 
     @Test
     fun localProfileRemainsVisibleWhenRefreshFails() =
@@ -247,6 +260,7 @@ class ProfileStoreTest {
                 UpdateUserCacheUseCase(repo),
                 SaveSessionUseCase(sessionRepository),
                 ClearSessionUseCase(sessionRepository),
+                ObserveSessionUseCase(sessionRepository),
             ).create()
 
             store.accept(ProfileStore.Intent.Load)

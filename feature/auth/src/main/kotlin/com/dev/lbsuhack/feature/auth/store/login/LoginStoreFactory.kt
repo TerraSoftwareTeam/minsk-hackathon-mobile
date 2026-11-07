@@ -15,6 +15,7 @@ import com.dev.lbsuhack.feature.auth.domain.AuthRepository
 import com.dev.lbsuhack.feature.auth.parseSchoolClass
 import com.dev.lbsuhack.feature.auth.toUiText
 import kotlinx.coroutines.launch
+import java.security.MessageDigest
 import kotlin.random.Random
 
 class LoginStoreFactory(
@@ -39,6 +40,7 @@ class LoginStoreFactory(
         data class NameChanged(val name: String) : Message
         data class ClassNameChanged(val className: String) : Message
         data class RoleChanged(val role: UserRole) : Message
+        data class PupilMethodChanged(val method: PupilLoginMethod) : Message
         data object Loading : Message
         data object Loaded : Message
         data class Failed(val error: UiText) : Message
@@ -55,6 +57,9 @@ class LoginStoreFactory(
                 is LoginStore.Intent.NameChanged -> dispatch(Message.NameChanged(intent.name))
                 is LoginStore.Intent.ClassNameChanged -> dispatch(Message.ClassNameChanged(intent.className))
                 is LoginStore.Intent.RoleChanged -> dispatch(Message.RoleChanged(intent.role))
+                is LoginStore.Intent.PupilMethodChanged -> {
+                    if (!state().isLoading) dispatch(Message.PupilMethodChanged(intent.method))
+                }
                 LoginStore.Intent.Submit -> submit()
             }
         }
@@ -74,29 +79,25 @@ class LoginStoreFactory(
         }
 
         private fun submitTeacher() {
-            val surname = state().surname.trim()
-            val name = state().name.trim()
-
-            if (surname.isBlank() || name.isBlank()) {
-                dispatch(Message.Failed(UiText.Resource(R.string.auth_error_teacher_validation)))
-                return
-            }
-            val className = parseSchoolClass(state().className) ?: run {
-                dispatch(Message.Failed(UiText.Resource(R.string.auth_error_class_format)))
-                return
-            }
-
+            val identity = manualIdentity() ?: return
             authenticate {
                 authRepository.registerTeacher(
                     schoolsById = randomSchoolsById(),
-                    name = name,
-                    surname = surname,
-                    className = className,
+                    name = identity.name,
+                    surname = identity.surname,
+                    className = identity.className,
                 )
             }
         }
 
         private fun submitPupil() {
+            when (state().pupilMethod) {
+                PupilLoginMethod.SCHOOLS_BY -> submitPupilSchoolsBy()
+                PupilLoginMethod.MANUAL -> submitPupilManually()
+            }
+        }
+
+        private fun submitPupilSchoolsBy() {
             val username = state().username.trim()
             val password = state().password
 
@@ -106,6 +107,33 @@ class LoginStoreFactory(
             }
 
             authenticate { authRepository.login(username, password, UserRole.PUPIL) }
+        }
+
+        private fun submitPupilManually() {
+            val identity = manualIdentity() ?: return
+            authenticate {
+                authRepository.registerPupil(
+                    schoolsById = manualPupilSchoolsById(identity),
+                    name = identity.name,
+                    surname = identity.surname,
+                    className = identity.className,
+                )
+            }
+        }
+
+        private fun manualIdentity(): ManualIdentity? {
+            val surname = state().surname.trim()
+            val name = state().name.trim()
+
+            if (surname.isBlank() || name.isBlank()) {
+                dispatch(Message.Failed(UiText.Resource(R.string.auth_error_teacher_validation)))
+                return null
+            }
+            val className = parseSchoolClass(state().className) ?: run {
+                dispatch(Message.Failed(UiText.Resource(R.string.auth_error_class_format)))
+                return null
+            }
+            return ManualIdentity(name = name, surname = surname, className = className)
         }
 
         private fun authenticate(block: suspend () -> DomainResult<SessionUser>) {
@@ -132,13 +160,32 @@ class LoginStoreFactory(
             is Message.NameChanged -> copy(name = msg.name, error = null)
             is Message.ClassNameChanged -> copy(className = msg.className, error = null)
             is Message.RoleChanged -> copy(role = msg.role, error = null)
+            is Message.PupilMethodChanged -> copy(pupilMethod = msg.method, error = null)
             Message.Loading -> copy(isLoading = true, error = null)
-            Message.Loaded -> copy(isLoading = false)
+            Message.Loaded -> LoginStore.State(role = role, pupilMethod = pupilMethod)
             is Message.Failed -> copy(isLoading = false, error = msg.error)
         }
     }
 
+    private data class ManualIdentity(
+        val name: String,
+        val surname: String,
+        val className: String,
+    )
+
     private companion object {
         fun randomSchoolsById(): String = Random.nextInt(1_000_000, 10_000_000).toString()
+
+        fun manualPupilSchoolsById(identity: ManualIdentity): String {
+            val key = listOf(identity.surname, identity.name, identity.className)
+                .joinToString(separator = "|") { it.lowercase() }
+            val digest = MessageDigest.getInstance("SHA-256").digest(key.toByteArray())
+            val value = digest.take(MANUAL_ID_BYTES).fold(0L) { acc, byte -> (acc shl 8) or (byte.toLong() and 0xFF) }
+            return (MANUAL_ID_MIN + Math.floorMod(value, MANUAL_ID_RANGE)).toString()
+        }
+
+        const val MANUAL_ID_BYTES = 7
+        const val MANUAL_ID_MIN = 100_000_000_000L
+        const val MANUAL_ID_RANGE = 900_000_000_000L
     }
 }

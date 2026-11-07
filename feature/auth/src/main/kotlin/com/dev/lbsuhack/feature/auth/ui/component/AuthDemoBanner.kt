@@ -24,6 +24,7 @@ import com.dev.lbsuhack.feature.auth.R
 @Composable
 internal fun AuthDemoBanner(
     modifier: Modifier = Modifier,
+    text: String = stringResource(R.string.auth_demo_hint),
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -39,11 +40,11 @@ internal fun AuthDemoBanner(
             Icon(
                 imageVector = Icons.Rounded.Info,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(20.dp),
             )
             Text(
-                text = stringResource(R.string.auth_demo_hint),
+                text = text,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 18.sp,

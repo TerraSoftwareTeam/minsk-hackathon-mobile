@@ -54,6 +54,7 @@ internal fun ActivityPhotoField(photoUri: String?, title: String, enabled: Boole
                 enabled = enabled,
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                 onClick = { picker.launch(arrayOf("image/*")) },
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
             ) {
                 Icon(
                     imageVector = Icons.Outlined.AddPhotoAlternate,

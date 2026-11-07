@@ -46,7 +46,7 @@ internal fun RequestsEmptyState(
                 imageVector = Icons.Default.Inbox,
                 contentDescription = null,
                 modifier = Modifier.size(32.dp),
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MaterialTheme.colorScheme.onSurface,
             )
         }
         Spacer(modifier = Modifier.height(18.dp))

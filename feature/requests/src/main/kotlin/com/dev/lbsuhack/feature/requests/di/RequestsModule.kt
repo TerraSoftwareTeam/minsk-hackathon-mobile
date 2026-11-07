@@ -21,7 +21,13 @@ val requestsModule = module {
         )
     }
 
-    singleOf(::RequestsStoreFactory)
+    single {
+        RequestsStoreFactory(
+            storeFactory = get(),
+            requestRepository = get(),
+            observeSessionUseCase = get(),
+        )
+    }
 
     viewModelOf(::RequestsViewModel)
 

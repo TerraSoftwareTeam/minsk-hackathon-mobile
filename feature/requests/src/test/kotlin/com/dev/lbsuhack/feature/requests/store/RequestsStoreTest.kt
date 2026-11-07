@@ -25,6 +25,7 @@ import com.dev.lbsuhack.feature.requests.util.FakeReviewRequestRepository
 import com.dev.lbsuhack.feature.requests.util.FakeSessionRepository
 import com.dev.lbsuhack.feature.requests.util.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -106,6 +107,71 @@ class RequestsStoreTest {
         sessionRepository = FakeSessionRepository(initialState = SessionState.Authenticated(user)),
         repository = repository,
     )
+
+    @Test
+    fun `polling picks up a request that arrives while the screen is open`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val repository = FakeReviewRequestRepository(teacherQueue = listOf(teacherRequest("existing")))
+            val store = RequestsStoreFactory(
+                storeFactory = DefaultStoreFactory(),
+                requestRepository = repository,
+                observeSessionUseCase = ObserveSessionUseCase(
+                    FakeSessionRepository(initialState = SessionState.Authenticated(teacher)),
+                ),
+                pollIntervalMs = POLL_INTERVAL_MS,
+            ).create()
+
+            store.labels.test {
+                store.accept(RequestsStore.Intent.Load(UserRole.TEACHER))
+                store.accept(RequestsStore.Intent.StartPolling)
+                runCurrent()
+                assertEquals(listOf("existing"), store.state.queueRequests.map { it.id })
+
+                repository.teacherQueue = listOf(teacherRequest("existing"), teacherRequest("fresh"))
+                advanceTimeBy(POLL_INTERVAL_MS + 1)
+                runCurrent()
+
+                assertEquals(listOf("existing", "fresh"), store.state.queueRequests.map { it.id })
+                val label = awaitItem() as RequestsStore.Label.ShowMessage
+                assertEquals(UiText.Plural(R.plurals.requests_new_arrived, 1), label.text)
+
+                store.accept(RequestsStore.Intent.StopPolling)
+                cancelAndIgnoreRemainingEvents()
+            }
+            store.dispose()
+        }
+
+    @Test
+    fun `admin approve dialog forecasts the chance for the chosen date`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val repository = FakeReviewRequestRepository(
+                adminQueue = listOf(adminRequest("a-1").copy(categoryKey = "SPORTS", successProbability = 0.58)),
+            )
+            val store = createStore(user = admin, repository = repository)
+            store.accept(RequestsStore.Intent.Load(UserRole.ORGANIZATOR))
+            runCurrent()
+
+            store.accept(RequestsStore.Intent.ClickApprove("a-1"))
+            val opened = store.state.dialog as RequestDialog.Approve
+            assertEquals(0.58, opened.chance!!, 0.0001)
+            assertTrue(opened.isChanceLoading)
+
+            advanceTimeBy(CHANCE_WAIT_MS)
+            runCurrent()
+            assertEquals(0.72, (store.state.dialog as RequestDialog.Approve).chance!!, 0.0001)
+            assertEquals("SPORTS", repository.probabilityRequests.last().first)
+
+            repository.probabilityResult = DomainResult.Success(0.41)
+            store.accept(RequestsStore.Intent.ChangeStartsAt(OffsetDateTime.now().plusDays(2)))
+            advanceTimeBy(CHANCE_WAIT_MS)
+            runCurrent()
+
+            val updated = store.state.dialog as RequestDialog.Approve
+            assertFalse(updated.isChanceLoading)
+            assertEquals(0.41, updated.chance!!, 0.0001)
+            assertEquals(2, repository.probabilityRequests.size)
+            store.dispose()
+        }
 
     @Test
     fun `teacher queue shows requests without class filtering`() = runTest(mainDispatcherRule.testDispatcher) {
@@ -487,3 +553,7 @@ class RequestsStoreTest {
             assertEquals(AccessState.Granted, store.state.accessState)
         }
 }
+
+private const val POLL_INTERVAL_MS = 1_000L
+
+private const val CHANCE_WAIT_MS = 300L

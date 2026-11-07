@@ -47,7 +47,9 @@ fun RequestsScreen(
 
     LifecycleResumeEffect(viewModel, role) {
         viewModel.accept(RequestsStore.Intent.Load(role))
+        viewModel.accept(RequestsStore.Intent.StartPolling)
         onPauseOrDispose {
+            viewModel.accept(RequestsStore.Intent.StopPolling)
             viewModel.accept(RequestsStore.Intent.Pause)
         }
     }
@@ -112,6 +114,7 @@ fun RequestsScreen(
                     onSelectTab = { viewModel.accept(RequestsStore.Intent.SelectTab(it)) },
                     onApprove = { viewModel.accept(RequestsStore.Intent.ClickApprove(it)) },
                     onDecline = { viewModel.accept(RequestsStore.Intent.ClickDecline(it)) },
+                    onRefresh = { viewModel.accept(RequestsStore.Intent.Refresh) },
                 )
             }
         }

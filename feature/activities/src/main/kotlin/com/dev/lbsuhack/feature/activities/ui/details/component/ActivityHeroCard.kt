@@ -26,6 +26,7 @@ import com.dev.lbsuhack.core.designsystem.theme.hack
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.ui.activities.component.ActivityCardCover
 import com.dev.lbsuhack.feature.activities.ui.activities.component.ActivityMetadata
+import com.dev.lbsuhack.feature.activities.ui.component.ActivityAuthorBadges
 
 @Composable
 internal fun ActivityHeroCard(proposal: ActivityProposal, isAuthor: Boolean) {
@@ -41,11 +42,11 @@ internal fun ActivityHeroCard(proposal: ActivityProposal, isAuthor: Boolean) {
             ),
     ) {
         proposal.photoUri?.let { photoUri ->
-            ActivityCardCover(proposal = proposal, photoUri = photoUri, isAuthor = isAuthor)
+            ActivityCardCover(proposal = proposal, photoUri = photoUri)
         }
         Column(modifier = Modifier.padding(20.dp)) {
             if (proposal.photoUri == null) {
-                ActivityMetadata(proposal = proposal, isAuthor = isAuthor)
+                ActivityMetadata(proposal = proposal)
                 Spacer(modifier = Modifier.height(16.dp))
             }
             Text(
@@ -69,6 +70,7 @@ internal fun ActivityHeroCard(proposal: ActivityProposal, isAuthor: Boolean) {
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                ActivityAuthorBadges(proposal = proposal, isAuthor = isAuthor)
             }
 
             if (!proposal.teacherName.isNullOrBlank()) {
@@ -90,15 +92,17 @@ internal fun ActivityHeroCard(proposal: ActivityProposal, isAuthor: Boolean) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
-            HorizontalDivider(color = MaterialTheme.hack.gridLine)
-            Spacer(modifier = Modifier.height(18.dp))
+            if (proposal.description.isNotBlank()) {
+                Spacer(modifier = Modifier.height(18.dp))
+                HorizontalDivider(color = MaterialTheme.hack.gridLine)
+                Spacer(modifier = Modifier.height(18.dp))
 
-            Text(
-                text = proposal.description,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+                Text(
+                    text = proposal.description,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
         }
     }
 }

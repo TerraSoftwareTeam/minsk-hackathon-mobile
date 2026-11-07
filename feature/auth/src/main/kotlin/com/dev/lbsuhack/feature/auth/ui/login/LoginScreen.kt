@@ -125,6 +125,7 @@ fun LoginScreen(
                         onSurnameChange = { viewModel.accept(LoginStore.Intent.SurnameChanged(it)) },
                         onNameChange = { viewModel.accept(LoginStore.Intent.NameChanged(it)) },
                         onClassNameChange = { viewModel.accept(LoginStore.Intent.ClassNameChanged(it)) },
+                        onPupilMethodChange = { viewModel.accept(LoginStore.Intent.PupilMethodChanged(it)) },
                         onSubmit = { viewModel.accept(LoginStore.Intent.Submit) },
                     )
                 }

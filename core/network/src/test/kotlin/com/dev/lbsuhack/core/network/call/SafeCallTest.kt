@@ -50,6 +50,13 @@ class SafeCallTest {
     }
 
     @Test
+    fun mapsUnresolvedHostToNoInternet() = runTest {
+        val result = safeCall<String> { throw java.nio.channels.UnresolvedAddressException() }
+
+        assertEquals(NetworkResult.Error(NetworkError.NoInternet), result)
+    }
+
+    @Test
     fun rethrowsCancellation() = runTest {
         var thrown: Throwable? = null
         try {

@@ -21,7 +21,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.ui.activities.mapper.icon
 import com.dev.lbsuhack.feature.activities.ui.activities.mapper.labelRes
@@ -31,7 +30,6 @@ import com.dev.lbsuhack.feature.activities.ui.component.ActivityTag
 internal fun ActivityMetadata(
     proposal: ActivityProposal,
     modifier: Modifier = Modifier,
-    isAuthor: Boolean = false,
 ) {
     val foreground = MaterialTheme.colorScheme.onSurface
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant
@@ -68,9 +66,6 @@ internal fun ActivityMetadata(
                     )
                 }
             }
-        }
-        if (isAuthor) {
-            ActivityTag(text = stringResource(R.string.activity_created_by_me))
         }
     }
 }

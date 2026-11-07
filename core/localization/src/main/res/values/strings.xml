@@ -3,4 +3,15 @@
     <string name="localization_language_system">System default</string>
     <string name="localization_language_english">English</string>
     <string name="localization_language_russian">Russian</string>
+    <string name="chance_title">Chance to happen</string>
+    <string name="chance_level_low">low</string>
+    <string name="chance_level_medium">medium</string>
+    <string name="chance_level_high">high</string>
+    <string name="chance_hint_low">Similar events in this category rarely happen. A clear description and a photo help to collect votes.</string>
+    <string name="chance_hint_medium">Similar events in this category happen about half of the time.</string>
+    <string name="chance_hint_high">Similar events in this category usually happen.</string>
+    <string name="chance_basis">Estimated from past events of the same category</string>
+    <string name="chance_preview_title">Forecast</string>
+    <string name="chance_preview_loading">Calculating the forecast…</string>
+    <string name="chance_for_date">Chance with this date</string>
 </resources>

@@ -14,6 +14,7 @@ import com.dev.lbsuhack.core.network.generated.model.CreateEventDto
 import com.dev.lbsuhack.core.network.generated.model.EventLikeResponseDto
 import com.dev.lbsuhack.core.network.generated.model.EventResponseDto
 import com.dev.lbsuhack.core.network.generated.model.EventVoteResponseDto
+import com.dev.lbsuhack.core.network.generated.model.ProbabilityResponseDto
 import com.dev.lbsuhack.core.network.generated.model.VotingEventResponseDto
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
 import com.dev.lbsuhack.feature.activities.domain.ActivityMutationFailure
@@ -27,6 +28,7 @@ import io.ktor.client.request.delete
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
@@ -53,6 +55,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.time.Instant
+import java.time.OffsetDateTime
 import java.util.concurrent.atomic.AtomicInteger
 
 class ActivityRepositoryImpl(
@@ -103,14 +106,14 @@ class ActivityRepositoryImpl(
         val requestOwner = sessionId()
         val startedAtMutation = mutations.get()
         val role = sessionUser()?.role
-        if (role == UserRole.ORGANIZATOR) {
-            val result = safeCall { httpClient.get("api/v1/events/admin-moderation").body<List<EventResponseDto>>() }
+        if (role != null && role != UserRole.PUPIL) {
+            val result = safeCall { httpClient.get("api/v1/events/my").body<List<VotingEventResponseDto>>() }
             return@withContext when (result) {
                 is NetworkResult.Success -> {
                     if (sessionId() != requestOwner) return@withContext DomainResult.Failure(DomainError.Unauthorized)
                     mutationMutex.withLock {
                         if (mutations.get() == startedAtMutation) {
-                            activitiesFlow.value = result.data.map { it.toDomain() }.newestFirst()
+                            activitiesFlow.value = result.data.map { it.toDomain(isMine = true) }.newestFirst()
                         }
                     }
                     DomainResult.Success(Unit)
@@ -348,12 +351,29 @@ class ActivityRepositoryImpl(
             }
         }
 
+    override suspend fun previewSuccessProbability(
+        category: ActivityCategory,
+        startsAt: OffsetDateTime?,
+    ): DomainResult<Double> = withContext(ioDispatcher) {
+        val result = safeCall {
+            httpClient.get("api/v1/events/probability") {
+                parameter("category", category.toDto().value)
+                startsAt?.let { parameter("startsAt", it.toInstant().toString()) }
+            }.body<ProbabilityResponseDto>()
+        }
+        when (result) {
+            is NetworkResult.Success -> DomainResult.Success(result.data.successProbability.toDouble())
+            is NetworkResult.Error -> DomainResult.Failure(result.error.toActivityDomain())
+        }
+    }
+
     override suspend fun createEvent(
         name: String,
         category: ActivityCategory,
         description: String,
         scope: ActivityScope,
         voteThreshold: Int,
+        startsAt: String?,
     ): DomainResult<ActivityProposal> = withContext(ioDispatcher) {
         prepareCache()
         val requestOwner = sessionId()
@@ -363,6 +383,7 @@ class ActivityRepositoryImpl(
             voteThreshold = voteThreshold,
             description = description.trim().ifEmpty { null },
             scope = scope.toDto(),
+            startsAt = startsAt,
         )
         val result = safeCall {
             httpClient.post("api/v1/events") {

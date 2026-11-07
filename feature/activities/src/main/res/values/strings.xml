@@ -136,7 +136,6 @@
     <string name="create_activity_submission_info">How proposal submission works</string>
     <string name="create_activity_info_dismiss">Got it</string>
     <string name="activities_retry">Retry</string>
-    <string name="activity_created_by_me">Created by me</string>
 
     <string name="activity_error_forbidden_create">Only pupils can create events</string>
     <string name="activity_error_forbidden_vote">Only pupils can vote</string>
@@ -148,4 +147,19 @@
     <string name="activity_error_validation">Please check the entered fields</string>
     <string name="activity_error_not_found">Event not found</string>
     <string name="activity_error_unknown">Something went wrong. Please try again</string>
+    <string name="activities_load_error_title">Could not load events</string>
+    <string name="activity_author_you">You</string>
+    <string name="create_activity_title_teacher">Teacher event</string>
+    <string name="create_activity_title_school">School event</string>
+    <string name="create_origin_teacher_title">No moderation</string>
+    <string name="create_origin_teacher_desc">The event opens for pupil voting right away. Once it reaches the vote threshold, the school administration sets the date.</string>
+    <string name="create_origin_school_title">For the whole school</string>
+    <string name="create_origin_school_desc">Every pupil sees the event right away. If it reaches the vote threshold by the event date, it takes place automatically; otherwise it is cancelled.</string>
+    <string name="create_activity_date_label">Event date</string>
+    <string name="create_activity_date_hint">The date cannot be changed after publishing. Voting runs until then.</string>
+    <string name="create_activity_error_date_in_past">Pick an event date in the future</string>
+    <string name="create_activity_publish_action">Publish</string>
+    <string name="activity_origin_teacher">Teacher</string>
+    <string name="activity_origin_school">School</string>
+    <string name="details_school_recruiting_desc">If the vote threshold is reached by the event date, the event takes place. Otherwise it is cancelled.</string>
 </resources>

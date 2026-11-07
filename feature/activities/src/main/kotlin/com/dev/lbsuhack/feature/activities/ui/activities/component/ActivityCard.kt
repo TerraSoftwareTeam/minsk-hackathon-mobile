@@ -24,8 +24,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.dev.lbsuhack.feature.activities.domain.ActivityOrigin
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
+import com.dev.lbsuhack.feature.activities.ui.component.ActivityAuthorBadges
+import com.dev.lbsuhack.feature.activities.ui.component.ActivityChanceMeter
 import com.dev.lbsuhack.feature.activities.ui.component.ActivityRating
 import com.dev.lbsuhack.feature.activities.ui.component.ActivityVoteButton
 
@@ -40,9 +43,10 @@ internal fun ActivityCard(
     onUnvote: () -> Unit,
     onLike: () -> Unit,
     onUnlike: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.extraLarge)
             .background(MaterialTheme.colorScheme.surfaceContainer)
@@ -54,11 +58,11 @@ internal fun ActivityCard(
             .clickable(onClick = onClick),
     ) {
         proposal.photoUri?.let { photoUri ->
-            ActivityCardCover(proposal = proposal, photoUri = photoUri, isAuthor = isAuthor)
+            ActivityCardCover(proposal = proposal, photoUri = photoUri)
         }
         Column(modifier = Modifier.padding(20.dp)) {
             if (proposal.photoUri == null) {
-                ActivityMetadata(proposal = proposal, isAuthor = isAuthor)
+                ActivityMetadata(proposal = proposal)
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
@@ -85,19 +89,22 @@ internal fun ActivityCard(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                ActivityAuthorBadges(proposal = proposal, isAuthor = isAuthor)
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            if (proposal.description.isNotBlank()) {
+                Spacer(modifier = Modifier.height(12.dp))
 
-            Text(
-                text = proposal.description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-            )
+                Text(
+                    text = proposal.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
 
-            if (proposal.status == ActivityStatus.FINALIZED && proposal.confirmedTime != null) {
+            if (proposal.confirmedTime != null && (proposal.status == ActivityStatus.FINALIZED || proposal.origin == ActivityOrigin.SCHOOL)) {
                 Spacer(modifier = Modifier.height(16.dp))
                 ConfirmedActivityInfo(confirmedTime = proposal.confirmedTime)
             }
@@ -105,6 +112,14 @@ internal fun ActivityCard(
             Spacer(modifier = Modifier.height(18.dp))
 
             ActivityVoteProgress(proposal = proposal)
+
+            if (proposal.showsChance) {
+                Spacer(modifier = Modifier.height(14.dp))
+                ActivityChanceMeter(
+                    probability = proposal.successProbability,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 

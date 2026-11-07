@@ -17,7 +17,10 @@ import com.dev.lbsuhack.feature.requests.domain.ReviewRequest
 import com.dev.lbsuhack.feature.requests.domain.ReviewRequestRepository
 import com.dev.lbsuhack.feature.requests.domain.isPending
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -26,6 +29,7 @@ class RequestsStoreFactory(
     private val storeFactory: StoreFactory,
     private val requestRepository: ReviewRequestRepository,
     private val observeSessionUseCase: ObserveSessionUseCase,
+    private val pollIntervalMs: Long = DEFAULT_POLL_INTERVAL_MS,
 ) {
 
     fun create(): RequestsStore =
@@ -48,6 +52,8 @@ class RequestsStoreFactory(
         data class DialogOpened(val dialog: RequestDialog?) : Message
         data class DeclineReasonChanged(val value: String) : Message
         data class StartsAtChanged(val value: OffsetDateTime, val hasDateError: Boolean) : Message
+        data object ChanceLoading : Message
+        data class ChanceLoaded(val requestId: String, val chance: Double?) : Message
         data object Submitting : Message
         data object ActionCompleted : Message
         data object ActionFailed : Message
@@ -60,6 +66,8 @@ class RequestsStoreFactory(
         private var refreshedAudience: RequestAudience? = null
         private var sessionJob: Job? = null
         private var requestsJob: Job? = null
+        private var pollingJob: Job? = null
+        private var chanceJob: Job? = null
 
         override fun executeIntent(intent: RequestsStore.Intent) {
             when (intent) {
@@ -72,6 +80,8 @@ class RequestsStoreFactory(
 
                 RequestsStore.Intent.Refresh -> refresh(state().audience)
                 RequestsStore.Intent.Pause -> stopObserving()
+                RequestsStore.Intent.StartPolling -> startPolling()
+                RequestsStore.Intent.StopPolling -> stopPolling()
                 is RequestsStore.Intent.SelectTab -> dispatch(Message.TabSelected(intent.tab))
                 is RequestsStore.Intent.ClickApprove -> openApproveDialog(intent.requestId)
                 is RequestsStore.Intent.ClickDecline -> openDeclineDialog(intent.requestId)
@@ -82,6 +92,7 @@ class RequestsStoreFactory(
 
                 is RequestsStore.Intent.ChangeStartsAt -> {
                     dispatch(Message.StartsAtChanged(intent.value, !isFutureDate(intent.value)))
+                    loadApproveChance()
                 }
 
                 RequestsStore.Intent.ConfirmApprove -> confirmApprove()
@@ -107,10 +118,42 @@ class RequestsStoreFactory(
         }
 
         private fun stopObserving() {
+            stopPolling()
             sessionJob?.cancel()
             sessionJob = null
             requestsJob?.cancel()
             requestsJob = null
+        }
+
+        private fun startPolling() {
+            if (pollingJob?.isActive == true) return
+            pollingJob = scope.launch {
+                while (isActive) {
+                    delay(pollIntervalMs)
+                    val audience = state().audience ?: continue
+                    if (state().isRefreshing || state().isSubmitting) continue
+                    pollOnce(audience)
+                }
+            }
+        }
+
+        private fun stopPolling() {
+            pollingJob?.cancel()
+            pollingJob = null
+        }
+
+        private suspend fun pollOnce(audience: RequestAudience) {
+            val knownPendingIds = state().queueRequests.filter { it.isPending }.mapTo(HashSet()) { it.id }
+            val hadLoaded = state().hasLoadedOnce
+            if (requestRepository.refresh(audience) !is DomainResult.Success) return
+            val loaded = requestRepository.observeRequests().first()
+            dispatch(Message.RequestsLoaded(loaded))
+            dispatch(Message.RefreshCompleted)
+            val arrived = loaded
+                .count { it.audience == audience && it.isPending && it.id !in knownPendingIds }
+            if (hadLoaded && arrived > 0) {
+                publish(RequestsStore.Label.ShowMessage(UiText.Plural(R.plurals.requests_new_arrived, arrived)))
+            }
         }
 
         private fun resolveAccess(sessionState: SessionState) {
@@ -139,7 +182,10 @@ class RequestsStoreFactory(
             dispatch(Message.RefreshStarted)
             scope.launch {
                 when (val result = requestRepository.refresh(audience)) {
-                    is DomainResult.Success -> dispatch(Message.RefreshCompleted)
+                    is DomainResult.Success -> {
+                        dispatch(Message.RequestsLoaded(requestRepository.observeRequests().first()))
+                        dispatch(Message.RefreshCompleted)
+                    }
                     is DomainResult.Failure -> {
                         dispatch(Message.RefreshFailed)
                         publish(RequestsStore.Label.ShowMessage(result.error.toUiText()))
@@ -158,9 +204,28 @@ class RequestsStoreFactory(
                         requestId = request.id,
                         title = request.title,
                         startsAt = if (state().audience == RequestAudience.ADMIN) defaultStartsAt() else null,
+                        chance = request.successProbability,
                     ),
                 ),
             )
+            if (state().audience == RequestAudience.ADMIN) loadApproveChance()
+        }
+
+        private fun loadApproveChance() {
+            val dialog = state().dialog as? RequestDialog.Approve ?: return
+            val request = state().queueRequests.find { it.id == dialog.requestId } ?: return
+            val startsAt = dialog.startsAt?.takeIf { isFutureDate(it) } ?: return
+            chanceJob?.cancel()
+            dispatch(Message.ChanceLoading)
+            chanceJob = scope.launch {
+                delay(CHANCE_DEBOUNCE_MS)
+                val result = requestRepository.previewSuccessProbability(
+                    categoryKey = request.categoryKey,
+                    startsAt = startsAt.toInstant().toString(),
+                )
+                val chance = (result as? DomainResult.Success)?.value ?: request.successProbability
+                dispatch(Message.ChanceLoaded(dialog.requestId, chance))
+            }
         }
 
         private fun openDeclineDialog(requestId: String) {
@@ -261,6 +326,17 @@ class RequestsStoreFactory(
                 dialog = (dialog as? RequestDialog.Decline)?.copy(reason = msg.value) ?: dialog,
             )
 
+            Message.ChanceLoading -> copy(
+                dialog = (dialog as? RequestDialog.Approve)?.copy(isChanceLoading = true) ?: dialog,
+            )
+
+            is Message.ChanceLoaded -> copy(
+                dialog = (dialog as? RequestDialog.Approve)
+                    ?.takeIf { it.requestId == msg.requestId }
+                    ?.copy(chance = msg.chance, isChanceLoading = false)
+                    ?: dialog,
+            )
+
             is Message.StartsAtChanged -> copy(
                 dialog = (dialog as? RequestDialog.Approve)?.copy(
                     startsAt = msg.value,
@@ -281,5 +357,7 @@ internal fun defaultStartsAt(now: OffsetDateTime = OffsetDateTime.now()): Offset
 internal fun isFutureDate(startsAt: OffsetDateTime?, now: OffsetDateTime = OffsetDateTime.now()): Boolean =
     startsAt?.isAfter(now) == true
 
+private const val DEFAULT_POLL_INTERVAL_MS = 10_000L
+private const val CHANCE_DEBOUNCE_MS = 250L
 private const val DEFAULT_START_OFFSET_DAYS = 7L
 private const val DEFAULT_START_HOUR = 12

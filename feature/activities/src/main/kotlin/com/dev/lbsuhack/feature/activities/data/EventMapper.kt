@@ -7,6 +7,7 @@ import com.dev.lbsuhack.core.network.generated.model.EventUserResponseDto
 import com.dev.lbsuhack.core.network.generated.model.EventVoteResponseDto
 import com.dev.lbsuhack.core.network.generated.model.VotingEventResponseDto
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
+import com.dev.lbsuhack.feature.activities.domain.ActivityOrigin
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.domain.ActivityScope
 import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
@@ -29,7 +30,7 @@ fun VotingEventResponseDto.toDomain(isMine: Boolean = false): ActivityProposal =
     votingClosesAt = votingClosesAt,
     createdAt = createdAt,
     authorName = initiator.fullName(),
-    teacherName = teacher?.fullName(),
+    teacherName = moderators.moderatorNames(status == VotingEventResponseDto.Status.ON_MODERATION),
     declineReason = declineReason,
     photoUri = imageUrl,
     confirmedTime = startsAt?.toDisplayDateTime(),
@@ -37,6 +38,8 @@ fun VotingEventResponseDto.toDomain(isMine: Boolean = false): ActivityProposal =
     likesCount = likesCount,
     likedByMe = likedByMe,
     isMine = isMine,
+    origin = createdByRole.toOrigin(),
+    successProbability = successProbability.toDouble(),
 )
 
 fun EventResponseDto.toDomain(
@@ -57,7 +60,7 @@ fun EventResponseDto.toDomain(
     votingClosesAt = votingClosesAt,
     createdAt = createdAt,
     authorName = initiator.fullName(),
-    teacherName = teacher?.fullName(),
+    teacherName = moderators.moderatorNames(status == EventResponseDto.Status.ON_MODERATION),
     declineReason = declineReason,
     photoUri = imageUrl,
     confirmedTime = startsAt?.toDisplayDateTime(),
@@ -65,6 +68,8 @@ fun EventResponseDto.toDomain(
     likesCount = likesCount,
     likedByMe = likedByMe,
     isMine = isMine,
+    origin = createdByRole.toOrigin(),
+    successProbability = successProbability.toDouble(),
 )
 
 private fun EventUserResponseDto.fullName(): String =
@@ -185,3 +190,18 @@ internal fun String.toDisplayDateTime(zone: ZoneId = ZoneId.systemDefault(), loc
             .atZoneSameInstant(zone)
             .format(DateTimeFormatter.ofPattern("d MMMM yyyy, HH:mm", locale))
     }.getOrDefault(this)
+
+private fun List<EventUserResponseDto>.moderatorNames(isTeacherModeration: Boolean): String? =
+    if (isTeacherModeration) joinToString { it.fullName() }.ifBlank { null } else null
+
+private fun VotingEventResponseDto.CreatedByRole.toOrigin(): ActivityOrigin = when (this) {
+    VotingEventResponseDto.CreatedByRole.PUPIL -> ActivityOrigin.PUPIL
+    VotingEventResponseDto.CreatedByRole.TEACHER -> ActivityOrigin.TEACHER
+    VotingEventResponseDto.CreatedByRole.ADMIN -> ActivityOrigin.SCHOOL
+}
+
+private fun EventResponseDto.CreatedByRole.toOrigin(): ActivityOrigin = when (this) {
+    EventResponseDto.CreatedByRole.PUPIL -> ActivityOrigin.PUPIL
+    EventResponseDto.CreatedByRole.TEACHER -> ActivityOrigin.TEACHER
+    EventResponseDto.CreatedByRole.ADMIN -> ActivityOrigin.SCHOOL
+}

@@ -63,4 +63,10 @@
     <string name="requests_date_not_set">Дата не назначена</string>
     <string name="requests_dialog_approve_date_label">Дата проведения</string>
     <string name="requests_error_date_in_past">Выберите дату проведения в будущем</string>
+    <plurals name="requests_new_arrived">
+        <item quantity="one">Пришла %d новая заявка</item>
+        <item quantity="few">Пришли %d новые заявки</item>
+        <item quantity="many">Пришло %d новых заявок</item>
+        <item quantity="other">Пришло %d новых заявок</item>
+    </plurals>
 </resources>

@@ -63,4 +63,8 @@
     <string name="requests_date_not_set">Date not set</string>
     <string name="requests_dialog_approve_date_label">Event date</string>
     <string name="requests_error_date_in_past">Pick an event date in the future</string>
+    <plurals name="requests_new_arrived">
+        <item quantity="one">%d new request arrived</item>
+        <item quantity="other">%d new requests arrived</item>
+    </plurals>
 </resources>
