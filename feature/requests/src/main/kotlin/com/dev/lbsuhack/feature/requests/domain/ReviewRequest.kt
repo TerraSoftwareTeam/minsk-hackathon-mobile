@@ -1,5 +1,7 @@
 package com.dev.lbsuhack.feature.requests.domain
 
+import java.time.OffsetDateTime
+
 enum class RequestAudience {
     TEACHER,
     ADMIN,
@@ -12,18 +14,14 @@ enum class ReviewStatus {
     DECLINED,
 }
 
-data class RequestAuthor(
-    val id: String,
-    val name: String,
-    val pupilClass: String,
-)
+const val MAX_DECLINE_REASON_LENGTH = 2000
 
 data class ReviewRequest(
     val id: String,
     val title: String,
     val description: String,
-    val proposedDate: String?,
-    val author: RequestAuthor,
+    val proposedDate: OffsetDateTime?,
+    val authorName: String,
     val status: ReviewStatus,
     val audience: RequestAudience,
     val declineReason: String? = null,

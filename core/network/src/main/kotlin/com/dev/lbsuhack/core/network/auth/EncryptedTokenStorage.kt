@@ -1,9 +1,5 @@
 package com.dev.lbsuhack.core.network.auth
 
-import android.content.Context
-import android.util.AtomicFile
-import java.io.File
-import java.io.FileNotFoundException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,22 +8,22 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 
 class EncryptedTokenStorage(
-    context: Context,
+    private val persistence: TokenPersistence,
+    private val cipher: TokenCipher,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : TokenStorage {
 
     private val mutex = Mutex()
-    private val cipher = TokenCipher()
-
-    private val tokenFile = AtomicFile(
-        File(
-            context.applicationContext.noBackupFilesDir,
-            "auth_tokens.enc",
-        )
-    )
 
     private val _authState = MutableStateFlow(AuthState())
     override val authState: StateFlow<AuthState> =
@@ -86,7 +82,7 @@ class EncryptedTokenStorage(
                     plaintext.fill(0)
                 }
 
-                writeAtomically(encrypted)
+                persistence.write(encrypted)
 
                 _authState.value = newState
             }
@@ -104,7 +100,7 @@ class EncryptedTokenStorage(
                     plaintext.fill(0)
                 }
 
-                writeAtomically(encrypted)
+                persistence.write(encrypted)
 
                 _authState.value = AuthState()
                 initialized = true
@@ -115,53 +111,38 @@ class EncryptedTokenStorage(
     private fun loadIfNeeded() {
         if (initialized) return
 
-        val encrypted = try {
-            tokenFile.openRead().use { it.readBytes() }
-        } catch (_: FileNotFoundException) {
+        val encrypted = persistence.read()
+        if (encrypted == null) {
             _authState.value = AuthState()
             initialized = true
             return
         }
 
-        val plaintext = cipher.decrypt(encrypted)
-
         val restored = try {
-            decode(plaintext)
-        } finally {
-            plaintext.fill(0)
+            val plaintext = cipher.decrypt(encrypted)
+            try {
+                decode(plaintext)
+            } finally {
+                plaintext.fill(0)
+            }
+        } catch (_: Exception) {
+            AuthState()
         }
 
         _authState.value = restored
         initialized = true
     }
 
-    private fun writeAtomically(bytes: ByteArray) {
-        val stream = tokenFile.startWrite()
-
-        try {
-            stream.write(bytes)
-            tokenFile.finishWrite(stream)
-        } catch (error: Throwable) {
-            tokenFile.failWrite(stream)
-            throw error
-        }
-    }
-
     private fun encode(state: AuthState): ByteArray =
-        JSONObject()
-            .put(
-                "access_token",
-                state.accessToken ?: JSONObject.NULL,
-            )
-            .put(
-                "refresh_token",
-                state.refreshToken ?: JSONObject.NULL,
-            )
+        buildJsonObject {
+            put("access_token", state.accessToken?.let { JsonPrimitive(it) } ?: JsonNull)
+            put("refresh_token", state.refreshToken?.let { JsonPrimitive(it) } ?: JsonNull)
+        }
             .toString()
             .toByteArray(Charsets.UTF_8)
 
     private fun decode(bytes: ByteArray): AuthState {
-        val json = JSONObject(bytes.toString(Charsets.UTF_8))
+        val json = Json.parseToJsonElement(bytes.toString(Charsets.UTF_8)).jsonObject
 
         return AuthState(
             accessToken = json.nullableToken("access_token"),
@@ -169,14 +150,13 @@ class EncryptedTokenStorage(
         )
     }
 
-    private fun JSONObject.nullableToken(key: String): String? =
-        if (isNull(key)) {
-            null
-        } else {
-            getString(key).also {
-                require(it.isNotBlank()) {
-                    "Stored token must not be blank"
-                }
-            }
+    private fun JsonObject.nullableToken(key: String): String? {
+        val element = this[key] ?: return null
+        if (element is JsonNull) return null
+        val token = element.jsonPrimitive.content
+        require(token.isNotBlank()) {
+            "Stored token must not be blank"
         }
+        return token
+    }
 }

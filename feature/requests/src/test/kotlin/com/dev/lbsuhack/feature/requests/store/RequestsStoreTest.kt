@@ -11,11 +11,12 @@ import com.dev.lbsuhack.core.domain.session.SessionState
 import com.dev.lbsuhack.core.domain.session.SessionUser
 import com.dev.lbsuhack.core.localization.text.UiText
 import com.dev.lbsuhack.feature.requests.R
+import com.dev.lbsuhack.feature.requests.domain.MAX_DECLINE_REASON_LENGTH
 import com.dev.lbsuhack.feature.requests.domain.RequestAudience
-import com.dev.lbsuhack.feature.requests.domain.RequestAuthor
 import com.dev.lbsuhack.feature.requests.domain.ReviewRequest
 import com.dev.lbsuhack.feature.requests.domain.ReviewStatus
 import com.dev.lbsuhack.feature.requests.domain.isProcessed
+import com.dev.lbsuhack.feature.requests.store.requests.AccessState
 import com.dev.lbsuhack.feature.requests.store.requests.RequestDialog
 import com.dev.lbsuhack.feature.requests.store.requests.RequestsStore
 import com.dev.lbsuhack.feature.requests.store.requests.RequestsStoreFactory
@@ -24,14 +25,17 @@ import com.dev.lbsuhack.feature.requests.util.FakeReviewRequestRepository
 import com.dev.lbsuhack.feature.requests.util.FakeSessionRepository
 import com.dev.lbsuhack.feature.requests.util.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import java.time.OffsetDateTime
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RequestsStoreTest {
@@ -61,14 +65,14 @@ class RequestsStoreTest {
 
     private fun teacherRequest(
         id: String,
-        pupilClass: String,
         status: ReviewStatus = ReviewStatus.PENDING_TEACHER,
+        authorName: String = "Ученик $id",
     ) = ReviewRequest(
         id = id,
         title = "Заявка $id",
         description = "Описание",
-        proposedDate = "Пятница, 16:00",
-        author = RequestAuthor("pupil-$id", "Ученик $id", pupilClass),
+        proposedDate = OffsetDateTime.parse("2026-11-21T10:00:00+03:00"),
+        authorName = authorName,
         status = status,
         audience = RequestAudience.TEACHER,
     )
@@ -80,35 +84,38 @@ class RequestsStoreTest {
         id = id,
         title = "Заявка $id",
         description = "Описание",
-        proposedDate = "Суббота, 10:30",
-        author = RequestAuthor("pupil-$id", "Ученик $id", "11-А"),
+        proposedDate = OffsetDateTime.parse("2026-11-21T10:00:00+03:00"),
+        authorName = "Ученик $id",
         status = status,
         audience = RequestAudience.ADMIN,
     )
 
     private fun createStore(
+        sessionRepository: FakeSessionRepository,
+        repository: FakeReviewRequestRepository,
+    ): RequestsStore = RequestsStoreFactory(
+        storeFactory = DefaultStoreFactory(),
+        requestRepository = repository,
+        observeSessionUseCase = ObserveSessionUseCase(sessionRepository),
+    ).create()
+
+    private fun createStore(
         user: SessionUser,
         repository: FakeReviewRequestRepository,
-    ): RequestsStore {
-        val sessionRepository = FakeSessionRepository(
-            initialState = SessionState.Authenticated(user),
-        )
-        return RequestsStoreFactory(
-            storeFactory = DefaultStoreFactory(),
-            requestRepository = repository,
-            observeSessionUseCase = ObserveSessionUseCase(sessionRepository),
-        ).create()
-    }
+    ): RequestsStore = createStore(
+        sessionRepository = FakeSessionRepository(initialState = SessionState.Authenticated(user)),
+        repository = repository,
+    )
 
     @Test
-    fun `teacher route shows publication queue`() = runTest(mainDispatcherRule.testDispatcher) {
+    fun `teacher queue shows requests without class filtering`() = runTest(mainDispatcherRule.testDispatcher) {
         val store = createStore(
             user = teacher,
             repository = FakeReviewRequestRepository(
                 teacherQueue = listOf(
-                    teacherRequest("publication-1", "10-А"),
-                    teacherRequest("publication-2", "10-А"),
-                    teacherRequest("publication-3", "10-А", ReviewStatus.APPROVED),
+                    teacherRequest("publication-1", authorName = "Ученик без класса"),
+                    teacherRequest("publication-2"),
+                    teacherRequest("publication-3", ReviewStatus.APPROVED),
                 ),
             ),
         )
@@ -116,29 +123,14 @@ class RequestsStoreTest {
         store.accept(RequestsStore.Intent.Load(UserRole.TEACHER))
         runCurrent()
 
+        assertEquals(AccessState.Granted, store.state.accessState)
         assertTrue(store.state.canReview)
         assertEquals(RequestAudience.TEACHER, store.state.audience)
-        assertTrue(store.state.queueRequests.all { it.audience == RequestAudience.TEACHER })
-        assertEquals(2, store.state.pendingCount)
-    }
-
-    @Test
-    fun `teacher sees only requests of own class`() = runTest(mainDispatcherRule.testDispatcher) {
-        val store = createStore(
-            user = teacher.copy(pupilClass = "9-В"),
-            repository = FakeReviewRequestRepository(
-                teacherQueue = listOf(
-                    teacherRequest("publication-1", "10-А"),
-                    teacherRequest("publication-3", "9-В", ReviewStatus.APPROVED),
-                ),
-            ),
+        assertEquals(
+            listOf("publication-1", "publication-2", "publication-3"),
+            store.state.queueRequests.map { it.id },
         )
-
-        store.accept(RequestsStore.Intent.Load(UserRole.TEACHER))
-        runCurrent()
-
-        assertEquals(listOf("publication-3"), store.state.queueRequests.map { it.id })
-        assertEquals(0, store.state.pendingCount)
+        assertEquals(2, store.state.pendingCount)
     }
 
     @Test
@@ -157,7 +149,7 @@ class RequestsStoreTest {
         store.accept(RequestsStore.Intent.Load(UserRole.ORGANIZATOR))
         runCurrent()
 
-        assertTrue(store.state.canReview)
+        assertEquals(AccessState.Granted, store.state.accessState)
         assertEquals(RequestAudience.ADMIN, store.state.audience)
         assertTrue(store.state.queueRequests.all { it.audience == RequestAudience.ADMIN })
         assertEquals(2, store.state.pendingCount)
@@ -176,6 +168,7 @@ class RequestsStoreTest {
             store.accept(RequestsStore.Intent.Load(UserRole.ORGANIZATOR))
             runCurrent()
 
+            assertEquals(AccessState.Denied, store.state.accessState)
             assertFalse(store.state.canReview)
             assertNull(store.state.audience)
             assertTrue(store.state.queueRequests.isEmpty())
@@ -187,42 +180,108 @@ class RequestsStoreTest {
         val store = createStore(
             user = pupil,
             repository = FakeReviewRequestRepository(
-                teacherQueue = listOf(teacherRequest("publication-1", "10-А")),
+                teacherQueue = listOf(teacherRequest("publication-1")),
             ),
         )
 
         store.accept(RequestsStore.Intent.Load(UserRole.PUPIL))
         runCurrent()
 
+        assertEquals(AccessState.Denied, store.state.accessState)
         assertFalse(store.state.canReview)
         assertNull(store.state.audience)
         assertTrue(store.state.visibleRequests.isEmpty())
     }
 
     @Test
-    fun `pupil session cannot open a reviewer queue`() = runTest(mainDispatcherRule.testDispatcher) {
+    fun `access stays checking while the session is unknown`() = runTest(mainDispatcherRule.testDispatcher) {
+        val sessionRepository = FakeSessionRepository(initialState = SessionState.Unknown)
         val store = createStore(
-            user = pupil,
+            sessionRepository = sessionRepository,
             repository = FakeReviewRequestRepository(
-                teacherQueue = listOf(teacherRequest("publication-1", "10-А")),
+                teacherQueue = listOf(teacherRequest("publication-1")),
             ),
         )
 
         store.accept(RequestsStore.Intent.Load(UserRole.TEACHER))
         runCurrent()
 
+        assertEquals(AccessState.Checking, store.state.accessState)
         assertFalse(store.state.canReview)
-        assertNull(store.state.audience)
-        assertTrue(store.state.visibleRequests.isEmpty())
+        assertTrue(store.state.queueRequests.isEmpty())
+
+        sessionRepository.authenticate(teacher)
+        runCurrent()
+
+        assertEquals(AccessState.Granted, store.state.accessState)
+        assertEquals(RequestAudience.TEACHER, store.state.audience)
+        assertEquals(listOf("publication-1"), store.state.queueRequests.map { it.id })
     }
 
     @Test
-    fun `approve publication changes status and publishes message`() =
+    fun `empty cache emission does not finish the initial loading`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val store = createStore(
                 user = teacher,
                 repository = FakeReviewRequestRepository(
-                    teacherQueue = listOf(teacherRequest("publication-1", "10-А")),
+                    teacherQueue = listOf(teacherRequest("publication-1")),
+                    refreshDelayMillis = 1_000L,
+                ),
+            )
+
+            store.accept(RequestsStore.Intent.Load(UserRole.TEACHER))
+            runCurrent()
+
+            assertTrue(store.state.requests.isEmpty())
+            assertTrue(store.state.isRefreshing)
+            assertTrue(store.state.isInitialLoading)
+
+            advanceUntilIdle()
+
+            assertEquals(listOf("publication-1"), store.state.requests.map { it.id })
+            assertFalse(store.state.isRefreshing)
+            assertFalse(store.state.isInitialLoading)
+        }
+
+    @Test
+    fun `refresh failure marks the load as failed and retry succeeds`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val repository = FakeReviewRequestRepository(
+                teacherQueue = listOf(teacherRequest("publication-1")),
+                refreshResult = DomainResult.Failure(DomainError.Network),
+            )
+            val store = createStore(user = teacher, repository = repository)
+
+            store.labels.test {
+                store.accept(RequestsStore.Intent.Load(UserRole.TEACHER))
+                runCurrent()
+
+                assertEquals(
+                    RequestsStore.Label.ShowMessage(UiText.Resource(R.string.requests_error_network)),
+                    awaitItem(),
+                )
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            assertTrue(store.state.loadFailed)
+            assertFalse(store.state.isInitialLoading)
+            assertTrue(store.state.requests.isEmpty())
+
+            repository.refreshResult = DomainResult.Success(Unit)
+            store.accept(RequestsStore.Intent.Refresh)
+            advanceUntilIdle()
+
+            assertFalse(store.state.loadFailed)
+            assertEquals(listOf("publication-1"), store.state.requests.map { it.id })
+        }
+
+    @Test
+    fun `approve changes the status and publishes a message`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val store = createStore(
+                user = teacher,
+                repository = FakeReviewRequestRepository(
+                    teacherQueue = listOf(teacherRequest("publication-1")),
                 ),
             )
             store.accept(RequestsStore.Intent.Load(UserRole.TEACHER))
@@ -244,14 +303,15 @@ class RequestsStoreTest {
             val updated = store.state.requests.first { it.id == "publication-1" }
             assertEquals(ReviewStatus.APPROVED, updated.status)
             assertNull(store.state.dialog)
+            assertFalse(store.state.isSubmitting)
         }
 
     @Test
-    fun `decline stores reason and closes dialog`() = runTest(mainDispatcherRule.testDispatcher) {
+    fun `decline stores the reason and closes the dialog`() = runTest(mainDispatcherRule.testDispatcher) {
         val store = createStore(
             user = teacher,
             repository = FakeReviewRequestRepository(
-                teacherQueue = listOf(teacherRequest("publication-1", "10-А")),
+                teacherQueue = listOf(teacherRequest("publication-1")),
             ),
         )
         store.accept(RequestsStore.Intent.Load(UserRole.TEACHER))
@@ -270,13 +330,126 @@ class RequestsStoreTest {
     }
 
     @Test
+    fun `decline reason is truncated to the maximum length`() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore(
+            user = teacher,
+            repository = FakeReviewRequestRepository(
+                teacherQueue = listOf(teacherRequest("publication-1")),
+            ),
+        )
+        store.accept(RequestsStore.Intent.Load(UserRole.TEACHER))
+        runCurrent()
+
+        store.accept(RequestsStore.Intent.ClickDecline("publication-1"))
+        runCurrent()
+        store.accept(RequestsStore.Intent.ChangeDeclineReason("я".repeat(MAX_DECLINE_REASON_LENGTH + 500)))
+        runCurrent()
+
+        val dialog = store.state.dialog as RequestDialog.Decline
+        assertEquals(MAX_DECLINE_REASON_LENGTH, dialog.reason.length)
+    }
+
+    @Test
+    fun `dialog is not dismissed while the request is being submitted`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val store = createStore(
+                user = teacher,
+                repository = FakeReviewRequestRepository(
+                    teacherQueue = listOf(teacherRequest("publication-1")),
+                    actionDelayMillis = 1_000L,
+                ),
+            )
+            store.accept(RequestsStore.Intent.Load(UserRole.TEACHER))
+            runCurrent()
+
+            store.accept(RequestsStore.Intent.ClickDecline("publication-1"))
+            runCurrent()
+            store.accept(RequestsStore.Intent.ConfirmDecline)
+            runCurrent()
+
+            assertTrue(store.state.isSubmitting)
+            assertNotNull(store.state.dialog)
+
+            store.accept(RequestsStore.Intent.DismissDialog)
+            runCurrent()
+
+            assertNotNull(store.state.dialog)
+
+            advanceUntilIdle()
+
+            assertFalse(store.state.isSubmitting)
+            assertNull(store.state.dialog)
+        }
+
+    @Test
+    fun `admin cannot approve with a date in the past`() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore(
+            user = admin,
+            repository = FakeReviewRequestRepository(
+                adminQueue = listOf(adminRequest("admin-1")),
+            ),
+        )
+        store.accept(RequestsStore.Intent.Load(UserRole.ORGANIZATOR))
+        runCurrent()
+
+        store.accept(RequestsStore.Intent.ClickApprove("admin-1"))
+        runCurrent()
+
+        val dialog = store.state.dialog as RequestDialog.Approve
+        assertNotNull(dialog.startsAt)
+
+        store.accept(RequestsStore.Intent.ChangeStartsAt(OffsetDateTime.now().minusDays(1)))
+        runCurrent()
+
+        assertTrue((store.state.dialog as RequestDialog.Approve).hasDateError)
+
+        store.labels.test {
+            store.accept(RequestsStore.Intent.ConfirmApprove)
+            runCurrent()
+
+            assertEquals(
+                RequestsStore.Label.ShowMessage(UiText.Resource(R.string.requests_error_date_in_past)),
+                awaitItem(),
+            )
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        assertNotNull(store.state.dialog)
+        assertEquals(ReviewStatus.PENDING_ADMIN, store.state.requests.first { it.id == "admin-1" }.status)
+    }
+
+    @Test
+    fun `admin approve sends the selected date`() = runTest(mainDispatcherRule.testDispatcher) {
+        val store = createStore(
+            user = admin,
+            repository = FakeReviewRequestRepository(
+                adminQueue = listOf(adminRequest("admin-1")),
+            ),
+        )
+        store.accept(RequestsStore.Intent.Load(UserRole.ORGANIZATOR))
+        runCurrent()
+
+        store.accept(RequestsStore.Intent.ClickApprove("admin-1"))
+        runCurrent()
+
+        val startsAt = OffsetDateTime.now().plusDays(3).withHour(15).withMinute(30).withSecond(0).withNano(0)
+        store.accept(RequestsStore.Intent.ChangeStartsAt(startsAt))
+        runCurrent()
+        store.accept(RequestsStore.Intent.ConfirmApprove)
+        runCurrent()
+
+        assertEquals(ReviewStatus.APPROVED, store.state.requests.first { it.id == "admin-1" }.status)
+        assertNull(store.state.dialog)
+    }
+
+    @Test
     fun `processed tab hides pending requests`() = runTest(mainDispatcherRule.testDispatcher) {
         val store = createStore(
             user = teacher,
             repository = FakeReviewRequestRepository(
                 teacherQueue = listOf(
-                    teacherRequest("publication-1", "10-А"),
-                    teacherRequest("publication-2", "10-А", ReviewStatus.DECLINED),
+                    teacherRequest("publication-1"),
+                    teacherRequest("publication-2", ReviewStatus.DECLINED),
                 ),
             ),
         )
@@ -287,30 +460,30 @@ class RequestsStoreTest {
         runCurrent()
 
         assertTrue(store.state.visibleRequests.all { it.isProcessed })
+        assertEquals(listOf("publication-2"), store.state.visibleRequests.map { it.id })
     }
 
     @Test
-    fun `refresh failure publishes error and stops loading`() = runTest(mainDispatcherRule.testDispatcher) {
-        val store = createStore(
-            user = teacher,
-            repository = FakeReviewRequestRepository(
-                teacherQueue = listOf(teacherRequest("publication-1", "10-А")),
-                refreshResult = DomainResult.Failure(DomainError.Network),
-            ),
-        )
-
-        store.labels.test {
+    fun `pause stops the observation and resume reloads the queue`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val store = createStore(
+                user = teacher,
+                repository = FakeReviewRequestRepository(
+                    teacherQueue = listOf(teacherRequest("publication-1")),
+                ),
+            )
             store.accept(RequestsStore.Intent.Load(UserRole.TEACHER))
             runCurrent()
 
-            assertEquals(
-                RequestsStore.Label.ShowMessage(UiText.Resource(R.string.requests_error_network)),
-                awaitItem(),
-            )
-            cancelAndIgnoreRemainingEvents()
-        }
+            assertEquals(listOf("publication-1"), store.state.requests.map { it.id })
 
-        assertFalse(store.state.isLoading)
-        assertTrue(store.state.visibleRequests.isEmpty())
-    }
+            store.accept(RequestsStore.Intent.Pause)
+            runCurrent()
+
+            store.accept(RequestsStore.Intent.Load(UserRole.TEACHER))
+            runCurrent()
+
+            assertEquals(listOf("publication-1"), store.state.requests.map { it.id })
+            assertEquals(AccessState.Granted, store.state.accessState)
+        }
 }

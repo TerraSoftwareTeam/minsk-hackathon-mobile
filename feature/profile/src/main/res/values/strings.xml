@@ -4,6 +4,7 @@
     <string name="profile_back">Back</string>
     <string name="profile_notifications">Notifications</string>
     <string name="profile_notifications_description">Push notifications from services</string>
+    <string name="profile_notifications_error">Could not update notification settings. Try again</string>
     <string name="profile_saved_title">Saved</string>
     <string name="profile_saved_empty">Nothing here yet. Save activities from the feed.</string>
     <string name="profile_open_settings">Settings</string>
@@ -45,4 +46,8 @@
         <item quantity="other">%1$d saved items</item>
     </plurals>
     <string name="profile_school_not_specified">School not specified</string>
+    <string name="profile_retry">Try again</string>
+    <string name="profile_error_load_title">Failed to load profile</string>
+    <string name="profile_error_load_desc">Could not load profile data. Check your connection and try again.</string>
+    <string name="profile_name_unknown">—</string>
 </resources>

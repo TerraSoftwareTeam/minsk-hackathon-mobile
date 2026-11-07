@@ -1,8 +1,10 @@
 package com.dev.lbsuhack.feature.activities.store.activities
 
 import com.arkivanov.mvikotlin.core.store.Store
+import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.domain.session.SessionUser
 import com.dev.lbsuhack.core.localization.text.UiText
+import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.domain.ActivityCategory
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
@@ -19,7 +21,6 @@ enum class ActivityTab {
 interface ActivitiesStore : Store<ActivitiesStore.Intent, ActivitiesStore.State, ActivitiesStore.Label> {
 
     sealed interface Intent {
-        data object Load : Intent
         data object Refresh : Intent
         data object StartPolling : Intent
         data object StopPolling : Intent
@@ -41,6 +42,7 @@ interface ActivitiesStore : Store<ActivitiesStore.Intent, ActivitiesStore.State,
         val currentUser: SessionUser? = null,
         val isLoading: Boolean = false,
         val error: UiText? = null,
+        val errorId: Long = 0L,
     ) {
         val filteredActivities: List<ActivityProposal>
             get() = activities.filter { proposal ->
@@ -50,22 +52,40 @@ interface ActivitiesStore : Store<ActivitiesStore.Intent, ActivitiesStore.State,
                     ActivityTab.ON_VOTE -> proposal.status == ActivityStatus.ON_VOTE
                     ActivityTab.ON_ADMIN_MODERATION -> proposal.status == ActivityStatus.ON_ADMIN_MODERATION
                     ActivityTab.FINALIZED -> proposal.status == ActivityStatus.FINALIZED
-                    ActivityTab.MY_PROPOSALS -> proposal.isCreatedBy(currentUser?.id, currentUser?.schoolsById)
+                    ActivityTab.MY_PROPOSALS -> proposal.isMine
                     ActivityTab.MY_VOTES -> proposal.hasVoted
                 }
                 matchesCategory && matchesTab
             }
 
-        val myProposalsCount: Int
-            get() = if (currentUser == null) 0 else activities.count { it.isCreatedBy(currentUser.id, currentUser.schoolsById) }
+        val canInteract: Boolean
+            get() = currentUser?.role == UserRole.PUPIL
 
-        val myVotesCount: Int
-            get() = activities.count { it.hasVoted }
+        val canCreate: Boolean
+            get() = currentUser?.role == UserRole.PUPIL
+
+        val primaryActionLabel: UiText
+            get() = if (canCreate) {
+                UiText.Resource(R.string.activities_create_action)
+            } else {
+                UiText.Resource(R.string.activities_review_action)
+            }
+
+        fun isAuthorOf(proposal: ActivityProposal): Boolean = proposal.isMine
+
+        fun canVoteIn(proposal: ActivityProposal): Boolean =
+            canInteract && !proposal.isMine && proposal.canChangeVote
+
+        fun canUnvoteIn(proposal: ActivityProposal): Boolean = canInteract && !proposal.isMine
+
+        fun canLikeIn(proposal: ActivityProposal): Boolean =
+            canInteract && !proposal.isMine && proposal.canLike
     }
 
     sealed interface Label {
         data class OpenDetails(val activityId: String) : Label
         data object OpenCreate : Label
+        data class OpenRequests(val role: UserRole) : Label
         data object OpenProfile : Label
     }
 }

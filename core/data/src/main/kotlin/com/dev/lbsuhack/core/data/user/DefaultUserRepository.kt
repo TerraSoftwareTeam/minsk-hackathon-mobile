@@ -1,6 +1,6 @@
 package com.dev.lbsuhack.core.data.user
 
-import android.content.Context
+import com.dev.lbsuhack.core.data.KeyValueStorage
 import com.dev.lbsuhack.core.domain.DomainError
 import com.dev.lbsuhack.core.domain.DomainResult
 import com.dev.lbsuhack.core.domain.model.User
@@ -25,17 +25,14 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 class DefaultUserRepository(
-    context: Context,
+    private val storage: KeyValueStorage,
     private val httpClient: HttpClient,
     private val sessionRepository: SessionRepository,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : UserRepository {
 
-    private val preferences = context.applicationContext.getSharedPreferences(
-        PREFS_NAME,
-        Context.MODE_PRIVATE,
-    ).apply {
-        edit().remove("fathers_name").apply()
+    init {
+        storage.remove(LEGACY_FATHERS_NAME_KEY)
     }
 
     private val mutex = Mutex()
@@ -98,20 +95,20 @@ class DefaultUserRepository(
         withContext(ioDispatcher) {
             mutex.withLock {
                 _currentUser.value = null
-                preferences.edit().clear().apply()
+                storage.clear()
             }
         }
     }
 
     private fun readFromPrefs(): User? {
-        val id = preferences.getString(KEY_ID, null) ?: return null
-        val name = preferences.getString(KEY_NAME, null) ?: return null
-        val surname = preferences.getString(KEY_SURNAME, null)
-        val schoolsById = preferences.getString(KEY_SCHOOLS_BY_ID, null)
-        val schoolName = preferences.getString(KEY_SCHOOL_NAME, null)
-        val roleStr = preferences.getString(KEY_ROLE, null)
+        val id = storage.getString(KEY_ID) ?: return null
+        val name = storage.getString(KEY_NAME) ?: return null
+        val surname = storage.getString(KEY_SURNAME)
+        val schoolsById = storage.getString(KEY_SCHOOLS_BY_ID)
+        val schoolName = storage.getString(KEY_SCHOOL_NAME)
+        val roleStr = storage.getString(KEY_ROLE)
         val role = roleStr?.let { runCatching { UserRole.valueOf(it) }.getOrNull() } ?: UserRole.PUPIL
-        val pupilClass = preferences.getString(KEY_CLASS, null)
+        val pupilClass = storage.getString(KEY_CLASS)
 
         return when (role) {
             UserRole.PUPIL -> User.Pupil(
@@ -138,20 +135,18 @@ class DefaultUserRepository(
     }
 
     private fun writeToPrefs(user: User) {
-        val editor = preferences.edit()
-            .putString(KEY_ID, user.id)
-            .putString(KEY_NAME, user.name)
-            .putString(KEY_SURNAME, user.surname)
-            .putString(KEY_SCHOOLS_BY_ID, user.schoolsById)
-            .putString(KEY_SCHOOL_NAME, user.schoolName)
-            .putString(KEY_ROLE, user.role.name)
+        storage.putString(KEY_ID, user.id)
+        storage.putString(KEY_NAME, user.name)
+        storage.putString(KEY_SURNAME, user.surname)
+        storage.putString(KEY_SCHOOLS_BY_ID, user.schoolsById)
+        storage.putString(KEY_SCHOOL_NAME, user.schoolName)
+        storage.putString(KEY_ROLE, user.role.name)
 
         if (user is User.Pupil) {
-            editor.putString(KEY_CLASS, user.pupilClass)
+            storage.putString(KEY_CLASS, user.pupilClass)
         } else {
-            editor.remove(KEY_CLASS)
+            storage.remove(KEY_CLASS)
         }
-        editor.apply()
     }
 
     private fun UserResponseDto.toDomain(existingSchoolName: String? = null): User = when (role) {
@@ -178,7 +173,7 @@ class DefaultUserRepository(
     }
 
     private companion object {
-        const val PREFS_NAME = "cached_user_profile"
+        const val LEGACY_FATHERS_NAME_KEY = "fathers_name"
         const val KEY_ID = "id"
         const val KEY_NAME = "name"
         const val KEY_SURNAME = "surname"

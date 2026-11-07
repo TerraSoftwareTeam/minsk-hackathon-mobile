@@ -1,46 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="auth_welcome_subtitle">Платформа для организации 6-го школьного дня</string>
-    <string name="auth_login_pupil_title">Вход ученика</string>
-    <string name="auth_login_teacher_title">Вход учителя</string>
-    <string name="auth_login_organizer_title">Вход организатора</string>
-    <string name="auth_login_organizer_hint">Нажмите «Войти» — аккаунт организатора будет создан автоматически.</string>
+    <string name="auth_welcome_subtitle">Platform for organizing the 6th school day</string>
+    <string name="auth_login_pupil_title">Pupil Sign In</string>
+    <string name="auth_login_teacher_title">Teacher Sign In</string>
+    <string name="auth_login_organizer_title">Organizer Sign In</string>
+    <string name="auth_login_organizer_hint">Tap «Sign in» — the organizer account will be created automatically.</string>
 
-    <string name="auth_role_pupil_action">Я ученик</string>
-    <string name="auth_role_teacher_action">Я учитель</string>
-    <string name="auth_role_organizator_action">Я организатор</string>
-    <string name="auth_username">Логин</string>
+    <string name="auth_role_pupil_action">I am a pupil</string>
+    <string name="auth_role_teacher_action">I am a teacher</string>
+    <string name="auth_role_organizator_action">I am an organizer</string>
+    <string name="auth_username">Login</string>
     <string name="auth_username_placeholder">kolia</string>
-    <string name="auth_name">Имя</string>
-    <string name="auth_name_placeholder">Иван</string>
-    <string name="auth_surname">Фамилия</string>
-    <string name="auth_surname_placeholder">Иванов</string>
-    <string name="auth_class">Класс</string>
-    <string name="auth_class_grade">Параллель</string>
-    <string name="auth_class_letter">Буква</string>
-    <string name="auth_class_not_selected">Не выбран</string>
-    <string name="auth_class_no_letter">Без буквы</string>
-    <string name="auth_password">Пароль</string>
+    <string name="auth_name">First name</string>
+    <string name="auth_name_placeholder">Ivan</string>
+    <string name="auth_surname">Surname</string>
+    <string name="auth_surname_placeholder">Ivanov</string>
+    <string name="auth_class">Class</string>
+    <string name="auth_class_grade">Grade</string>
+    <string name="auth_class_letter">Letter</string>
+    <string name="auth_class_not_selected">Not selected</string>
+    <string name="auth_class_no_letter">No letter</string>
+    <string name="auth_password">Password</string>
     <string name="auth_password_placeholder">••••••••</string>
 
-    <string name="auth_login_action">Вход по schools.by</string>
-    <string name="auth_login_action_teacher">Войти</string>
-    <string name="auth_login_action_organizer">Войти</string>
-    <string name="auth_back">Назад</string>
+    <string name="auth_login_action">Sign in via schools.by</string>
+    <string name="auth_login_action_teacher">Sign in</string>
+    <string name="auth_login_action_organizer">Sign in</string>
+    <string name="auth_back">Back</string>
 
-    <string name="auth_demo_hint">Используйте логин и пароль от schools.by</string>
+    <string name="auth_demo_hint">Use your schools.by login and password</string>
 
-    <string name="auth_error_validation">Введите логин и пароль Schools.by</string>
-    <string name="auth_error_teacher_validation">Укажите фамилию и имя.</string>
-    <string name="auth_error_class_format">Выберите класс.</string>
-    <string name="auth_error_network">Сеть недоступна. Попробуйте ещё раз.</string>
-    <string name="auth_error_credentials">Неверный логин или пароль Schools.by.</string>
-    <string name="auth_error_forbidden">Доступ запрещён.</string>
-    <string name="auth_error_role_mismatch_pupil">Этот аккаунт Schools.by зарегистрирован как ученик. Выберите «Я ученик».</string>
-    <string name="auth_error_role_mismatch_teacher">Этот аккаунт Schools.by уже зарегистрирован как учитель. Выберите «Я учитель».</string>
-    <string name="auth_error_role_mismatch_organizator">Этот аккаунт зарегистрирован как организатор. Выберите «Я организатор».</string>
-    <string name="auth_error_unknown">Что-то пошло не так. Попробуйте ещё раз.</string>
+    <string name="auth_error_validation">Enter your Schools.by login and password</string>
+    <string name="auth_error_teacher_validation">Enter your first name and surname.</string>
+    <string name="auth_error_class_format">Select a class.</string>
+    <string name="auth_error_network">Network unavailable. Please try again.</string>
+    <string name="auth_error_credentials">Incorrect Schools.by login or password.</string>
+    <string name="auth_error_forbidden">Access denied.</string>
+    <string name="auth_error_role_mismatch_pupil">This Schools.by account is registered as a pupil. Choose «I am a pupil».</string>
+    <string name="auth_error_role_mismatch_teacher">This Schools.by account is already registered as a teacher. Choose «I am a teacher».</string>
+    <string name="auth_error_role_mismatch_organizator">This account is registered as an organizer. Choose «I am an organizer».</string>
+    <string name="auth_error_unknown">Something went wrong. Please try again.</string>
 
-    <string name="auth_password_show">Показать пароль</string>
-    <string name="auth_password_hide">Скрыть пароль</string>
+    <string name="auth_password_show">Show password</string>
+    <string name="auth_password_hide">Hide password</string>
 </resources>

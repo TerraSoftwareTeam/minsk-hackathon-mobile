@@ -18,7 +18,6 @@
 
     <string name="requests_kind_publication">Publication</string>
     <string name="requests_kind_visit">Event</string>
-    <string name="requests_author_format">Author: %1$s · %2$s</string>
     <string name="requests_author_name_format">Author: %1$s</string>
     <string name="requests_votes_format">Votes: %1$d of %2$d</string>
     <string name="requests_rating_format">Rating: %1$d</string>
@@ -29,6 +28,7 @@
     <string name="requests_action_approve">Approve</string>
     <string name="requests_action_decline">Decline</string>
     <string name="requests_action_cancel">Cancel</string>
+    <string name="requests_retry">Retry</string>
 
     <string name="requests_dialog_approve_title">Confirm approval?</string>
     <string name="requests_dialog_approve_teacher_text">The request will be approved and can be published in the feed.</string>
@@ -37,12 +37,15 @@
     <string name="requests_dialog_decline_text">Add a reason so the author understands the decision.</string>
     <string name="requests_dialog_decline_reason_label">Reason (optional)</string>
     <string name="requests_dialog_decline_reason_hint">For example: the event needs adult supervision</string>
+    <string name="requests_reason_counter">%1$d / %2$d</string>
 
     <string name="requests_empty_title">No requests here yet</string>
     <string name="requests_empty_pending_teacher">New publication requests from your pupils will appear here.</string>
     <string name="requests_empty_pending_admin">New event requests will appear here.</string>
     <string name="requests_empty_processed">Requests you have already reviewed will appear here.</string>
     <string name="requests_empty_all">There are no requests for this queue yet.</string>
+    <string name="requests_empty_error_title">Could not load requests</string>
+    <string name="requests_empty_error_desc">The list did not load. Check the connection and try again.</string>
 
     <string name="requests_access_denied_title">No access</string>
     <string name="requests_access_denied_desc">This section is available to class teachers and school administration.</string>
@@ -50,6 +53,8 @@
     <string name="requests_error_network">Connection problem. Check your internet and try again</string>
     <string name="requests_error_forbidden">You do not have access to this queue</string>
     <string name="requests_error_not_found">The request was not found. Refresh the list</string>
+    <string name="requests_error_validation">The data was rejected by the server. Check it and try again</string>
+    <string name="requests_error_conflict">This request has already been handled by someone else</string>
     <string name="requests_error_unknown">Something went wrong. Try again</string>
     <string name="requests_success_approved">Request approved</string>
     <string name="requests_success_declined">Request declined</string>

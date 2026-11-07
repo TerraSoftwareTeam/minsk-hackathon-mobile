@@ -5,10 +5,6 @@ import com.dev.lbsuhack.core.domain.model.User
 
 interface ProfileRepository {
 
-    suspend fun isNotificationsEnabled(): Boolean
-
-    suspend fun setNotificationsEnabled(enabled: Boolean)
-
     suspend fun savedCount(): Int
 
     suspend fun updateOwnProfile(

@@ -1,6 +1,7 @@
 package com.dev.lbsuhack.feature.activities.store.details
 
 import com.arkivanov.mvikotlin.core.store.Store
+import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.domain.session.SessionUser
 import com.dev.lbsuhack.core.localization.text.UiText
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
@@ -22,11 +23,18 @@ interface ActivityDetailsStore :
     data class State(
         val activity: ActivityProposal? = null,
         val currentUser: SessionUser? = null,
-        val isLoading: Boolean = false,
+        val loadState: ActivityLoadState = ActivityLoadState.Idle,
         val error: UiText? = null,
+        val errorId: Long = 0L,
     ) {
+        val isLoading: Boolean
+            get() = loadState == ActivityLoadState.Loading
+
         val isAuthor: Boolean
-            get() = activity?.isCreatedBy(currentUser?.id, currentUser?.schoolsById) == true
+            get() = activity?.isMine == true
+
+        val canInteract: Boolean
+            get() = currentUser?.role == UserRole.PUPIL && !isAuthor
 
         val hasVoted: Boolean
             get() = activity?.hasVoted == true
@@ -35,4 +43,12 @@ interface ActivityDetailsStore :
     sealed interface Label {
         data object Back : Label
     }
+}
+
+sealed interface ActivityLoadState {
+    data object Idle : ActivityLoadState
+    data object Loading : ActivityLoadState
+    data object NotFound : ActivityLoadState
+    data object Forbidden : ActivityLoadState
+    data class Failed(val error: UiText) : ActivityLoadState
 }

@@ -16,6 +16,10 @@ class SettingsViewModel(
 
     val state: StateFlow<SettingsStore.State> = store.stateFlow
 
+    init {
+        store.accept(SettingsStore.Intent.Init)
+    }
+
     fun accept(intent: SettingsStore.Intent) {
         store.accept(intent)
     }

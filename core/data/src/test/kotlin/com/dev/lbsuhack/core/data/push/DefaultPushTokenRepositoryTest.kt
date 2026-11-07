@@ -1,103 +1,176 @@
 package com.dev.lbsuhack.core.data.push
 
-import com.dev.lbsuhack.core.network.auth.AuthState
-import com.dev.lbsuhack.core.network.auth.TokenStorage
-import com.dev.lbsuhack.core.network.client.AppHttpClientFactory
+import com.dev.lbsuhack.core.data.FakeKeyValueStorage
+import com.dev.lbsuhack.core.data.FakeTokenStorage
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.MockRequestHandleScope
+import io.ktor.client.engine.mock.MockRequestHandler
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.engine.mock.toByteArray
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.defaultRequest
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
+import io.ktor.client.request.HttpRequestData
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
+import io.ktor.http.content.TextContent
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DefaultPushTokenRepositoryTest {
 
-    private class Recorded(val method: HttpMethod, val path: String, val auth: String?, val body: String)
+    private val json = Json { ignoreUnknownKeys = true }
 
-    private class FakeTokenStorage(var token: String?) : TokenStorage {
-        override val authState: StateFlow<AuthState> = MutableStateFlow(AuthState())
-        override suspend fun getAccessToken(): String? = token
-        override suspend fun getRefreshToken(): String? = null
-        override suspend fun saveTokens(accessToken: String, refreshToken: String?) {
-            token = accessToken
+    private val requestBodies = mutableListOf<String>()
+    private var requestCount = 0
+
+    private fun TestScope.repository(
+        storage: FakeKeyValueStorage = FakeKeyValueStorage(),
+        tokenStorage: FakeTokenStorage = FakeTokenStorage(accessToken = "access"),
+        handler: MockRequestHandler,
+    ): DefaultPushTokenRepository {
+        val client = HttpClient(MockEngine(handler)) {
+            expectSuccess = false
+            install(ContentNegotiation) { json(json) }
         }
-        override suspend fun clear() {
-            token = null
-        }
-    }
-
-    private val recorded = mutableListOf<Recorded>()
-
-    private fun TestScope.repository(token: String?, status: HttpStatusCode = HttpStatusCode.NoContent) =
-        DefaultPushTokenRepository(
-            httpClient = HttpClient(MockEngine { request ->
-                recorded += Recorded(
-                    method = request.method,
-                    path = request.url.encodedPath,
-                    auth = request.headers[HttpHeaders.Authorization],
-                    body = request.body.toByteArray().decodeToString(),
-                )
-                respond("", status)
-            }) {
-                expectSuccess = false
-                install(ContentNegotiation) { json(AppHttpClientFactory.defaultJson) }
-                defaultRequest { url("https://api.test/") }
-            },
-            tokenStorage = FakeTokenStorage(token),
-            deviceId = { "device-1" },
+        return DefaultPushTokenRepository(
+            storage = storage,
+            httpClient = client,
+            tokenStorage = tokenStorage,
             ioDispatcher = StandardTestDispatcher(testScheduler),
         )
+    }
 
-    @Test
-    fun registerPostsTokenWithBearerAndDevice() = runTest {
-        assertTrue(repository("jwt").register("fcm-token"))
+    private fun MockRequestHandleScope.respondOk(status: HttpStatusCode = HttpStatusCode.OK) = respond(
+        content = "{}",
+        status = status,
+        headers = headersOf("Content-Type", ContentType.Application.Json.toString()),
+    )
 
-        val call = recorded.single()
-        assertEquals(HttpMethod.Post, call.method)
-        assertEquals("/api/v1/device-token", call.path)
-        assertEquals("Bearer jwt", call.auth)
-        val body = AppHttpClientFactory.defaultJson.parseToJsonElement(call.body).jsonObject
-        assertEquals("fcm-token", body["token"]?.jsonPrimitive?.content)
-        assertEquals("ANDROID", body["platform"]?.jsonPrimitive?.content)
-        assertEquals("device-1", body["deviceId"]?.jsonPrimitive?.content)
+    private fun captureBody(request: HttpRequestData) {
+        requestCount += 1
+        requestBodies += (request.body as TextContent).text
     }
 
     @Test
-    fun unregisterDeletesTokenWithBearer() = runTest {
-        assertTrue(repository("jwt").unregister("fcm-token"))
+    fun returnsFalseWithoutRequestWhenAccessTokenMissing() = runTest {
+        val repository = repository(
+            tokenStorage = FakeTokenStorage(accessToken = null),
+            handler = {
+                captureBody(it)
+                respondOk()
+            },
+        )
 
-        val call = recorded.single()
-        assertEquals(HttpMethod.Delete, call.method)
-        assertEquals("/api/v1/device-token", call.path)
-        assertEquals("Bearer jwt", call.auth)
-        val body = AppHttpClientFactory.defaultJson.parseToJsonElement(call.body).jsonObject
-        assertEquals("fcm-token", body["token"]?.jsonPrimitive?.content)
+        assertFalse(repository.register("push-token"))
+
+        assertEquals(0, requestCount)
     }
 
     @Test
-    fun nothingIsSentWithoutAccessToken() = runTest {
-        assertFalse(repository(null).register("fcm-token"))
-        assertFalse(repository("").unregister("fcm-token"))
-        assertTrue(recorded.isEmpty())
+    fun returnsFalseWhenAccessTokenBlank() = runTest {
+        val repository = repository(
+            tokenStorage = FakeTokenStorage(accessToken = " "),
+            handler = {
+                captureBody(it)
+                respondOk()
+            },
+        )
+
+        assertFalse(repository.unregister("push-token"))
+
+        assertEquals(0, requestCount)
     }
 
     @Test
-    fun rejectedRequestReturnsFalse() = runTest {
-        assertFalse(repository("expired", HttpStatusCode.Unauthorized).unregister("fcm-token"))
+    fun registerPostsTokenWithStableDeviceId() = runTest {
+        val storage = FakeKeyValueStorage()
+        val repository = repository(
+            storage = storage,
+            handler = {
+                captureBody(it)
+                respondOk()
+            },
+        )
+
+        assertTrue(repository.register("first"))
+        assertTrue(repository.register("second"))
+
+        assertEquals(2, requestCount)
+        val first = json.parseToJsonElement(requestBodies[0]).jsonObject
+        val second = json.parseToJsonElement(requestBodies[1]).jsonObject
+        assertEquals("first", first["token"]!!.jsonPrimitive.content)
+        assertEquals("second", second["token"]!!.jsonPrimitive.content)
+        assertEquals("ANDROID", first["platform"]!!.jsonPrimitive.content)
+        val firstDeviceId = first["deviceId"]!!.jsonPrimitive.content
+        assertEquals(firstDeviceId, second["deviceId"]!!.jsonPrimitive.content)
+        assertEquals(firstDeviceId, storage.getString("device_id"))
+    }
+
+    @Test
+    fun registerReturnsFalseWhenServerRejects() = runTest {
+        val repository = repository(
+            handler = {
+                captureBody(it)
+                respondOk(HttpStatusCode.BadRequest)
+            },
+        )
+
+        assertFalse(repository.register("push-token"))
+    }
+
+    @Test
+    fun unregisterDeletesToken() = runTest {
+        val repository = repository(
+            handler = {
+                captureBody(it)
+                respondOk(HttpStatusCode.NoContent)
+            },
+        )
+
+        assertTrue(repository.unregister("push-token"))
+
+        val body = json.parseToJsonElement(requestBodies[0]).jsonObject
+        assertEquals("push-token", body["token"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun swallowsNetworkFailure() = runTest {
+        val repository = repository(
+            handler = { throw IOException("offline") },
+        )
+
+        assertFalse(repository.register("push-token"))
+        assertFalse(repository.unregister("push-token"))
+    }
+
+    @Test
+    fun rethrowsCancellation() = runTest {
+        val repository = repository(
+            handler = { throw CancellationException("cancelled") },
+        )
+
+        var thrown: Throwable? = null
+        try {
+            repository.register("push-token")
+        } catch (error: Throwable) {
+            thrown = error
+        }
+
+        assertNotNull(thrown)
+        assertTrue(thrown is CancellationException)
     }
 }

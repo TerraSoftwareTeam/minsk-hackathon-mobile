@@ -102,4 +102,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.koin.android)
+
+    testImplementation(libs.bundles.unit.test)
+    testImplementation("io.ktor:ktor-client-mock:3.0.3")
 }

@@ -1,7 +1,9 @@
 package com.dev.lbsuhack.core.network.di
 
+import com.dev.lbsuhack.core.network.auth.AtomicFileTokenPersistence
 import com.dev.lbsuhack.core.network.auth.EncryptedTokenStorage
 import com.dev.lbsuhack.core.domain.session.ClearSessionUseCase
+import com.dev.lbsuhack.core.network.auth.KeystoreTokenCipher
 import com.dev.lbsuhack.core.network.auth.TokenStorage
 import com.dev.lbsuhack.core.network.client.AppHttpClientFactory
 import io.ktor.client.HttpClient
@@ -14,7 +16,8 @@ import org.koin.dsl.module
 val networkModule = module {
     single {
         EncryptedTokenStorage(
-            context = androidContext(),
+            persistence = AtomicFileTokenPersistence(androidContext()),
+            cipher = KeystoreTokenCipher(),
             ioDispatcher = Dispatchers.IO,
         )
     } bind TokenStorage::class

@@ -4,6 +4,7 @@
     <string name="profile_back">Назад</string>
     <string name="profile_notifications">Уведомления</string>
     <string name="profile_notifications_description">Push-уведомления от сервисов</string>
+    <string name="profile_notifications_error">Не удалось изменить настройки уведомлений. Попробуйте ещё раз</string>
     <string name="profile_saved_title">Сохранённое</string>
     <string name="profile_saved_empty">Пока ничего нет. Сохраняйте мероприятия из ленты.</string>
     <string name="profile_open_settings">Настройки</string>
@@ -47,4 +48,8 @@
         <item quantity="other">%1$d сохранённых элементов</item>
     </plurals>
     <string name="profile_school_not_specified">Школа не указана</string>
+    <string name="profile_retry">Повторить</string>
+    <string name="profile_error_load_title">Не удалось загрузить профиль</string>
+    <string name="profile_error_load_desc">Не удалось загрузить данные профиля. Проверьте подключение и повторите попытку.</string>
+    <string name="profile_name_unknown">—</string>
 </resources>

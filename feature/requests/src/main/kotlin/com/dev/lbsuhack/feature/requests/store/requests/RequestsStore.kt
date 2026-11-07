@@ -2,17 +2,23 @@ package com.dev.lbsuhack.feature.requests.store.requests
 
 import com.arkivanov.mvikotlin.core.store.Store
 import com.dev.lbsuhack.core.domain.model.UserRole
-import com.dev.lbsuhack.core.domain.session.SessionUser
 import com.dev.lbsuhack.core.localization.text.UiText
 import com.dev.lbsuhack.feature.requests.domain.RequestAudience
 import com.dev.lbsuhack.feature.requests.domain.ReviewRequest
 import com.dev.lbsuhack.feature.requests.domain.isPending
 import com.dev.lbsuhack.feature.requests.domain.isProcessed
+import java.time.OffsetDateTime
 
 enum class RequestsTab {
     PENDING,
     PROCESSED,
     ALL,
+}
+
+sealed interface AccessState {
+    data object Checking : AccessState
+    data object Granted : AccessState
+    data object Denied : AccessState
 }
 
 sealed interface RequestDialog {
@@ -22,7 +28,8 @@ sealed interface RequestDialog {
     data class Approve(
         override val requestId: String,
         override val title: String,
-        val startsAt: String? = null,
+        val startsAt: OffsetDateTime? = null,
+        val hasDateError: Boolean = false,
     ) : RequestDialog
 
     data class Decline(
@@ -38,52 +45,41 @@ internal fun UserRole.toRequestAudience(): RequestAudience? = when (this) {
     UserRole.ORGANIZATOR -> RequestAudience.ADMIN
 }
 
-private val reviewerRoles = setOf(UserRole.TEACHER, UserRole.ORGANIZATOR)
-
-private fun isReviewer(role: UserRole?): Boolean =
-    role != null && role in reviewerRoles
-
 interface RequestsStore : Store<RequestsStore.Intent, RequestsStore.State, RequestsStore.Label> {
 
     sealed interface Intent {
         data class Load(val role: UserRole) : Intent
+        data object Refresh : Intent
+        data object Pause : Intent
         data class SelectTab(val tab: RequestsTab) : Intent
         data class ClickApprove(val requestId: String) : Intent
         data class ClickDecline(val requestId: String) : Intent
         data object DismissDialog : Intent
         data class ChangeDeclineReason(val value: String) : Intent
-        data class ChangeStartsAt(val value: String) : Intent
+        data class ChangeStartsAt(val value: OffsetDateTime) : Intent
         data object ConfirmApprove : Intent
         data object ConfirmDecline : Intent
     }
 
     data class State(
-        val currentUser: SessionUser? = null,
         val audience: RequestAudience? = null,
+        val accessState: AccessState = AccessState.Checking,
         val requests: List<ReviewRequest> = emptyList(),
         val selectedTab: RequestsTab = RequestsTab.PENDING,
         val dialog: RequestDialog? = null,
-        val isLoading: Boolean = true,
+        val isRefreshing: Boolean = false,
+        val hasLoadedOnce: Boolean = false,
+        val loadFailed: Boolean = false,
         val isSubmitting: Boolean = false,
     ) {
         val canReview: Boolean
-            get() = when (audience) {
-                RequestAudience.TEACHER -> currentUser?.role == UserRole.TEACHER
-                RequestAudience.ADMIN -> currentUser?.role == UserRole.ORGANIZATOR
-                null -> false
-            }
+            get() = accessState == AccessState.Granted
 
         val queueRequests: List<ReviewRequest>
             get() {
                 if (!canReview) return emptyList()
                 val queueAudience = audience ?: return emptyList()
-                val queue = requests.filter { it.audience == queueAudience }
-                val teacherClass = currentUser?.pupilClass
-                return if (queueAudience == RequestAudience.TEACHER && !teacherClass.isNullOrBlank()) {
-                    queue.filter { it.author.pupilClass == teacherClass }
-                } else {
-                    queue
-                }
+                return requests.filter { it.audience == queueAudience }
             }
 
         val visibleRequests: List<ReviewRequest>
@@ -97,6 +93,9 @@ interface RequestsStore : Store<RequestsStore.Intent, RequestsStore.State, Reque
 
         val pendingCount: Int
             get() = queueRequests.count { it.isPending }
+
+        val isInitialLoading: Boolean
+            get() = !hasLoadedOnce && !loadFailed
     }
 
     sealed interface Label {

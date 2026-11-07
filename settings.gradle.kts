@@ -33,8 +33,6 @@ include(":core:ui")
 include(":layers")
 
 include(":feature:activities")
-include(":feature:activevote")
 include(":feature:auth")
-include(":feature:events")
 include(":feature:profile")
 include(":feature:requests")

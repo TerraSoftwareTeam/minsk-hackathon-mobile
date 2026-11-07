@@ -7,21 +7,28 @@ import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
 import com.dev.lbsuhack.core.domain.DomainResult
 import com.dev.lbsuhack.core.domain.model.User
 import com.dev.lbsuhack.core.domain.model.UserRole
+import com.dev.lbsuhack.core.domain.push.ObserveNotificationsEnabledUseCase
+import com.dev.lbsuhack.core.domain.push.SetNotificationsEnabledUseCase
+import com.dev.lbsuhack.core.domain.session.ClearSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SaveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionUser
-import com.dev.lbsuhack.core.domain.session.ClearSessionUseCase
 import com.dev.lbsuhack.core.domain.user.GetCurrentUserUseCase
 import com.dev.lbsuhack.core.domain.user.UpdateUserCacheUseCase
 import com.dev.lbsuhack.core.localization.text.UiText
-import com.dev.lbsuhack.feature.profile.toUiText
 import com.dev.lbsuhack.feature.profile.R
 import com.dev.lbsuhack.feature.profile.domain.ProfileRepository
-import kotlinx.coroutines.flow.collectLatest
+import com.dev.lbsuhack.feature.profile.toUiText
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class ProfileStoreFactory(
     private val storeFactory: StoreFactory,
     private val profileRepository: ProfileRepository,
+    private val observeNotificationsEnabled: ObserveNotificationsEnabledUseCase,
+    private val setNotificationsEnabled: SetNotificationsEnabledUseCase,
     private val getCurrentUser: GetCurrentUserUseCase,
     private val updateUserCache: UpdateUserCacheUseCase,
     private val saveSession: SaveSessionUseCase,
@@ -51,15 +58,20 @@ class ProfileStoreFactory(
         data class DialogOpened(val dialog: ProfileEditDialog?) : Message
         data class NameChanged(val value: String) : Message
         data class SurnameChanged(val value: String) : Message
+        data object LoadingStarted : Message
+        data object LoadingFinished : Message
+        data object LoadingFailed : Message
         data object Saving : Message
         data object SavingFinished : Message
-        data object LoadingFinished : Message
+        data object SavingSucceeded : Message
     }
 
     private inner class ExecutorImpl :
         CoroutineExecutor<ProfileStore.Intent, Nothing, ProfileStore.State, Message, ProfileStore.Label>() {
 
-        private var loading = false
+        private var loadJob: Job? = null
+        private var editJob: Job? = null
+        private val toggleMutex = Mutex()
 
         override fun executeIntent(intent: ProfileStore.Intent) {
             when (intent) {
@@ -75,57 +87,72 @@ class ProfileStoreFactory(
         }
 
         private fun load() {
-            scope.launch {
-                val notificationsEnabled = profileRepository.isNotificationsEnabled()
-                val savedCount = profileRepository.savedCount()
-                val cached = (getCurrentUser() as? DomainResult.Success)?.value
+            loadJob?.cancel()
+            loadJob = scope.launch {
+                dispatch(Message.LoadingStarted)
+                val initialNotifications = if (state().hasUser) state().notificationsEnabled else observeNotificationsEnabled().first()
+                val initialSaved = if (state().hasUser) state().savedCount else profileRepository.savedCount()
+                val cached = (getCurrentUser(forceRefresh = false) as? DomainResult.Success)?.value
                 if (cached != null) {
-                    dispatch(Message.UserLoaded(
-                        fullName = cached.displayName(),
-                        pupilClass = (cached as? User.Pupil)?.pupilClass.orEmpty(),
-                        schoolName = cached.schoolName.orEmpty(),
-                        role = cached.role,
-                        notificationsEnabled = notificationsEnabled,
-                        savedCount = savedCount,
-                    ))
+                    dispatch(
+                        Message.UserLoaded(
+                            fullName = cached.displayName(),
+                            pupilClass = (cached as? User.Pupil)?.pupilClass.orEmpty(),
+                            schoolName = cached.schoolName.orEmpty(),
+                            role = cached.role,
+                            notificationsEnabled = initialNotifications,
+                            savedCount = initialSaved,
+                        ),
+                    )
                 }
                 when (val result = getCurrentUser(forceRefresh = true)) {
                     is DomainResult.Success -> {
                         val user = result.value
+                        val currentNotifications = if (state().hasUser) state().notificationsEnabled else observeNotificationsEnabled().first()
+                        val currentSaved = if (state().hasUser) state().savedCount else profileRepository.savedCount()
                         dispatch(
                             Message.UserLoaded(
                                 fullName = user.displayName(),
                                 pupilClass = (user as? User.Pupil)?.pupilClass.orEmpty(),
                                 schoolName = user.schoolName.orEmpty(),
                                 role = user.role,
-                                notificationsEnabled = notificationsEnabled,
-                                savedCount = savedCount,
+                                notificationsEnabled = currentNotifications,
+                                savedCount = currentSaved,
                             ),
                         )
                     }
 
                     is DomainResult.Failure -> {
-                        dispatch(Message.LoadingFinished)
-                        publish(ProfileStore.Label.ShowMessage(result.error.toUiText()))
+                        if (!state().hasUser) {
+                            dispatch(Message.LoadingFailed)
+                            publish(ProfileStore.Label.ShowMessage(result.error.toUiText()))
+                        } else {
+                            dispatch(Message.LoadingFinished)
+                        }
                     }
                 }
             }
         }
 
         private fun toggleNotifications() {
+            dispatch(Message.NotificationsChanged(!state().notificationsEnabled))
             scope.launch {
-                val enabled = !state().notificationsEnabled
-                profileRepository.setNotificationsEnabled(enabled)
-                dispatch(Message.NotificationsChanged(enabled))
+                toggleMutex.withLock {
+                    val target = state().notificationsEnabled
+                    if (setNotificationsEnabled(target)) return@withLock
+                    if (state().notificationsEnabled == target) {
+                        dispatch(Message.NotificationsChanged(!target))
+                        publish(ProfileStore.Label.ShowMessage(UiText.Resource(R.string.profile_notifications_error)))
+                    }
+                }
             }
         }
 
         private fun openEditDialog() {
-            val dialog = state().dialog
-            if (dialog != null) return
+            if (state().dialog != null || editJob?.isActive == true) return
 
-            scope.launch {
-                val user = getCurrentUser().let { (it as? DomainResult.Success)?.value }
+            editJob = scope.launch {
+                val user = (getCurrentUser() as? DomainResult.Success)?.value
                 dispatch(
                     Message.DialogOpened(
                         ProfileEditDialog(
@@ -150,7 +177,7 @@ class ProfileStoreFactory(
             scope.launch {
                 val previousUser = (getCurrentUser() as? DomainResult.Success)?.value
                 val userId = previousUser?.id
-                if (userId.isNullOrBlank()) {
+                if (previousUser == null || userId.isNullOrBlank()) {
                     dispatch(Message.SavingFinished)
                     publish(ProfileStore.Label.ShowMessage(UiText.Resource(R.string.profile_error_unknown)))
                     return@launch
@@ -165,8 +192,8 @@ class ProfileStoreFactory(
                 ) {
                     is DomainResult.Success -> {
                         val user = when (val updated = result.value) {
-                            is User.Pupil -> updated.copy(schoolName = previousUser?.schoolName)
-                            is User.Teacher -> updated.copy(schoolName = previousUser?.schoolName)
+                            is User.Pupil -> updated.copy(schoolName = previousUser.schoolName)
+                            is User.Teacher -> updated.copy(schoolName = previousUser.schoolName)
                             is User.Organizator -> updated
                         }
                         updateUserCache(user)
@@ -181,7 +208,7 @@ class ProfileStoreFactory(
                                 savedCount = state().savedCount,
                             ),
                         )
-                        dispatch(Message.SavingFinished)
+                        dispatch(Message.SavingSucceeded)
                         publish(ProfileStore.Label.ShowMessage(UiText.Resource(R.string.profile_success_updated)))
                     }
 
@@ -210,15 +237,20 @@ class ProfileStoreFactory(
                 notificationsEnabled = msg.notificationsEnabled,
                 savedCount = msg.savedCount,
                 isLoading = false,
+                isError = false,
+                hasUser = true,
             )
 
             is Message.NotificationsChanged -> copy(notificationsEnabled = msg.enabled)
             is Message.DialogOpened -> copy(dialog = msg.dialog, isSaving = false)
             is Message.NameChanged -> copy(dialog = dialog?.copy(name = msg.value))
             is Message.SurnameChanged -> copy(dialog = dialog?.copy(surname = msg.value))
+            Message.LoadingStarted -> copy(isLoading = !hasUser, isError = false)
+            Message.LoadingFinished -> copy(isLoading = false)
+            Message.LoadingFailed -> copy(isLoading = false, isError = true)
             Message.Saving -> copy(isSaving = true)
             Message.SavingFinished -> copy(isSaving = false)
-            Message.LoadingFinished -> copy(isLoading = false)
+            Message.SavingSucceeded -> copy(dialog = null, isSaving = false)
         }
     }
 
