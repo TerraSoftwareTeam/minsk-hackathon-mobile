@@ -3,6 +3,7 @@ package com.dev.lbsuhack.feature.activities.ui.create
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -156,28 +157,38 @@ fun CreateActivityScreen(
                                     )
                                 },
                             )
+
+                            Spacer(modifier = Modifier.height(20.dp))
+
                             HackSectionLabel(text = stringResource(R.string.create_activity_scope_label))
-                            ActivityScope.entries.forEach { scope ->
-                                FilterChip(
-                                    selected = state.scope == scope,
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                        selectedLabelColor = MaterialTheme.colorScheme.onSurface,
-                                        selectedLeadingIconColor = MaterialTheme.colorScheme.onSurface,
-                                    ),
-                                    border = FilterChipDefaults.filterChipBorder(
-                                        enabled = state.canEdit && !state.isSubmitting,
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                ActivityScope.entries.forEach { scope ->
+                                    FilterChip(
                                         selected = state.scope == scope,
-                                        borderColor = MaterialTheme.colorScheme.outlineVariant,
-                                        selectedBorderColor = MaterialTheme.colorScheme.onSurface,
-                                        selectedBorderWidth = 1.dp,
-                                    ),
-                                    enabled = state.canEdit && !state.isSubmitting,
-                                    onClick = { viewModel.accept(CreateActivityStore.Intent.ChangeScope(scope)) },
-                                    label = {
-                                        Text(stringResource(scope.labelRes()))
-                                    },
-                                )
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                            selectedLabelColor = MaterialTheme.colorScheme.onSurface,
+                                            selectedLeadingIconColor = MaterialTheme.colorScheme.onSurface,
+                                        ),
+                                        border = FilterChipDefaults.filterChipBorder(
+                                            enabled = state.canEdit && !state.isSubmitting,
+                                            selected = state.scope == scope,
+                                            borderColor = MaterialTheme.colorScheme.outlineVariant,
+                                            selectedBorderColor = MaterialTheme.colorScheme.onSurface,
+                                            selectedBorderWidth = 1.dp,
+                                        ),
+                                        enabled = state.canEdit && !state.isSubmitting,
+                                        onClick = { viewModel.accept(CreateActivityStore.Intent.ChangeScope(scope)) },
+                                        label = {
+                                            Text(stringResource(scope.labelRes()))
+                                        },
+                                    )
+                                }
                             }
                         }
 

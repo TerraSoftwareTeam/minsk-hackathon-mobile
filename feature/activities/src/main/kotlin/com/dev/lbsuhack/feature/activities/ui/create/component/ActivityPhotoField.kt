@@ -3,23 +3,23 @@ package com.dev.lbsuhack.feature.activities.ui.create.component
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddPhotoAlternate
+import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,26 +45,48 @@ internal fun ActivityPhotoField(photoUri: String?, title: String, enabled: Boole
         photoUri?.let {
             ActivityPhoto(it, title, modifier = Modifier.fillMaxWidth().height(200.dp))
         }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            OutlinedButton(enabled = enabled, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                onClick = { picker.launch(arrayOf("image/*")) }) {
-                Icon(Icons.Outlined.AddPhotoAlternate, contentDescription = null, modifier = Modifier.size(20.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            OutlinedButton(
+                enabled = enabled,
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                onClick = { picker.launch(arrayOf("image/*")) },
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.AddPhotoAlternate,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(stringResource(if (photoUri == null) R.string.activity_photo_add else R.string.activity_photo_replace))
             }
-            if (photoUri == null) {
+            if (photoUri != null) {
+                OutlinedButton(
+                    enabled = enabled,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                    onClick = { onChange(null) },
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.DeleteOutline,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.activity_photo_remove))
+                }
+            } else {
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    stringResource(R.string.activity_photo_optional),
+                    text = stringResource(R.string.activity_photo_optional),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            }
-            Spacer(modifier = Modifier.weight(1f))
-            if (photoUri != null) {
-                TextButton(colors = ButtonDefaults.buttonColors(contentColor = MaterialTheme.colorScheme.primary), enabled = enabled, onClick = { onChange(null) }) {
-                    Text(stringResource(R.string.activity_photo_remove))
-                }
             }
         }
     }
