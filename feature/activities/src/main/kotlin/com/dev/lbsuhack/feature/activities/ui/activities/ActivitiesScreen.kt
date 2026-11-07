@@ -229,6 +229,7 @@ fun ActivitiesScreen(
                                     ActivityCard(
                                         proposal = proposal,
                                         isAuthor = state.isAuthorOf(proposal),
+                                        viewerRole = state.currentUser?.role,
                                         onClick = {
                                             viewModel.accept(ActivitiesStore.Intent.ClickActivity(proposal.id))
                                         },

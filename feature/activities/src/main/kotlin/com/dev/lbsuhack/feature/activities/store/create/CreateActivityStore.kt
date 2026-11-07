@@ -44,10 +44,14 @@ interface CreateActivityStore :
         val photoUri: String? = null,
         val createdActivityId: String? = null,
         val creationState: CreationState = CreationState.EDITING,
+        val completionContentState: CreationState = CreationState.EDITING,
         val isSubmitting: Boolean = false,
         val error: UiText? = null,
         val errorId: Long = 0L,
     ) {
+        val contentState: CreationState
+            get() = if (creationState == CreationState.CREATED) completionContentState else creationState
+
         val canEdit: Boolean
             get() = creationState == CreationState.EDITING
 

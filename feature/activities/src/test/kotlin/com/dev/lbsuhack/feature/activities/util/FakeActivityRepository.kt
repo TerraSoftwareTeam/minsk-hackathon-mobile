@@ -47,6 +47,8 @@ class FakeActivityRepository(
 
     override fun observeActivities(): Flow<List<ActivityProposal>> = activities.asStateFlow()
 
+    override fun cachedEventById(id: String): ActivityProposal? = activities.value.find { it.id == id }
+
     var refreshGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
 
     override suspend fun refresh(): DomainResult<Unit> {

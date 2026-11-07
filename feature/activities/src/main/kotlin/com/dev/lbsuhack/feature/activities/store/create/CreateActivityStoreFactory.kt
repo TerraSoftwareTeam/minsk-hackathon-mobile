@@ -231,7 +231,11 @@ class CreateActivityStoreFactory(
                 is Message.ErrorOccurred -> copy(isSubmitting = false, error = msg.error, errorId = errorId + 1)
                 Message.ErrorDismissed -> copy(error = null)
                 Message.PhotoFailed -> copy(isSubmitting = false, creationState = CreationState.PHOTO_PENDING)
-                Message.Submitted -> copy(isSubmitting = false, creationState = CreationState.CREATED)
+                Message.Submitted -> copy(
+                    isSubmitting = true,
+                    completionContentState = creationState,
+                    creationState = CreationState.CREATED,
+                )
             }
     }
 }

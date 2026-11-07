@@ -69,7 +69,7 @@ class LoginStoreFactory(
 
             when (state().role) {
                 UserRole.ORGANIZATOR -> authenticate {
-                    authRepository.registerOrganizer(randomSchoolsById())
+                    authRepository.registerOrganizer(ORGANIZER_SCHOOLS_BY_ID)
                 }
 
                 UserRole.TEACHER -> submitTeacher()
@@ -174,6 +174,8 @@ class LoginStoreFactory(
     )
 
     private companion object {
+        const val ORGANIZER_SCHOOLS_BY_ID = "admin-001"
+
         fun randomSchoolsById(): String = Random.nextInt(1_000_000, 10_000_000).toString()
 
         fun manualPupilSchoolsById(identity: ManualIdentity): String {

@@ -14,6 +14,7 @@ interface ActivityRepository {
     val mutationFailures: Flow<ActivityMutationFailure>
 
     fun observeActivities(): Flow<List<ActivityProposal>>
+    fun cachedEventById(id: String): ActivityProposal?
     suspend fun refresh(): DomainResult<Unit>
     suspend fun getEventById(id: String): DomainResult<ActivityProposal>
     suspend fun uploadPhoto(eventId: String, photoUri: String): DomainResult<ActivityProposal>

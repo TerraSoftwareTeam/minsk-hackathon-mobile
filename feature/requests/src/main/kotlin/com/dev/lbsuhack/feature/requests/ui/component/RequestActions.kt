@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.dev.lbsuhack.core.ui.component.HackButtonContent
 import com.dev.lbsuhack.feature.requests.R
 
 @Composable
@@ -22,6 +23,8 @@ internal fun RequestActions(
     onApprove: () -> Unit,
     onDecline: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    approving: Boolean = false,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -29,6 +32,7 @@ internal fun RequestActions(
     ) {
         OutlinedButton(
             onClick = onDecline,
+            enabled = enabled,
             modifier = Modifier
                 .weight(1f)
                 .height(50.dp),
@@ -44,16 +48,19 @@ internal fun RequestActions(
         }
         Button(
             onClick = onApprove,
+            enabled = enabled,
             modifier = Modifier
                 .weight(1f)
                 .height(50.dp),
             shape = MaterialTheme.shapes.medium,
         ) {
-            Text(
-                text = stringResource(R.string.requests_action_approve),
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                maxLines = 1,
-            )
+            HackButtonContent(loading = approving) {
+                Text(
+                    text = stringResource(R.string.requests_action_approve),
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    maxLines = 1,
+                )
+            }
         }
     }
 }

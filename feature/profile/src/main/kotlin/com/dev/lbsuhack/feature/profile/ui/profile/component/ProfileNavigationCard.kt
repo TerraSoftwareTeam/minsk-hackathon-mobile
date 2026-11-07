@@ -1,7 +1,6 @@
 package com.dev.lbsuhack.feature.profile.ui.profile.component
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,7 +25,6 @@ import com.dev.lbsuhack.feature.profile.ui.common.ProfileIconBadge
 fun ProfileNavigationCard(
     icon: ImageVector,
     title: String,
-    description: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -40,18 +38,12 @@ fun ProfileNavigationCard(
         ) {
             ProfileIconBadge(icon = icon)
             Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            Text(
+                text = title,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
             Spacer(modifier = Modifier.width(12.dp))
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,

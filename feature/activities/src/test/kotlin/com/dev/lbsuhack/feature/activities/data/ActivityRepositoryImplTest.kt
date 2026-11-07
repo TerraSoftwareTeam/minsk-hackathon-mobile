@@ -149,6 +149,7 @@ class ActivityRepositoryImplTest {
             val repository = ActivityRepositoryImpl(client, StandardTestDispatcher(testScheduler), ObserveSessionUseCase(session))
             repository.refresh()
             assertEquals(1, repository.observeActivities().first().size)
+            assertEquals("e-sync", repository.cachedEventById("e-sync")?.id)
             delayed = true
             val pending = async { repository.refresh() }
             runCurrent()
@@ -156,14 +157,18 @@ class ActivityRepositoryImplTest {
             session.clear()
             session.save(user)
             assertTrue(repository.observeActivities().first().isEmpty())
+            assertTrue(repository.cachedEventById("e-sync") == null)
             gate.complete(Unit)
             assertEquals(DomainError.Unauthorized, (pending.await() as DomainResult.Failure).error)
             assertTrue(repository.observeActivities().first().isEmpty())
+            assertTrue(repository.cachedEventById("e-sync") == null)
             delayed = false
             repository.refresh()
             assertEquals(1, repository.observeActivities().first().size)
+            assertEquals("e-sync", repository.cachedEventById("e-sync")?.id)
             session.save(user.copy(id = "second"))
             assertTrue(repository.observeActivities().first().isEmpty())
+            assertTrue(repository.cachedEventById("e-sync") == null)
         }
     }
 

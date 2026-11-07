@@ -27,8 +27,9 @@ internal fun ActivityVoteProgress(proposal: ActivityProposal) {
     ) {
         ActivityVotesMeter(proposal = proposal)
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        ActivityVotersSummary(voters = proposal.voters)
+        if (proposal.voters.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            ActivityVotersSummary(voters = proposal.voters)
+        }
     }
 }

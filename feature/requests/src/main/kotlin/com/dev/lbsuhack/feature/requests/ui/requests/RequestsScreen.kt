@@ -113,11 +113,9 @@ fun RequestsScreen(
 
     RequestsDialogHost(
         dialog = state.dialog,
-        audience = state.audience,
         isSubmitting = state.isSubmitting,
         onDismiss = { viewModel.accept(RequestsStore.Intent.DismissDialog) },
         onChangeReason = { viewModel.accept(RequestsStore.Intent.ChangeDeclineReason(it)) },
-        onConfirmApprove = { viewModel.accept(RequestsStore.Intent.ConfirmApprove) },
         onConfirmDecline = { viewModel.accept(RequestsStore.Intent.ConfirmDecline) },
     )
 }

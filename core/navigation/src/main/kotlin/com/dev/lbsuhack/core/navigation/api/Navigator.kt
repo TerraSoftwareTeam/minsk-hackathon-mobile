@@ -7,6 +7,7 @@ import com.dev.lbsuhack.core.domain.model.UserRole
 interface Navigator {
     val canGoBack: Boolean
     fun navigate(route: NavKey)
+    fun replaceCurrent(route: NavKey)
     fun replaceAll(route: NavKey)
     fun back()
 }

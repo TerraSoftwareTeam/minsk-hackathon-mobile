@@ -46,8 +46,6 @@ import com.dev.lbsuhack.feature.activities.ui.component.ActivityChanceMeter
 import com.dev.lbsuhack.feature.activities.ui.component.ActivityTag
 import com.dev.lbsuhack.feature.activities.ui.create.component.ActivityPhotoField
 import com.dev.lbsuhack.feature.activities.ui.create.component.CategorySelector
-import com.dev.lbsuhack.feature.activities.ui.create.component.CreateActivityCompletedState
-import com.dev.lbsuhack.feature.activities.ui.create.component.CreateOriginBanner
 import com.dev.lbsuhack.feature.activities.ui.create.component.FormSection
 import com.dev.lbsuhack.feature.activities.ui.create.component.FormTextField
 import com.dev.lbsuhack.feature.activities.ui.create.component.MaxParticipantsField
@@ -104,17 +102,15 @@ fun CreateActivityScreen(
                 .padding(padding)
                 .imePadding(),
         ) {
-            when (state.creationState) {
-                CreationState.EDITING -> {
+            when (state.contentState) {
+                CreationState.EDITING, CreationState.CREATED -> {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                            .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        CreateOriginBanner(origin = state.origin)
-
                         FormSection(title = stringResource(R.string.create_activity_main_section)) {
                             HackSectionLabel(text = stringResource(R.string.create_activity_category_label))
                             Spacer(modifier = Modifier.height(10.dp))
@@ -172,6 +168,9 @@ fun CreateActivityScreen(
 
                             ParticipantCountRow(
                                 title = stringResource(R.string.create_activity_threshold_label),
+                                infoText = stringResource(
+                                    if (state.isStaff) R.string.create_activity_threshold_hint_staff else R.string.create_activity_threshold_hint,
+                                ),
                                 value = state.voteThreshold,
                                 decrementEnabled = state.voteThreshold > state.minVoteThreshold && formEnabled,
                                 incrementEnabled = state.voteThreshold < MAX_VOTE_THRESHOLD && formEnabled,
@@ -186,19 +185,6 @@ fun CreateActivityScreen(
                                     )
                                 },
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = stringResource(
-                                    if (state.isStaff) {
-                                        R.string.create_activity_threshold_hint_staff
-                                    } else {
-                                        R.string.create_activity_threshold_hint
-                                    },
-                                ),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-
                             Spacer(modifier = Modifier.height(16.dp))
 
                             MaxParticipantsField(
@@ -286,16 +272,6 @@ fun CreateActivityScreen(
                             viewModel.accept(CreateActivityStore.Intent.ChangePhoto(null))
                             viewModel.accept(CreateActivityStore.Intent.Submit)
                         },
-                        modifier = Modifier.align(Alignment.Center),
-                    )
-                }
-
-                CreationState.CREATED -> {
-                    CreateActivityCompletedState(
-                        onOpenCreated = {
-                            state.createdActivityId?.let(onCreated)
-                        },
-                        onBackToList = onBack,
                         modifier = Modifier.align(Alignment.Center),
                     )
                 }

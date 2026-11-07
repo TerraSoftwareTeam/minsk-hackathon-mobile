@@ -7,7 +7,6 @@ import com.dev.lbsuhack.feature.requests.domain.RequestAudience
 import com.dev.lbsuhack.feature.requests.domain.ReviewRequest
 import com.dev.lbsuhack.feature.requests.domain.isPending
 import com.dev.lbsuhack.feature.requests.domain.isProcessed
-import java.time.OffsetDateTime
 
 enum class RequestsSectionKind {
     PENDING,
@@ -35,13 +34,6 @@ sealed interface RequestDialog {
     val requestId: String
     val title: String
 
-    data class Approve(
-        override val requestId: String,
-        override val title: String,
-        val startsAt: OffsetDateTime? = null,
-        val chance: Double? = null,
-    ) : RequestDialog
-
     data class Decline(
         override val requestId: String,
         override val title: String,
@@ -68,7 +60,6 @@ interface RequestsStore : Store<RequestsStore.Intent, RequestsStore.State, Reque
         data class ClickDecline(val requestId: String) : Intent
         data object DismissDialog : Intent
         data class ChangeDeclineReason(val value: String) : Intent
-        data object ConfirmApprove : Intent
         data object ConfirmDecline : Intent
     }
 
@@ -84,6 +75,7 @@ interface RequestsStore : Store<RequestsStore.Intent, RequestsStore.State, Reque
         val hasLoadedOnce: Boolean = false,
         val loadFailed: Boolean = false,
         val isSubmitting: Boolean = false,
+        val approvingRequestId: String? = null,
     ) {
         val canReview: Boolean
             get() = accessState == AccessState.Granted

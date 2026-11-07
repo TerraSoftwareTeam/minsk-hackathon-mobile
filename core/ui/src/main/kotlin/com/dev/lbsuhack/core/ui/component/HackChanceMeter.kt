@@ -70,7 +70,7 @@ fun HackChanceMeter(
                 modifier = Modifier.weight(1f),
             )
             if (!footnote.isNullOrBlank()) {
-                HackChanceInfoButton(title = title, text = footnote)
+                HackInfoButton(title = title, text = footnote)
             }
             AnimatedContent(
                 targetState = percent,

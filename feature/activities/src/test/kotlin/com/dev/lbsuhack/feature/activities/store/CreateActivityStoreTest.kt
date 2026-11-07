@@ -241,6 +241,8 @@ class CreateActivityStoreTest {
         }
 
         assertEquals(CreationState.CREATED, store.state.creationState)
+        assertEquals(CreationState.EDITING, store.state.contentState)
+        assertTrue(store.state.isSubmitting)
         assertFalse(store.state.canEdit)
         assertEquals(1, activityRepository.createCalls)
         store.dispose()
@@ -296,6 +298,8 @@ class CreateActivityStoreTest {
         assertEquals(1, activityRepository.createCalls)
         assertEquals(2, activityRepository.photoCalls)
         assertEquals(CreationState.CREATED, store.state.creationState)
+        assertEquals(CreationState.PHOTO_PENDING, store.state.contentState)
+        assertTrue(store.state.isSubmitting)
         store.dispose()
     }
 

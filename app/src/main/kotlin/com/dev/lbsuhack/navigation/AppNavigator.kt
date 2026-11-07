@@ -20,6 +20,16 @@ class AppNavigator(
         backStack.add(route)
     }
 
+    override fun replaceCurrent(route: NavKey) {
+        if (route in backStack) {
+            navigate(route)
+        } else if (backStack.isEmpty()) {
+            backStack.add(route)
+        } else {
+            backStack[backStack.lastIndex] = route
+        }
+    }
+
     override fun replaceAll(route: NavKey) {
         backStack.clear()
         backStack.add(route)

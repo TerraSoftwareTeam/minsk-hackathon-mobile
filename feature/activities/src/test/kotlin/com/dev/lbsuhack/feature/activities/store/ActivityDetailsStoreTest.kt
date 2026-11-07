@@ -40,11 +40,21 @@ class ActivityDetailsStoreTest {
         listOf(TestFixtures.ownProposal, TestFixtures.otherProposal),
     )
 
-    private fun createStore(): ActivityDetailsStore = ActivityDetailsStoreFactory(
+    private fun createStore(activityId: String? = null): ActivityDetailsStore = ActivityDetailsStoreFactory(
         storeFactory = DefaultStoreFactory(),
         activityRepository = activityRepository,
         observeSessionUseCase = ObserveSessionUseCase(sessionRepository),
-    ).create()
+    ).create(activityId)
+
+    @Test
+    fun cachedCreatedActivityIsVisibleBeforeLoadingStarts() {
+        val store = createStore("act-1")
+
+        assertEquals(TestFixtures.ownProposal, store.state.activity)
+        assertEquals(TestFixtures.pupil, store.state.currentUser)
+        assertFalse(store.state.isLoading)
+        store.dispose()
+    }
 
     @Test
     fun ratingSwitchesBetweenDislikeLikeAndNoReaction() = runTest(mainDispatcherRule.testDispatcher) {

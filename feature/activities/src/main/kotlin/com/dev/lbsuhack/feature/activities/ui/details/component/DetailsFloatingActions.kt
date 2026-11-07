@@ -3,36 +3,29 @@ package com.dev.lbsuhack.feature.activities.ui.details.component
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.dev.lbsuhack.feature.activities.R
+import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
+import com.dev.lbsuhack.feature.activities.presentation.ActivityRatingMode
+import com.dev.lbsuhack.feature.activities.presentation.actionsFor
 import com.dev.lbsuhack.feature.activities.ui.common.FloatingActionsBackdrop
 import com.dev.lbsuhack.feature.activities.ui.component.ActivityRating
+import com.dev.lbsuhack.feature.activities.ui.component.ActivityRatingSummary
 import com.dev.lbsuhack.feature.activities.ui.component.ActivityVoteButton
 
 @Composable
 internal fun DetailsFloatingActions(
     proposal: ActivityProposal,
-    isAuthor: Boolean,
+    viewerRole: UserRole?,
     canInteract: Boolean,
     canVote: Boolean,
     onVote: () -> Unit,
@@ -42,51 +35,30 @@ internal fun DetailsFloatingActions(
     onUnlike: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.fillMaxWidth().height(180.dp)) {
+    val actions = proposal.actionsFor(viewerRole)
+    if (!actions.isVisible) return
+    Box(modifier = modifier.fillMaxWidth().height(if (actions.showParticipation) 144.dp else 96.dp)) {
         FloatingActionsBackdrop(modifier = Modifier.matchParentSize())
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = if (actions.showParticipation) Arrangement.spacedBy(12.dp) else Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (isAuthor) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 10.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Spacer(modifier = Modifier.width(7.dp))
-                    Text(
-                        text = stringResource(R.string.details_author_badge),
-                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
+            when (actions.ratingMode) {
+                ActivityRatingMode.INTERACTIVE -> ActivityRating(
+                    likesCount = proposal.likesCount,
+                    likedByMe = proposal.likedByMe,
+                    dislikedByMe = proposal.dislikedByMe,
+                    enabled = canInteract,
+                    onLike = onLike,
+                    onDislike = onDislike,
+                    onUnlike = onUnlike,
+                    modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer, CircleShape),
+                )
+                ActivityRatingMode.SUMMARY -> ActivityRatingSummary(score = proposal.likesCount)
+                ActivityRatingMode.HIDDEN -> Unit
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (proposal.canLike) {
-                    ActivityRating(
-                        likesCount = proposal.likesCount,
-                        likedByMe = proposal.likedByMe,
-                        dislikedByMe = proposal.dislikedByMe,
-                        enabled = canInteract && proposal.canLike,
-                        onLike = onLike,
-                        onDislike = onDislike,
-                        onUnlike = onUnlike,
-                        modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer, CircleShape),
-                    )
-                }
-
+            if (actions.showParticipation) {
                 ActivityVoteButton(
                     proposal = proposal,
                     canInteract = canVote,

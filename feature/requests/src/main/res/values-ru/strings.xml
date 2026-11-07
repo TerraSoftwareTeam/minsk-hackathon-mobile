@@ -30,9 +30,6 @@
     <string name="requests_action_cancel">Отмена</string>
     <string name="requests_retry">Повторить</string>
 
-    <string name="requests_dialog_approve_title">Подтвердить одобрение?</string>
-    <string name="requests_dialog_approve_teacher_text">Ученики смогут записываться до закрытия голосования — за 3 дня до мероприятия.</string>
-    <string name="requests_dialog_approve_admin_text">Мероприятие будет утверждено на дату, которую выбрал автор.</string>
     <string name="requests_dialog_decline_title">Отклонить заявку?</string>
     <string name="requests_dialog_decline_text">Укажите причину, чтобы автор понял решение.</string>
     <string name="requests_dialog_decline_reason_label">Причина (необязательно)</string>
@@ -60,7 +57,6 @@
     <string name="requests_success_declined">Заявка отклонена</string>
     <string name="requests_profile">Профиль</string>
     <string name="requests_refresh">Обновить</string>
-    <string name="requests_dialog_approve_date_label">Дата проведения</string>
     <plurals name="requests_new_arrived">
         <item quantity="one">Пришла %d новая заявка</item>
         <item quantity="few">Пришли %d новые заявки</item>
@@ -103,4 +99,6 @@
     <string name="requests_note_teacher_pending_until_format">Решите до %1$s, иначе заявка отменится.</string>
     <string name="requests_note_admin_pending_until_format">Решите до начала мероприятия — %1$s.</string>
     <string name="requests_note_admin_approved_desc">Мероприятие состоится.</string>
+    <string name="requests_show_organizer">Организатор</string>
+    <string name="requests_origin_pupil">Ученик</string>
 </resources>

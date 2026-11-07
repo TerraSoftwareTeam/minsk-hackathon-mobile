@@ -12,9 +12,10 @@ import kotlinx.coroutines.flow.StateFlow
 @OptIn(ExperimentalCoroutinesApi::class)
 class ActivityDetailsViewModel(
     storeFactory: ActivityDetailsStoreFactory,
+    activityId: String,
 ) : ViewModel() {
 
-    private val store = storeFactory.create()
+    private val store = storeFactory.create(activityId)
 
     val state: StateFlow<ActivityDetailsStore.State> = store.stateFlow
     val labels: Flow<ActivityDetailsStore.Label> = store.labels

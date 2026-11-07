@@ -3,7 +3,6 @@
     <string name="profile_title">Profile</string>
     <string name="profile_back">Back</string>
     <string name="profile_notifications">Notifications</string>
-    <string name="profile_notifications_description">Push notifications from services</string>
     <string name="profile_notifications_error">Could not update notification settings. Try again</string>
     <string name="profile_open_settings">Settings</string>
     <string name="profile_requests">Event management</string>
@@ -46,9 +45,5 @@
     <string name="profile_name_unknown">—</string>
     <string name="profile_create_activity">Create an event</string>
     <string name="profile_my_activities">School events</string>
-    <string name="profile_requests_teacher_desc">Approve or decline initiatives of your class</string>
-    <string name="profile_requests_admin_desc">Set the date for events that collected votes</string>
-    <string name="profile_my_activities_desc">Create and view school events</string>
     <string name="profile_school_activities">School events</string>
-    <string name="profile_school_activities_desc">Create and view school events</string>
 </resources>

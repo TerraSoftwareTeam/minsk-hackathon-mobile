@@ -35,17 +35,11 @@ fun ProfileStaffSection(
         ProfileNavigationCard(
             icon = if (isTeacher) Icons.AutoMirrored.Filled.FactCheck else Icons.Outlined.Verified,
             title = stringResource(if (isTeacher) R.string.profile_requests_teacher else R.string.profile_requests_admin),
-            description = stringResource(
-                if (isTeacher) R.string.profile_requests_teacher_desc else R.string.profile_requests_admin_desc,
-            ),
             onClick = { onOpenRequests(role) },
         )
         ProfileNavigationCard(
             icon = if (isTeacher) Icons.Outlined.Event else Icons.Outlined.AccountBalance,
             title = stringResource(if (isTeacher) R.string.profile_my_activities else R.string.profile_school_activities),
-            description = stringResource(
-                if (isTeacher) R.string.profile_my_activities_desc else R.string.profile_school_activities_desc,
-            ),
             onClick = onOpenActivities,
         )
     }

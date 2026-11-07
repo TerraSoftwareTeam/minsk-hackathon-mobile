@@ -1,13 +1,16 @@
 package com.dev.lbsuhack.feature.activities.ui.create.component
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dev.lbsuhack.core.ui.component.HackInfoButton
 import com.dev.lbsuhack.core.ui.component.HackDateTimeField
 import com.dev.lbsuhack.core.ui.component.HackSectionLabel
 import com.dev.lbsuhack.feature.activities.R
@@ -27,7 +30,16 @@ internal fun SchoolDateField(
 ) {
     val format = rememberActivityDateFormatter()
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        HackSectionLabel(text = stringResource(R.string.create_activity_date_label))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            HackSectionLabel(
+                text = stringResource(R.string.create_activity_date_label),
+                modifier = Modifier.weight(1f),
+            )
+            HackInfoButton(
+                title = stringResource(R.string.create_activity_date_label),
+                text = stringResource(R.string.create_activity_date_hint, format(votingClosesAt(startsAt))),
+            )
+        }
         HackDateTimeField(
             value = startsAt,
             text = format(startsAt),
@@ -36,14 +48,12 @@ internal fun SchoolDateField(
             isError = hasError,
             minDate = earliestStartsAt().atZoneSameInstant(ZoneId.systemDefault()).toLocalDate(),
         )
-        Text(
-            text = if (hasError) {
-                stringResource(R.string.create_activity_error_date_in_past)
-            } else {
-                stringResource(R.string.create_activity_date_hint, format(votingClosesAt(startsAt)))
-            },
-            style = MaterialTheme.typography.bodySmall,
-            color = if (hasError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        if (hasError) {
+            Text(
+                text = stringResource(R.string.create_activity_error_date_in_past),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
     }
 }

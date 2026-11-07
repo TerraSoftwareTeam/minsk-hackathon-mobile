@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dev.lbsuhack.core.ui.component.HackInfoButton
 import com.dev.lbsuhack.feature.activities.R
 
 @Composable
@@ -31,6 +32,7 @@ internal fun ParticipantCountRow(
     incrementEnabled: Boolean,
     onDecrement: () -> Unit,
     onIncrement: () -> Unit,
+    infoText: String? = null,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth()
@@ -42,6 +44,9 @@ internal fun ParticipantCountRow(
     ) {
         Text(title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (!infoText.isNullOrBlank()) {
+            HackInfoButton(title = title, text = infoText)
+        }
         IconButton(onClick = onDecrement, enabled = decrementEnabled) {
             Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.create_activity_decrease_count, title),
                 modifier = Modifier.size(20.dp),

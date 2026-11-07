@@ -15,6 +15,7 @@ import com.dev.lbsuhack.feature.activities.R
 
 @Composable
 internal fun ActivityVotersSummary(voters: List<String>, modifier: Modifier = Modifier) {
+    if (voters.isEmpty()) return
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         if (voters.isNotEmpty()) {
             VoterAvatarStack(voters = voters)
@@ -34,7 +35,7 @@ internal fun ActivityVotersSummary(voters: List<String>, modifier: Modifier = Mo
 private fun votersText(voters: List<String>): String {
     val names = voters.map(::shortName)
     return when (names.size) {
-        0 -> stringResource(R.string.activities_voters_empty)
+        0 -> ""
         1 -> stringResource(R.string.activities_voters_one, names[0])
         2 -> stringResource(R.string.activities_voters_two, names[0], names[1])
         else -> stringResource(R.string.activities_voters_many, names[0], names[1], names.size - 2)

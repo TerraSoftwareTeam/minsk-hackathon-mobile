@@ -49,8 +49,7 @@ class ActivitiesNavigationInstaller(
                     CreateActivityScreen(
                         onBack = navigator::back,
                         onCreated = { id ->
-                            navigator.back()
-                            navigator.navigate(ActivityDetailsRoute(activityId = id))
+                            navigator.replaceCurrent(ActivityDetailsRoute(activityId = id))
                         },
                     )
                 }

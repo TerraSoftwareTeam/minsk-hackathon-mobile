@@ -30,9 +30,6 @@
     <string name="requests_action_cancel">Cancel</string>
     <string name="requests_retry">Retry</string>
 
-    <string name="requests_dialog_approve_title">Confirm approval?</string>
-    <string name="requests_dialog_approve_teacher_text">Pupils will be able to sign up until 3 days before the event.</string>
-    <string name="requests_dialog_approve_admin_text">The event will be confirmed on the date chosen by the author.</string>
     <string name="requests_dialog_decline_title">Decline the request?</string>
     <string name="requests_dialog_decline_text">Add a reason so the author understands the decision.</string>
     <string name="requests_dialog_decline_reason_label">Reason (optional)</string>
@@ -60,7 +57,6 @@
     <string name="requests_success_declined">Request declined</string>
     <string name="requests_profile">Profile</string>
     <string name="requests_refresh">Refresh</string>
-    <string name="requests_dialog_approve_date_label">Event date</string>
     <plurals name="requests_new_arrived">
         <item quantity="one">%d new request arrived</item>
         <item quantity="other">%d new requests arrived</item>
@@ -101,4 +97,6 @@
     <string name="requests_note_teacher_pending_until_format">Decide by %1$s, otherwise the request is cancelled.</string>
     <string name="requests_note_admin_pending_until_format">Decide before the event starts — %1$s.</string>
     <string name="requests_note_admin_approved_desc">The event will take place.</string>
+    <string name="requests_show_organizer">Organizer</string>
+    <string name="requests_origin_pupil">Pupil</string>
 </resources>

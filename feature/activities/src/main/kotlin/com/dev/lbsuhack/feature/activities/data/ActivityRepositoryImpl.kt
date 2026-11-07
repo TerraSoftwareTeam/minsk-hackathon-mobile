@@ -126,6 +126,13 @@ class ActivityRepositoryImpl(
         }
     } ?: activitiesFlow.map { it.items }
 
+    override fun cachedEventById(id: String): ActivityProposal? {
+        val cache = activitiesFlow.value
+        val userId = sessionId()
+        if (observeSession != null && (userId == null || cache.owner != userId)) return null
+        return cache.items.find { it.id == id }
+    }
+
     override suspend fun refresh(): DomainResult<Unit> = withContext(ioDispatcher) {
         prepareCache()
         val requestOwner = sessionId()

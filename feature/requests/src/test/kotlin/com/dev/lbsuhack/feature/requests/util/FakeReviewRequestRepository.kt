@@ -19,6 +19,9 @@ class FakeReviewRequestRepository(
     private val actionDelayMillis: Long = 0L,
 ) : ReviewRequestRepository {
 
+    var approveCalls = 0
+    var approveResult: DomainResult<ReviewRequest>? = null
+
     private val requestsFlow = MutableStateFlow<List<ReviewRequest>>(emptyList())
 
     override fun observeRequests(): Flow<List<ReviewRequest>> = requestsFlow.asStateFlow()
@@ -38,7 +41,9 @@ class FakeReviewRequestRepository(
         requestId: String,
         audience: RequestAudience,
     ): DomainResult<ReviewRequest> {
+        approveCalls++
         if (actionDelayMillis > 0L) delay(actionDelayMillis)
+        approveResult?.let { return it }
         return updateRequest(requestId) {
             it.copy(status = ReviewStatus.APPROVED, declineReason = null)
         }

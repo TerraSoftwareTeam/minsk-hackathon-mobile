@@ -14,11 +14,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.ui.component.ActivityVotersList
 
 @Composable
-internal fun ParticipantsCard(voters: List<String>, modifier: Modifier = Modifier) {
+internal fun ParticipantsCard(voters: List<String>, viewerRole: UserRole?, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -37,13 +38,13 @@ internal fun ParticipantsCard(voters: List<String>, modifier: Modifier = Modifie
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onSurface,
         )
-        if (voters.isEmpty()) {
+        if (voters.isEmpty() && viewerRole == UserRole.PUPIL) {
             Text(
                 text = stringResource(R.string.details_participants_empty),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        } else {
+        } else if (voters.isNotEmpty()) {
             ActivityVotersList(voters = voters)
         }
     }

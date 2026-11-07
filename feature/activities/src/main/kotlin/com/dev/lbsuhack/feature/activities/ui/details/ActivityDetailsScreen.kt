@@ -35,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dev.lbsuhack.core.localization.text.resolve
 import com.dev.lbsuhack.core.ui.component.HackTopBar
 import com.dev.lbsuhack.feature.activities.R
+import com.dev.lbsuhack.feature.activities.presentation.actionsFor
 import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
 import com.dev.lbsuhack.feature.activities.presentation.details.ActivityDetailsViewModel
 import com.dev.lbsuhack.feature.activities.store.details.ActivityDetailsStore
@@ -48,13 +49,14 @@ import com.dev.lbsuhack.feature.activities.ui.details.component.ParticipantsCard
 import com.dev.lbsuhack.feature.activities.ui.details.component.StatusTimelineCard
 import com.dev.lbsuhack.feature.activities.ui.details.component.SuccessChanceCard
 import com.dev.lbsuhack.feature.activities.ui.details.component.VotingStatusCard
+import org.koin.core.parameter.parametersOf
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun ActivityDetailsScreen(
     activityId: String,
     onBack: () -> Unit,
-    viewModel: ActivityDetailsViewModel = koinViewModel(),
+    viewModel: ActivityDetailsViewModel = koinViewModel(parameters = { parametersOf(activityId) }),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
@@ -148,12 +150,13 @@ fun ActivityDetailsScreen(
                 modifier = Modifier.fillMaxSize().padding(padding),
             )
         } else {
+            val actions = proposal.actionsFor(state.currentUser?.role)
             Box(modifier = Modifier.fillMaxSize().padding(padding)) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                        .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     ActivityHeroCard(proposal = proposal, isAuthor = state.isAuthor)
@@ -168,21 +171,25 @@ fun ActivityDetailsScreen(
                     if (proposal.showsChance && probability != null) {
                         SuccessChanceCard(probability = probability)
                     }
-                    ParticipantsCard(voters = proposal.voters)
-                    Spacer(modifier = Modifier.height(144.dp))
+                    ParticipantsCard(voters = proposal.voters, viewerRole = state.currentUser?.role)
+                    if (actions.isVisible) {
+                        Spacer(modifier = Modifier.height(if (actions.showParticipation) 144.dp else 96.dp))
+                    }
                 }
-                DetailsFloatingActions(
-                    proposal = proposal,
-                    isAuthor = state.isAuthor,
-                    canInteract = state.canInteract,
-                    canVote = state.canVote,
-                    onVote = { viewModel.accept(ActivityDetailsStore.Intent.Vote) },
-                    onUnvote = { viewModel.accept(ActivityDetailsStore.Intent.Unvote) },
-                    onLike = { viewModel.accept(ActivityDetailsStore.Intent.Like) },
-                    onDislike = { viewModel.accept(ActivityDetailsStore.Intent.Dislike) },
-                    onUnlike = { viewModel.accept(ActivityDetailsStore.Intent.Unlike) },
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                )
+                if (actions.isVisible) {
+                    DetailsFloatingActions(
+                        proposal = proposal,
+                        viewerRole = state.currentUser?.role,
+                        canInteract = state.canInteract,
+                        canVote = state.canVote,
+                        onVote = { viewModel.accept(ActivityDetailsStore.Intent.Vote) },
+                        onUnvote = { viewModel.accept(ActivityDetailsStore.Intent.Unvote) },
+                        onLike = { viewModel.accept(ActivityDetailsStore.Intent.Like) },
+                        onDislike = { viewModel.accept(ActivityDetailsStore.Intent.Dislike) },
+                        onUnlike = { viewModel.accept(ActivityDetailsStore.Intent.Unlike) },
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                    )
+                }
             }
         }
     }

@@ -74,6 +74,8 @@ internal fun RequestsContent(
                     ) { request ->
                         RequestCard(
                             request = request,
+                            actionsEnabled = !state.isSubmitting,
+                            isApproving = state.approvingRequestId == request.id,
                             onApprove = { onApprove(request.id) },
                             onDecline = { onDecline(request.id) },
                             onOpen = { onOpen(request.id) },

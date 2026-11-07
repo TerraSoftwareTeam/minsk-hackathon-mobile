@@ -35,7 +35,6 @@
     <string name="activities_vote_unavailable">Голосование недоступно</string>
     <string name="activities_rating_up">Повысить рейтинг</string>
     <string name="activities_rating_down">Понизить рейтинг</string>
-    <string name="activities_voters_empty">Пока никто не идёт</string>
     <string name="activities_voters_one">%1$s идёт</string>
     <string name="activities_voters_two">%1$s и %2$s идут</string>
     <string name="activities_voters_many">%1$s, %2$s и ещё %3$d</string>
@@ -61,10 +60,6 @@
     <string name="create_activity_error_limits">Название — до 200 символов, описание — до 5000, участников — от 2 до 10000.</string>
     <string name="create_activity_error_photo_upload">Мероприятие создано, но фото не загружено. Проверьте подключение и выберите JPEG, PNG, WebP или GIF до 5 МБ. Повторная отправка загрузит только фото.</string>
     <string name="create_activity_photo_pending">Мероприятие уже создано. Повторите загрузку фото или удалите его из формы и продолжите без фото.</string>
-    <string name="create_activity_created_title">Заявка отправлена</string>
-    <string name="create_activity_created_desc">Заявка отправлена классному руководителю на проверку.</string>
-    <string name="create_activity_back_to_list">К списку мероприятий</string>
-    <string name="create_activity_open_created">Открыть мероприятие</string>
     <string name="create_activity_drop_photo">Убрать фото</string>
 
     <string name="details_title">Детали мероприятия</string>
@@ -81,7 +76,6 @@
     <string name="details_expired_title">Мероприятие не состоится</string>
     <string name="details_expired_desc">За 3 дня до начала не набралось минимум участников или заявку не успели рассмотреть.</string>
     <string name="details_confirmed_time_label">Дата проведения:</string>
-    <string name="details_author_badge">Вы создатель этой заявки</string>
     <string name="details_participants_title">Участники (%1$d)</string>
     <string name="details_participants_empty">Пока никто не записался. Будьте первым!</string>
 
@@ -154,7 +148,7 @@
     <string name="create_origin_school_title">Для всей школы</string>
     <string name="create_origin_school_desc">Мероприятие сразу увидят все ученики. Если за 3 дня до даты наберётся минимум участников, оно состоится автоматически, иначе отменится.</string>
     <string name="create_activity_date_label">Дата проведения</string>
-    <string name="create_activity_date_hint">Голосование продлится до %1$s — за 3 дня до мероприятия. Дату потом изменить нельзя.</string>
+    <string name="create_activity_date_hint">Голосование продлится до %1$s — за 3 дня до мероприятия.</string>
     <string name="create_activity_error_date_in_past">Выберите дату не раньше чем через 4 дня: голосование закрывается за 3 дня до мероприятия.</string>
     <string name="create_activity_publish_action">Опубликовать</string>
     <string name="activity_origin_teacher">Учитель</string>
@@ -212,4 +206,8 @@
     <string name="activity_error_create_conflict">Мероприятие с таким названием уже есть</string>
     <string name="activity_error_state_changed">Мероприятие изменилось. Обновите экран</string>
     <string name="activity_share_action">Поделиться</string>
+    <string name="activity_show_organizer">Организатор</string>
+    <string name="activity_origin_pupil">Ученик</string>
+    <string name="activity_organizer_moderator">Модерация: %1$s</string>
+    <string name="activities_rating_summary">Рейтинг: %1$d</string>
 </resources>

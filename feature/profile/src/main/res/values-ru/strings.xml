@@ -3,7 +3,6 @@
     <string name="profile_title">Профиль</string>
     <string name="profile_back">Назад</string>
     <string name="profile_notifications">Уведомления</string>
-    <string name="profile_notifications_description">Push-уведомления от сервисов</string>
     <string name="profile_notifications_error">Не удалось изменить настройки уведомлений. Попробуйте ещё раз</string>
     <string name="profile_open_settings">Настройки</string>
     <string name="profile_requests">Работа с мероприятиями</string>
@@ -46,9 +45,5 @@
     <string name="profile_name_unknown">—</string>
     <string name="profile_create_activity">Создать мероприятие</string>
     <string name="profile_my_activities">Мероприятия школы</string>
-    <string name="profile_requests_teacher_desc">Одобряйте или отклоняйте инициативы своего класса</string>
-    <string name="profile_requests_admin_desc">Назначайте дату мероприятиям, набравшим голоса</string>
-    <string name="profile_my_activities_desc">Создавайте и просматривайте мероприятия школы</string>
     <string name="profile_school_activities">Мероприятия школы</string>
-    <string name="profile_school_activities_desc">Создавайте и просматривайте мероприятия школы</string>
 </resources>

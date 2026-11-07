@@ -17,6 +17,7 @@ import com.dev.lbsuhack.feature.activities.data.AndroidActivityImageSource
 import org.koin.android.ext.koin.androidContext
 import kotlinx.coroutines.Dispatchers
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.bind
 import org.koin.dsl.binds
@@ -40,7 +41,7 @@ val activitiesModule = module {
 
     viewModelOf(::ActivitiesViewModel)
     viewModelOf(::CreateActivityViewModel)
-    viewModelOf(::ActivityDetailsViewModel)
+    viewModel { (activityId: String) -> ActivityDetailsViewModel(get(), activityId) }
 
     singleOf(::ActivitiesNavigationInstaller) bind NavigationInstaller::class
 }

@@ -255,7 +255,7 @@ class LoginStoreTest {
         }
 
     @Test
-    fun `organizer submit registers with a generated numeric schools id`() =
+    fun `organizer submits always use the same schools id`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val store = createStore()
 
@@ -264,8 +264,17 @@ class LoginStoreTest {
             runCurrent()
 
             assertNull(store.state.error)
-            assertNotNull(fakeAuthRepository.loginId)
-            assertTrue(fakeAuthRepository.loginId!!.all { it.isDigit() })
+            assertEquals("admin-001", fakeAuthRepository.loginId)
+            assertEquals(UserRole.ORGANIZATOR, sessionRepository.savedUser?.role)
+
+            val second = createStore()
+            second.accept(LoginStore.Intent.RoleChanged(UserRole.ORGANIZATOR))
+            second.accept(LoginStore.Intent.Submit)
+            runCurrent()
+
+            assertNull(second.state.error)
+            assertEquals("admin-001", fakeAuthRepository.loginId)
+            assertEquals("admin-001", sessionRepository.savedUser?.id)
             assertEquals(UserRole.ORGANIZATOR, sessionRepository.savedUser?.role)
         }
 }

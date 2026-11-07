@@ -21,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.dev.lbsuhack.core.ui.component.HackInfoButton
 import com.dev.lbsuhack.feature.activities.R
 
 @Composable
@@ -47,18 +48,16 @@ internal fun MaxParticipantsField(
                 .padding(vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.create_activity_max_label),
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = stringResource(R.string.create_activity_max_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            Text(
+                text = stringResource(R.string.create_activity_max_label),
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            HackInfoButton(
+                title = stringResource(R.string.create_activity_max_label),
+                text = stringResource(R.string.create_activity_max_hint),
+            )
             Spacer(modifier = Modifier.width(12.dp))
             Switch(
                 checked = limited,

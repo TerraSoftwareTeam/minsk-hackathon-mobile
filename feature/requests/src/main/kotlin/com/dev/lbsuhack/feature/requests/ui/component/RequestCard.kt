@@ -12,11 +12,9 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,7 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.dev.lbsuhack.core.ui.component.HackBadge
+import com.dev.lbsuhack.core.ui.component.HackInfoButton
 import com.dev.lbsuhack.core.ui.component.HackDetailsLink
 import com.dev.lbsuhack.core.ui.component.HackTag
 import com.dev.lbsuhack.feature.requests.R
@@ -46,6 +44,8 @@ internal fun RequestCard(
     onDecline: () -> Unit,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
+    actionsEnabled: Boolean = true,
+    isApproving: Boolean = false,
 ) {
     val showsVotes = request.audience == RequestAudience.ADMIN || request.status == ReviewStatus.APPROVED
     val probability = request.successProbability
@@ -89,28 +89,17 @@ internal fun RequestCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            if (request.originKey == ORIGIN_SCHOOL) {
-                HackBadge(text = stringResource(R.string.requests_origin_school))
-            } else {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Outlined.Person,
-                        contentDescription = null,
-                        modifier = Modifier.size(17.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(modifier = Modifier.width(7.dp))
-                    Text(
-                        text = request.authorName,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    if (request.originKey == ORIGIN_TEACHER) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        HackBadge(text = stringResource(R.string.requests_origin_teacher))
-                    }
-                }
-            }
+            val isSchool = request.originKey == ORIGIN_SCHOOL
+            HackInfoButton(
+                title = if (isSchool) stringResource(R.string.requests_origin_school) else request.authorName,
+                text = when (request.originKey) {
+                    ORIGIN_SCHOOL -> ""
+                    ORIGIN_TEACHER -> stringResource(R.string.requests_origin_teacher)
+                    else -> stringResource(R.string.requests_origin_pupil)
+                },
+                buttonText = stringResource(R.string.requests_show_organizer),
+                icon = if (isSchool) Icons.Outlined.AccountBalance else Icons.Outlined.Person,
+            )
 
             if (request.description.isNotBlank()) {
                 Spacer(modifier = Modifier.height(12.dp))
@@ -144,7 +133,12 @@ internal fun RequestCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             if (request.isPending) {
-                RequestActions(onApprove = onApprove, onDecline = onDecline)
+                RequestActions(
+                    onApprove = onApprove,
+                    onDecline = onDecline,
+                    enabled = actionsEnabled,
+                    approving = isApproving,
+                )
             } else {
                 Row(modifier = Modifier.fillMaxWidth()) {
                     Spacer(modifier = Modifier.weight(1f))

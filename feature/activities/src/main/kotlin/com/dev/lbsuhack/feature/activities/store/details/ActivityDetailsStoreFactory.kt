@@ -27,11 +27,14 @@ class ActivityDetailsStoreFactory(
     private val observeSessionUseCase: ObserveSessionUseCase,
 ) {
 
-    fun create(): ActivityDetailsStore =
+    fun create(activityId: String? = null): ActivityDetailsStore =
         object : ActivityDetailsStore,
             Store<ActivityDetailsStore.Intent, ActivityDetailsStore.State, ActivityDetailsStore.Label> by storeFactory.create(
                 name = "ActivityDetailsStore",
-                initialState = ActivityDetailsStore.State(),
+                initialState = ActivityDetailsStore.State(
+                    activity = activityId?.let(activityRepository::cachedEventById),
+                    currentUser = (observeSessionUseCase.state.value as? SessionState.Authenticated)?.user,
+                ),
                 executorFactory = ::ExecutorImpl,
                 reducer = ReducerImpl,
             ) {}

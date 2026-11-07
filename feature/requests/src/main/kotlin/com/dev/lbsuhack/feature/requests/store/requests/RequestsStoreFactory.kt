@@ -54,6 +54,7 @@ class RequestsStoreFactory(
         data class TabSelected(val tab: RequestsTab) : Message
         data class DialogOpened(val dialog: RequestDialog?) : Message
         data class DeclineReasonChanged(val value: String) : Message
+        data class Approving(val requestId: String) : Message
         data object Submitting : Message
         data object ActionCompleted : Message
         data object ActionFailed : Message
@@ -82,7 +83,7 @@ class RequestsStoreFactory(
                 RequestsStore.Intent.StartPolling -> startPolling()
                 RequestsStore.Intent.StopPolling -> stopPolling()
                 is RequestsStore.Intent.SelectTab -> dispatch(Message.TabSelected(intent.tab))
-                is RequestsStore.Intent.ClickApprove -> openApproveDialog(intent.requestId)
+                is RequestsStore.Intent.ClickApprove -> approve(intent.requestId)
                 is RequestsStore.Intent.ClickDecline -> openDeclineDialog(intent.requestId)
                 RequestsStore.Intent.DismissDialog -> dismissDialog()
                 is RequestsStore.Intent.ChangeDeclineReason -> {
@@ -90,7 +91,6 @@ class RequestsStoreFactory(
                 }
 
 
-                RequestsStore.Intent.ConfirmApprove -> confirmApprove()
                 RequestsStore.Intent.ConfirmDecline -> confirmDecline()
             }
         }
@@ -197,23 +197,8 @@ class RequestsStoreFactory(
             }
         }
 
-        private fun openApproveDialog(requestId: String) {
-            val request = state().queueRequests.find { it.id == requestId } ?: return
-            if (!request.isPending) return
-
-            dispatch(
-                Message.DialogOpened(
-                    RequestDialog.Approve(
-                        requestId = request.id,
-                        title = request.title,
-                        startsAt = request.proposedDate,
-                        chance = request.successProbability,
-                    ),
-                ),
-            )
-        }
-
         private fun openDeclineDialog(requestId: String) {
+            if (state().isSubmitting) return
             val request = state().queueRequests.find { it.id == requestId } ?: return
             if (!request.isPending) return
 
@@ -232,14 +217,15 @@ class RequestsStoreFactory(
             dispatch(Message.DialogOpened(null))
         }
 
-        private fun confirmApprove() {
-            val dialog = state().dialog as? RequestDialog.Approve ?: return
-            if (state().isSubmitting) return
+        private fun approve(requestId: String) {
+            if (!state().canReview || state().isSubmitting) return
+            val request = state().queueRequests.find { it.id == requestId } ?: return
+            if (!request.isPending) return
             val audience = state().audience ?: return
 
-            dispatch(Message.Submitting)
+            dispatch(Message.Approving(requestId))
             scope.launch {
-                when (val result = requestRepository.approve(dialog.requestId, audience)) {
+                when (val result = requestRepository.approve(requestId, audience)) {
                     is DomainResult.Success -> {
                         dispatch(Message.ActionCompleted)
                         dispatch(Message.RequestUpdated(result.value))
@@ -311,9 +297,10 @@ class RequestsStoreFactory(
                 dialog = (dialog as? RequestDialog.Decline)?.copy(reason = msg.value) ?: dialog,
             )
 
+            is Message.Approving -> copy(isSubmitting = true, approvingRequestId = msg.requestId)
             Message.Submitting -> copy(isSubmitting = true)
-            Message.ActionCompleted -> copy(isSubmitting = false, dialog = null)
-            Message.ActionFailed -> copy(isSubmitting = false)
+            Message.ActionCompleted -> copy(isSubmitting = false, dialog = null, approvingRequestId = null)
+            Message.ActionFailed -> copy(isSubmitting = false, approvingRequestId = null)
         }
     }
 }

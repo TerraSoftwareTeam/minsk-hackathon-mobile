@@ -37,7 +37,7 @@ fun ProfileContent(
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
-            .padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         UserInfoCard(
@@ -58,7 +58,6 @@ fun ProfileContent(
 
         NotificationsCard(
             title = stringResource(R.string.profile_notifications),
-            description = stringResource(R.string.profile_notifications_description),
             enabled = state.notificationsEnabled,
             onToggle = { onToggleNotifications() },
         )

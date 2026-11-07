@@ -109,6 +109,68 @@ class RequestsStoreTest {
     )
 
     @Test
+    fun `one tap approves for teachers and admins while duplicate taps are ignored`() = runTest(mainDispatcherRule.testDispatcher) {
+        for (user in listOf(teacher, admin)) {
+            val request = if (user.role == UserRole.TEACHER) teacherRequest("direct") else adminRequest("direct")
+            val repository = FakeReviewRequestRepository(
+                teacherQueue = listOf(request),
+                adminQueue = listOf(request),
+                actionDelayMillis = 1_000L,
+            )
+            val store = createStore(user = user, repository = repository)
+            store.accept(RequestsStore.Intent.Load(user.role))
+            runCurrent()
+            store.accept(RequestsStore.Intent.ClickApprove("direct"))
+            store.accept(RequestsStore.Intent.ClickApprove("direct"))
+            store.accept(RequestsStore.Intent.ClickDecline("direct"))
+            runCurrent()
+
+            assertNull(store.state.dialog)
+            assertTrue(store.state.isSubmitting)
+            assertEquals("direct", store.state.approvingRequestId)
+            assertEquals(1, repository.approveCalls)
+            advanceTimeBy(1_001L)
+            runCurrent()
+            assertEquals(ReviewStatus.APPROVED, store.state.requests.single().status)
+            assertFalse(store.state.isSubmitting)
+            assertNull(store.state.approvingRequestId)
+            store.accept(RequestsStore.Intent.ClickApprove("direct"))
+            runCurrent()
+            assertEquals(1, repository.approveCalls)
+            store.dispose()
+        }
+    }
+
+    @Test
+    fun `failed direct approval leaves the request pending and allows retry`() = runTest(mainDispatcherRule.testDispatcher) {
+        val repository = FakeReviewRequestRepository(teacherQueue = listOf(teacherRequest("retry")))
+        repository.approveResult = DomainResult.Failure(DomainError.Network)
+        val store = createStore(user = teacher, repository = repository)
+        store.accept(RequestsStore.Intent.Load(UserRole.TEACHER))
+        runCurrent()
+        store.labels.test {
+            store.accept(RequestsStore.Intent.ClickApprove("retry"))
+            runCurrent()
+            assertTrue(awaitItem() is RequestsStore.Label.ShowMessage)
+            assertEquals(ReviewStatus.PENDING_TEACHER, store.state.requests.single().status)
+            assertNull(store.state.dialog)
+            assertFalse(store.state.isSubmitting)
+            assertNull(store.state.approvingRequestId)
+            repository.approveResult = null
+            store.accept(RequestsStore.Intent.ClickApprove("retry"))
+            runCurrent()
+            assertEquals(
+                RequestsStore.Label.ShowMessage(UiText.Resource(R.string.requests_success_approved)),
+                awaitItem(),
+            )
+            assertEquals(ReviewStatus.APPROVED, store.state.requests.single().status)
+            assertEquals(2, repository.approveCalls)
+            cancelAndIgnoreRemainingEvents()
+        }
+        store.dispose()
+    }
+
+    @Test
     fun `polling picks up a request that arrives while the screen is open`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val repository = FakeReviewRequestRepository(teacherQueue = listOf(teacherRequest("existing")))
@@ -142,7 +204,7 @@ class RequestsStoreTest {
         }
 
     @Test
-    fun `admin approve dialog shows the author date and chance`() =
+    fun `admin approves directly and preserves the author date and chance`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val date = OffsetDateTime.now().plusDays(10).withNano(0)
             val repository = FakeReviewRequestRepository(
@@ -153,9 +215,12 @@ class RequestsStoreTest {
             runCurrent()
 
             store.accept(RequestsStore.Intent.ClickApprove("a-1"))
-            val opened = store.state.dialog as RequestDialog.Approve
-            assertEquals(date, opened.startsAt)
-            assertEquals(0.58, opened.chance!!, 0.0001)
+            assertNull(store.state.dialog)
+            runCurrent()
+            val approved = store.state.requests.single()
+            assertEquals(ReviewStatus.APPROVED, approved.status)
+            assertEquals(date, approved.proposedDate)
+            assertEquals(0.58, approved.successProbability!!, 0.0001)
             store.dispose()
         }
 
@@ -343,7 +408,6 @@ class RequestsStoreTest {
             store.labels.test {
                 store.accept(RequestsStore.Intent.ClickApprove("publication-1"))
                 runCurrent()
-                store.accept(RequestsStore.Intent.ConfirmApprove)
                 runCurrent()
 
                 assertEquals(
@@ -448,7 +512,6 @@ class RequestsStoreTest {
         store.accept(RequestsStore.Intent.ClickApprove("admin-1"))
         runCurrent()
 
-        store.accept(RequestsStore.Intent.ConfirmApprove)
         runCurrent()
 
         assertEquals(ReviewStatus.APPROVED, store.state.requests.first { it.id == "admin-1" }.status)

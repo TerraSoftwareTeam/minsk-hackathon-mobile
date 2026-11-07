@@ -49,7 +49,7 @@ internal fun LoginCredentialsContent(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .imePadding()
-            .padding(horizontal = 24.dp, vertical = 20.dp),
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         when (state.role) {

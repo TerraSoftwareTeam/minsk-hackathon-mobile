@@ -1,42 +1,35 @@
 package com.dev.lbsuhack.feature.activities.ui.component
 
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import com.dev.lbsuhack.core.ui.component.HackInfoButton
 import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.domain.ActivityOrigin
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 
 @Composable
 internal fun ActivityAuthorRow(proposal: ActivityProposal, isAuthor: Boolean) {
-    if (proposal.origin == ActivityOrigin.SCHOOL) {
-        ActivityAuthorBadge(text = stringResource(R.string.activity_origin_school))
-    } else {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Outlined.Person,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = proposal.authorName,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            ActivityAuthorBadges(proposal = proposal, isAuthor = isAuthor)
-        }
+    val isSchool = proposal.origin == ActivityOrigin.SCHOOL
+    val name = if (isSchool) stringResource(R.string.activity_origin_school) else proposal.authorName
+    val role = when (proposal.origin) {
+        ActivityOrigin.SCHOOL -> null
+        ActivityOrigin.TEACHER -> stringResource(R.string.activity_origin_teacher)
+        ActivityOrigin.PUPIL -> stringResource(R.string.activity_origin_pupil)
     }
+    val moderator = proposal.teacherName?.takeIf { it.isNotBlank() }
+        ?.let { stringResource(R.string.activity_organizer_moderator, it) }
+    val info = listOfNotNull(
+        role,
+        if (isAuthor && !isSchool) stringResource(R.string.activity_author_you) else null,
+        moderator,
+    ).joinToString("\n\n")
+    HackInfoButton(
+        title = name,
+        text = info,
+        buttonText = stringResource(R.string.activity_show_organizer),
+        icon = if (isSchool) Icons.Outlined.AccountBalance else Icons.Outlined.Person,
+    )
 }

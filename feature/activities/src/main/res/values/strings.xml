@@ -35,7 +35,6 @@
     <string name="activities_vote_unavailable">Voting unavailable</string>
     <string name="activities_rating_up">Upvote</string>
     <string name="activities_rating_down">Downvote</string>
-    <string name="activities_voters_empty">Nobody is going yet</string>
     <string name="activities_voters_one">%1$s is going</string>
     <string name="activities_voters_two">%1$s and %2$s are going</string>
     <string name="activities_voters_many">%1$s, %2$s and %3$d more</string>
@@ -61,10 +60,6 @@
     <string name="create_activity_error_limits">Title up to 200 characters, description up to 5000, participants from 2 to 10000.</string>
     <string name="create_activity_error_photo_upload">Event created, but photo failed to upload. Check connection and choose JPEG, PNG, WebP or GIF up to 5 MB. Retrying will upload only the photo.</string>
     <string name="create_activity_photo_pending">Event is already created. Retry uploading the photo or remove it from the form to proceed without a photo.</string>
-    <string name="create_activity_created_title">Proposal submitted</string>
-    <string name="create_activity_created_desc">The request has been sent to the class teacher.</string>
-    <string name="create_activity_back_to_list">Back to events</string>
-    <string name="create_activity_open_created">Open event</string>
     <string name="create_activity_drop_photo">Remove photo</string>
 
     <string name="details_title">Event details</string>
@@ -81,7 +76,6 @@
     <string name="details_expired_title">Will not take place</string>
     <string name="details_expired_desc">The minimum number of participants was not reached 3 days before the start, or the request was not reviewed in time.</string>
     <string name="details_confirmed_time_label">Date:</string>
-    <string name="details_author_badge">You created this proposal</string>
     <string name="details_participants_title">Participants (%1$d)</string>
     <string name="details_participants_empty">No participants yet. Be the first to join!</string>
 
@@ -154,7 +148,7 @@
     <string name="create_origin_school_title">For the whole school</string>
     <string name="create_origin_school_desc">All pupils see it at once. If the minimum signs up 3 days before the date, it takes place automatically; otherwise it is cancelled.</string>
     <string name="create_activity_date_label">Event date</string>
-    <string name="create_activity_date_hint">Voting runs until %1$s, 3 days before the event. The date cannot be changed later.</string>
+    <string name="create_activity_date_hint">Voting runs until %1$s, 3 days before the event.</string>
     <string name="create_activity_error_date_in_past">Choose a date at least 4 days from now: voting closes 3 days before the event.</string>
     <string name="create_activity_publish_action">Publish</string>
     <string name="activity_origin_teacher">Teacher</string>
@@ -212,4 +206,8 @@
     <string name="activity_error_create_conflict">An event with this name already exists</string>
     <string name="activity_error_state_changed">The event has changed. Pull to refresh</string>
     <string name="activity_share_action">Share</string>
+    <string name="activity_show_organizer">Organizer</string>
+    <string name="activity_origin_pupil">Pupil</string>
+    <string name="activity_organizer_moderator">Reviewed by: %1$s</string>
+    <string name="activities_rating_summary">Rating: %1$d</string>
 </resources>

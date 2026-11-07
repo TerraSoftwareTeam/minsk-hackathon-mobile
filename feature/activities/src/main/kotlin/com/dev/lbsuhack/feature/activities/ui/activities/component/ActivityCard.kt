@@ -20,6 +20,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.dev.lbsuhack.core.domain.model.UserRole
+import com.dev.lbsuhack.feature.activities.presentation.ActivityRatingMode
+import com.dev.lbsuhack.feature.activities.presentation.actionsFor
+import com.dev.lbsuhack.feature.activities.ui.component.ActivityRatingSummary
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.domain.ActivityStage
 import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
@@ -33,6 +37,7 @@ import com.dev.lbsuhack.feature.activities.ui.component.ActivityVoteButton
 internal fun ActivityCard(
     proposal: ActivityProposal,
     isAuthor: Boolean,
+    viewerRole: UserRole?,
     canInteract: Boolean,
     canLike: Boolean,
     onClick: () -> Unit,
@@ -44,6 +49,7 @@ internal fun ActivityCard(
     modifier: Modifier = Modifier,
 ) {
     val stage = proposal.stage
+    val actions = proposal.actionsFor(viewerRole)
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -121,41 +127,17 @@ internal fun ActivityCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            if (viewerRole == UserRole.PUPIL) {
+                Spacer(modifier = Modifier.height(16.dp))
 
-            when (stage) {
-                ActivityStage.VOTING,
-                ActivityStage.CONFIRMED,
-                -> Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    ActivityRating(
-                        likesCount = proposal.likesCount,
-                        likedByMe = proposal.likedByMe,
-                        dislikedByMe = proposal.dislikedByMe,
-                        enabled = canLike,
-                        onLike = onLike,
-                        onDislike = onDislike,
-                        onUnlike = onUnlike,
-                    )
-                    ActivityVoteButton(
-                        proposal = proposal,
-                        canInteract = canInteract,
-                        onVote = onVote,
-                        onUnvote = onUnvote,
-                        onOpenDetails = onClick,
-                        modifier = Modifier.weight(1f).height(50.dp),
-                    )
-                }
-                ActivityStage.WAITING,
-                ActivityStage.CLOSED,
-                -> Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (proposal.canLike) {
+                when (stage) {
+                    ActivityStage.VOTING,
+                    ActivityStage.CONFIRMED,
+                    -> Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         ActivityRating(
                             likesCount = proposal.likesCount,
                             likedByMe = proposal.likedByMe,
@@ -165,9 +147,40 @@ internal fun ActivityCard(
                             onDislike = onDislike,
                             onUnlike = onUnlike,
                         )
+                        ActivityVoteButton(
+                            proposal = proposal,
+                            canInteract = canInteract,
+                            onVote = onVote,
+                            onUnvote = onUnvote,
+                            onOpenDetails = onClick,
+                            modifier = Modifier.weight(1f).height(50.dp),
+                        )
                     }
-                    Spacer(modifier = Modifier.weight(1f))
-                    ActivityDetailsLink(modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp))
+                    ActivityStage.WAITING,
+                    ActivityStage.CLOSED,
+                    -> Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (proposal.canLike) {
+                            ActivityRating(
+                                likesCount = proposal.likesCount,
+                                likedByMe = proposal.likedByMe,
+                                dislikedByMe = proposal.dislikedByMe,
+                                enabled = canLike,
+                                onLike = onLike,
+                                onDislike = onDislike,
+                                onUnlike = onUnlike,
+                            )
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                        ActivityDetailsLink(modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp))
+                    }
+                }
+            } else if (actions.ratingMode == ActivityRatingMode.SUMMARY) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                    ActivityRatingSummary(score = proposal.likesCount)
                 }
             }
         }
