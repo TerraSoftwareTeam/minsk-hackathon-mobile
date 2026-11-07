@@ -140,7 +140,7 @@
     <string name="activity_error_not_found">Event not found</string>
     <string name="activity_error_unknown">Something went wrong. Please try again</string>
     <string name="activities_load_error_title">Could not load events</string>
-    <string name="activity_author_you">You</string>
+    <string name="activity_author_tag">Your event</string>
     <string name="create_activity_title_teacher">Teacher event</string>
     <string name="create_activity_title_school">School event</string>
     <string name="create_origin_teacher_title">No moderation</string>

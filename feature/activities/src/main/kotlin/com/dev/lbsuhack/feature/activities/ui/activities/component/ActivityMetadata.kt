@@ -9,11 +9,16 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dev.lbsuhack.core.ui.component.HackStatusChip
+import com.dev.lbsuhack.core.ui.component.HackStatusEmphasis
+import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 import com.dev.lbsuhack.feature.activities.ui.activities.mapper.icon
 import com.dev.lbsuhack.feature.activities.ui.activities.mapper.labelRes
@@ -24,6 +29,7 @@ import com.dev.lbsuhack.feature.activities.ui.component.ActivityTag
 internal fun ActivityMetadata(
     proposal: ActivityProposal,
     modifier: Modifier = Modifier,
+    isAuthor: Boolean = false,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
@@ -41,6 +47,14 @@ internal fun ActivityMetadata(
             ActivityStatusChip(
                 status = proposal.status,
                 modifier = Modifier.weight(1.3f).fillMaxHeight(),
+            )
+        }
+        if (isAuthor) {
+            HackStatusChip(
+                text = stringResource(R.string.activity_author_tag),
+                icon = Icons.Outlined.Star,
+                emphasis = HackStatusEmphasis.ACTIVE,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }

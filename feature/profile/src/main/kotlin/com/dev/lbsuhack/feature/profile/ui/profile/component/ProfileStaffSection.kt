@@ -28,10 +28,12 @@ fun ProfileStaffSection(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        HackSectionLabel(
-            text = stringResource(R.string.profile_requests),
-            modifier = Modifier.padding(start = 4.dp),
-        )
+        if (isTeacher) {
+            HackSectionLabel(
+                text = stringResource(R.string.profile_requests),
+                modifier = Modifier.padding(start = 4.dp),
+            )
+        }
         ProfileNavigationCard(
             icon = if (isTeacher) Icons.AutoMirrored.Filled.FactCheck else Icons.Outlined.Verified,
             title = stringResource(if (isTeacher) R.string.profile_requests_teacher else R.string.profile_requests_admin),

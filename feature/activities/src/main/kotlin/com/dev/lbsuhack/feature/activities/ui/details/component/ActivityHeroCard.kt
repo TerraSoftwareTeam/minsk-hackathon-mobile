@@ -35,11 +35,11 @@ internal fun ActivityHeroCard(proposal: ActivityProposal, isAuthor: Boolean) {
             ),
     ) {
         proposal.photoUri?.let { photoUri ->
-            ActivityCardCover(proposal = proposal, photoUri = photoUri)
+            ActivityCardCover(proposal = proposal, photoUri = photoUri, isAuthor = isAuthor)
         }
         Column(modifier = Modifier.padding(20.dp)) {
             if (proposal.photoUri == null) {
-                ActivityMetadata(proposal = proposal)
+                ActivityMetadata(proposal = proposal, isAuthor = isAuthor)
                 Spacer(modifier = Modifier.height(16.dp))
             }
             Text(
@@ -50,7 +50,7 @@ internal fun ActivityHeroCard(proposal: ActivityProposal, isAuthor: Boolean) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            ActivityAuthorRow(proposal = proposal, isAuthor = isAuthor)
+            ActivityAuthorRow(proposal = proposal)
 
             if (proposal.description.isNotBlank()) {
                 Spacer(modifier = Modifier.height(18.dp))

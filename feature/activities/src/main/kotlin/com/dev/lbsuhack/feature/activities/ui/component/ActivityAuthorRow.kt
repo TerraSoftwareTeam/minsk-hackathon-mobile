@@ -11,7 +11,7 @@ import com.dev.lbsuhack.feature.activities.domain.ActivityOrigin
 import com.dev.lbsuhack.feature.activities.domain.ActivityProposal
 
 @Composable
-internal fun ActivityAuthorRow(proposal: ActivityProposal, isAuthor: Boolean) {
+internal fun ActivityAuthorRow(proposal: ActivityProposal) {
     val isSchool = proposal.origin == ActivityOrigin.SCHOOL
     val name = if (isSchool) stringResource(R.string.activity_origin_school) else proposal.authorName
     val role = when (proposal.origin) {
@@ -21,11 +21,7 @@ internal fun ActivityAuthorRow(proposal: ActivityProposal, isAuthor: Boolean) {
     }
     val moderator = proposal.teacherName?.takeIf { it.isNotBlank() }
         ?.let { stringResource(R.string.activity_organizer_moderator, it) }
-    val info = listOfNotNull(
-        role,
-        if (isAuthor && !isSchool) stringResource(R.string.activity_author_you) else null,
-        moderator,
-    ).joinToString("\n\n")
+    val info = listOfNotNull(role, moderator).joinToString("\n\n")
     HackInfoButton(
         title = name,
         text = info,

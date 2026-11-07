@@ -63,7 +63,7 @@ internal fun ActivityCard(
             .clickable(onClick = onClick),
     ) {
         proposal.photoUri?.let { photoUri ->
-            ActivityCardCover(proposal = proposal, photoUri = photoUri)
+            ActivityCardCover(proposal = proposal, photoUri = photoUri, isAuthor = isAuthor)
         }
         Column(
             modifier = Modifier
@@ -71,7 +71,7 @@ internal fun ActivityCard(
                 .alpha(if (stage == ActivityStage.CLOSED) CLOSED_ALPHA else 1f),
         ) {
             if (proposal.photoUri == null) {
-                ActivityMetadata(proposal = proposal)
+                ActivityMetadata(proposal = proposal, isAuthor = isAuthor)
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
@@ -85,7 +85,7 @@ internal fun ActivityCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            ActivityAuthorRow(proposal = proposal, isAuthor = isAuthor)
+            ActivityAuthorRow(proposal = proposal)
 
             if (proposal.description.isNotBlank()) {
                 Spacer(modifier = Modifier.height(12.dp))
