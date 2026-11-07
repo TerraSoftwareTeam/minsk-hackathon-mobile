@@ -1,10 +1,14 @@
 package com.dev.lbsuhack.core.data.di
 
 import com.dev.lbsuhack.core.data.PrefsKeyValueStorage
+import com.dev.lbsuhack.core.data.push.DefaultNotificationSettingsRepository
 import com.dev.lbsuhack.core.data.push.DefaultPushTokenRepository
 import com.dev.lbsuhack.core.data.session.DefaultSessionRepository
+import com.dev.lbsuhack.core.domain.push.NotificationSettingsRepository
+import com.dev.lbsuhack.core.domain.push.ObserveNotificationsEnabledUseCase
 import com.dev.lbsuhack.core.domain.push.PushTokenRepository
 import com.dev.lbsuhack.core.domain.push.RegisterPushTokenUseCase
+import com.dev.lbsuhack.core.domain.push.SetNotificationsEnabledUseCase
 import com.dev.lbsuhack.core.domain.push.UnregisterPushTokenUseCase
 import com.dev.lbsuhack.core.domain.session.SessionClearHook
 import com.dev.lbsuhack.core.data.user.DefaultUserRepository
@@ -45,6 +49,18 @@ val dataModule = module {
 
     single { RegisterPushTokenUseCase(repository = get()) }
     single { UnregisterPushTokenUseCase(repository = get()) }
+
+    single<NotificationSettingsRepository> {
+        DefaultNotificationSettingsRepository(
+            storage = PrefsKeyValueStorage(androidContext(), "push_device"),
+            pushTokenProvider = get(),
+            pushTokenRepository = get(),
+            ioDispatcher = Dispatchers.IO,
+        )
+    }
+
+    single { ObserveNotificationsEnabledUseCase(repository = get()) }
+    single { SetNotificationsEnabledUseCase(repository = get()) }
 
     single {
         DefaultUserRepository(

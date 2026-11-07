@@ -4,6 +4,7 @@
     <string name="profile_back">Back</string>
     <string name="profile_notifications">Notifications</string>
     <string name="profile_notifications_description">Push notifications from services</string>
+    <string name="profile_notifications_error">Could not update notification settings. Try again</string>
     <string name="profile_saved_title">Saved</string>
     <string name="profile_saved_empty">Nothing here yet. Save activities from the feed.</string>
     <string name="profile_open_settings">Settings</string>

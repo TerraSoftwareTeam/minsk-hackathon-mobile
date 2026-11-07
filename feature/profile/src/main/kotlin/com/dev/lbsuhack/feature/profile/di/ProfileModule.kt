@@ -10,7 +10,6 @@ import com.dev.lbsuhack.feature.profile.presentation.settings.SettingsViewModel
 import com.dev.lbsuhack.feature.profile.store.profile.ProfileStoreFactory
 import com.dev.lbsuhack.feature.profile.store.settings.SettingsStoreFactory
 import kotlinx.coroutines.Dispatchers
-import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.bind
@@ -26,7 +25,6 @@ val profileModule = module {
 
     single<ProfileRepository> {
         ProfileRepositoryImpl(
-            context = androidContext(),
             userProfileApi = get(),
         )
     }

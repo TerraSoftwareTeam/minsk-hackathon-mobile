@@ -1,10 +1,14 @@
 package com.dev.lbsuhack.feature.profile.store
 
+import com.arkivanov.mvikotlin.extensions.coroutines.labels
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
 import com.dev.lbsuhack.core.domain.DomainError
 import com.dev.lbsuhack.core.domain.DomainResult
 import com.dev.lbsuhack.core.domain.model.User
 import com.dev.lbsuhack.core.domain.model.UserRole
+import com.dev.lbsuhack.core.domain.push.NotificationSettingsRepository
+import com.dev.lbsuhack.core.domain.push.ObserveNotificationsEnabledUseCase
+import com.dev.lbsuhack.core.domain.push.SetNotificationsEnabledUseCase
 import com.dev.lbsuhack.core.domain.session.ClearSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SaveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionState
@@ -21,6 +25,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -58,11 +63,15 @@ class ProfileStoreTest {
 
     private val profileRepository = FakeProfileRepository()
 
+    private val notificationSettings = FakeNotificationSettingsRepository()
+
     private fun createStore(customUser: User? = testUser, repo: FakeUserRepository? = null): ProfileStore {
         val userRepo = repo ?: FakeUserRepository(customUser)
         return ProfileStoreFactory(
             storeFactory = DefaultStoreFactory(),
             profileRepository = profileRepository,
+            observeNotificationsEnabled = ObserveNotificationsEnabledUseCase(notificationSettings),
+            setNotificationsEnabled = SetNotificationsEnabledUseCase(notificationSettings),
             getCurrentUser = GetCurrentUserUseCase(userRepo),
             updateUserCache = UpdateUserCacheUseCase(userRepo),
             saveSession = SaveSessionUseCase(sessionRepository),
@@ -118,6 +127,26 @@ class ProfileStoreTest {
             runCurrent()
 
             assertFalse(store.state.notificationsEnabled)
+            assertFalse(notificationSettings.isEnabled.value)
+            store.dispose()
+        }
+
+    @Test
+    fun toggleNotificationsKeepsTheStateAndPublishesMessageWhenTheOperationFails() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            notificationSettings.succeeds = false
+            val store = createStore()
+            val labels = mutableListOf<ProfileStore.Label>()
+            val labelJob = launch { store.labels.collect { labels += it } }
+            runCurrent()
+
+            store.accept(ProfileStore.Intent.ToggleNotifications)
+            runCurrent()
+            labelJob.cancel()
+
+            assertTrue(store.state.notificationsEnabled)
+            assertTrue(notificationSettings.isEnabled.value)
+            assertEquals(1, labels.size)
             store.dispose()
         }
 
@@ -198,6 +227,8 @@ class ProfileStoreTest {
             val store = ProfileStoreFactory(
                 DefaultStoreFactory(),
                 profileRepository,
+                ObserveNotificationsEnabledUseCase(notificationSettings),
+                SetNotificationsEnabledUseCase(notificationSettings),
                 GetCurrentUserUseCase(repo),
                 UpdateUserCacheUseCase(repo),
                 SaveSessionUseCase(sessionRepository),
@@ -217,14 +248,7 @@ class ProfileStoreTest {
         }
 
     private class FakeProfileRepository : ProfileRepository {
-        private var notifications = true
         var updateResult: DomainResult<User>? = null
-
-        override suspend fun isNotificationsEnabled(): Boolean = notifications
-
-        override suspend fun setNotificationsEnabled(enabled: Boolean) {
-            notifications = enabled
-        }
 
         override suspend fun savedCount(): Int = 0
 
@@ -240,6 +264,18 @@ class ProfileStoreTest {
                 pupilClass = "10-А",
             ),
         )
+    }
+
+    private class FakeNotificationSettingsRepository : NotificationSettingsRepository {
+        var succeeds = true
+        private val _enabled = MutableStateFlow(true)
+        override val isEnabled: StateFlow<Boolean> = _enabled.asStateFlow()
+
+        override suspend fun setNotificationsEnabled(enabled: Boolean): Boolean {
+            if (!succeeds) return false
+            _enabled.value = enabled
+            return true
+        }
     }
 
     private class FakeUserRepository(initialUser: User? = null) : UserRepository {

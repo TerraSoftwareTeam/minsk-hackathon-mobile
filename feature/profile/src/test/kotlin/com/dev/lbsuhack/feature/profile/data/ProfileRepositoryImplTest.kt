@@ -15,37 +15,10 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ProfileRepositoryImplTest {
-
-    private class FakeProfilePreferences : ProfilePreferences {
-        private var notifications = true
-
-        override fun isNotificationsEnabled(): Boolean = notifications
-
-        override fun setNotificationsEnabled(enabled: Boolean) {
-            notifications = enabled
-        }
-    }
-
-    @Test
-    fun notificationsFlagCanBeToggled() = runTest {
-        val testDispatcher = StandardTestDispatcher(testScheduler)
-        val mockEngine = MockEngine { respond("", HttpStatusCode.OK) }
-        val client = HttpClient(mockEngine)
-        val api = UserProfileApi(client, testDispatcher)
-        val prefs = FakeProfilePreferences()
-        val repository = ProfileRepositoryImpl(prefs, api)
-
-        assertTrue(repository.isNotificationsEnabled())
-        repository.setNotificationsEnabled(false)
-        assertFalse(repository.isNotificationsEnabled())
-        repository.setNotificationsEnabled(true)
-        assertTrue(repository.isNotificationsEnabled())
-    }
 
     @Test
     fun savedCountReturnsZero() = runTest {
@@ -53,7 +26,7 @@ class ProfileRepositoryImplTest {
         val mockEngine = MockEngine { respond("", HttpStatusCode.OK) }
         val client = HttpClient(mockEngine)
         val api = UserProfileApi(client, testDispatcher)
-        val repository = ProfileRepositoryImpl(FakeProfilePreferences(), api)
+        val repository = ProfileRepositoryImpl(api)
 
         assertEquals(0, repository.savedCount())
     }
@@ -83,7 +56,7 @@ class ProfileRepositoryImplTest {
             }
         }
         val api = UserProfileApi(client, testDispatcher)
-        val repository = ProfileRepositoryImpl(FakeProfilePreferences(), api)
+        val repository = ProfileRepositoryImpl(api)
 
         val result = repository.updateOwnProfile("user-1", "Maria", "Sidorova")
         assertTrue(result is DomainResult.Success)

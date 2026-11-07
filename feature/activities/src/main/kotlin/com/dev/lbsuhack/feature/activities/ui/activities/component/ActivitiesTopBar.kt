@@ -56,11 +56,18 @@ internal fun ActivitiesTopBar(
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = if (userName != null) {
-                        stringResource(
-                            R.string.activities_greeting_format,
-                            userName,
-                            pupilClass.orEmpty(),
-                        )
+                        if (!pupilClass.isNullOrBlank()) {
+                            stringResource(
+                                R.string.activities_greeting_format,
+                                userName,
+                                pupilClass,
+                            )
+                        } else {
+                            stringResource(
+                                R.string.activities_greeting_simple_format,
+                                userName,
+                            )
+                        }
                     } else {
                         stringResource(R.string.activities_subtitle)
                     },

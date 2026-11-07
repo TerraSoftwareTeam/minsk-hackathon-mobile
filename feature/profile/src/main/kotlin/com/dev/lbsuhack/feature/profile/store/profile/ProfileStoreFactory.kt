@@ -7,6 +7,8 @@ import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
 import com.dev.lbsuhack.core.domain.DomainResult
 import com.dev.lbsuhack.core.domain.model.User
 import com.dev.lbsuhack.core.domain.model.UserRole
+import com.dev.lbsuhack.core.domain.push.ObserveNotificationsEnabledUseCase
+import com.dev.lbsuhack.core.domain.push.SetNotificationsEnabledUseCase
 import com.dev.lbsuhack.core.domain.session.ClearSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SaveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionUser
@@ -17,11 +19,14 @@ import com.dev.lbsuhack.feature.profile.R
 import com.dev.lbsuhack.feature.profile.domain.ProfileRepository
 import com.dev.lbsuhack.feature.profile.toUiText
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class ProfileStoreFactory(
     private val storeFactory: StoreFactory,
     private val profileRepository: ProfileRepository,
+    private val observeNotificationsEnabled: ObserveNotificationsEnabledUseCase,
+    private val setNotificationsEnabled: SetNotificationsEnabledUseCase,
     private val getCurrentUser: GetCurrentUserUseCase,
     private val updateUserCache: UpdateUserCacheUseCase,
     private val saveSession: SaveSessionUseCase,
@@ -64,6 +69,7 @@ class ProfileStoreFactory(
 
         private var loadJob: Job? = null
         private var editJob: Job? = null
+        private var toggleJob: Job? = null
 
         override fun executeIntent(intent: ProfileStore.Intent) {
             when (intent) {
@@ -82,7 +88,7 @@ class ProfileStoreFactory(
             loadJob?.cancel()
             loadJob = scope.launch {
                 dispatch(Message.LoadingStarted)
-                val initialNotifications = if (state().hasUser) state().notificationsEnabled else profileRepository.isNotificationsEnabled()
+                val initialNotifications = if (state().hasUser) state().notificationsEnabled else observeNotificationsEnabled().first()
                 val initialSaved = if (state().hasUser) state().savedCount else profileRepository.savedCount()
                 val cached = (getCurrentUser(forceRefresh = false) as? DomainResult.Success)?.value
                 if (cached != null) {
@@ -100,7 +106,7 @@ class ProfileStoreFactory(
                 when (val result = getCurrentUser(forceRefresh = true)) {
                     is DomainResult.Success -> {
                         val user = result.value
-                        val currentNotifications = if (state().hasUser) state().notificationsEnabled else profileRepository.isNotificationsEnabled()
+                        val currentNotifications = if (state().hasUser) state().notificationsEnabled else observeNotificationsEnabled().first()
                         val currentSaved = if (state().hasUser) state().savedCount else profileRepository.savedCount()
                         dispatch(
                             Message.UserLoaded(
@@ -127,10 +133,14 @@ class ProfileStoreFactory(
         }
 
         private fun toggleNotifications() {
-            scope.launch {
+            if (toggleJob?.isActive == true) return
+            toggleJob = scope.launch {
                 val enabled = !state().notificationsEnabled
-                profileRepository.setNotificationsEnabled(enabled)
-                dispatch(Message.NotificationsChanged(enabled))
+                if (setNotificationsEnabled(enabled)) {
+                    dispatch(Message.NotificationsChanged(enabled))
+                } else {
+                    publish(ProfileStore.Label.ShowMessage(UiText.Resource(R.string.profile_notifications_error)))
+                }
             }
         }
 
