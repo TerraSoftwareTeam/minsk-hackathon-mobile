@@ -77,6 +77,19 @@ fun ActivitiesScreen(
         }
     }
 
+    var knownActivityIds by remember { mutableStateOf<Set<String>?>(null) }
+
+    LaunchedEffect(state.activities, state.hasLoaded) {
+        if (!state.hasLoaded) return@LaunchedEffect
+        val ids = state.activities.mapTo(HashSet()) { it.id }
+        val known = knownActivityIds
+        knownActivityIds = ids
+        if (known == null) return@LaunchedEffect
+        val newIds = ids - known
+        if (newIds.isEmpty()) return@LaunchedEffect
+        state.indexOfFirstNew(newIds)?.let { index -> listState.animateScrollToItem(index) }
+    }
+
     val staffRole = state.currentUser?.role?.takeIf { it != UserRole.PUPIL }
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
@@ -294,3 +307,19 @@ fun ActivitiesScreen(
 
 private const val EMPTY_STATE_KEY = "activities-empty"
 private const val LOAD_ERROR_KEY = "activities-load-error"
+
+/** Lazy-list index to scroll to so the first newly arrived activity is visible at the top (with its section header). */
+private fun ActivitiesStore.State.indexOfFirstNew(newIds: Set<String>): Int? {
+    val sections = feedSections
+    val showHeaders = sections.size > 1
+    var index = 0
+    sections.forEach { section ->
+        val sectionStart = index
+        if (showHeaders) index++
+        section.activities.forEachIndexed { position, proposal ->
+            if (proposal.id in newIds) return if (position == 0) sectionStart else index
+            index++
+        }
+    }
+    return null
+}
