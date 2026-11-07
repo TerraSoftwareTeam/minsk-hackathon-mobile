@@ -430,16 +430,16 @@ class ActivitiesStoreTest {
     }
 
     @Test
-    fun pollingRefreshesImmediatelyAndThenEveryFiveSeconds() = runTest(mainDispatcherRule.testDispatcher) {
+    fun pollingRefreshesImmediatelyAndThenEverySecond() = runTest(mainDispatcherRule.testDispatcher) {
         val store = createStore()
 
         store.accept(ActivitiesStore.Intent.StartPolling)
         runCurrent()
         assertEquals(1, activityRepository.refreshCalls)
 
-        advanceTimeBy(5_001)
+        advanceTimeBy(1_001)
         assertEquals(2, activityRepository.refreshCalls)
-        advanceTimeBy(5_000)
+        advanceTimeBy(1_000)
         assertEquals(3, activityRepository.refreshCalls)
 
         store.accept(ActivitiesStore.Intent.StopPolling)
@@ -457,10 +457,10 @@ class ActivitiesStoreTest {
         runCurrent()
         assertEquals(1, activityRepository.refreshCalls)
 
-        advanceTimeBy(5_001)
+        advanceTimeBy(1_001)
         assertEquals(2, activityRepository.refreshCalls)
 
-        advanceTimeBy(10_001)
+        advanceTimeBy(2_001)
         assertEquals(3, activityRepository.refreshCalls)
         store.dispose()
     }

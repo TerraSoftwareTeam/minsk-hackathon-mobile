@@ -16,7 +16,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,14 +32,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dev.lbsuhack.core.localization.text.resolve
+import com.dev.lbsuhack.core.ui.component.HackSnackbarHost
 import com.dev.lbsuhack.core.ui.component.HackTopBar
+import com.dev.lbsuhack.core.ui.component.showHackSnackbar
 import com.dev.lbsuhack.feature.activities.R
-import com.dev.lbsuhack.feature.activities.presentation.actionsFor
 import com.dev.lbsuhack.feature.activities.domain.ActivityStatus
+import com.dev.lbsuhack.feature.activities.presentation.actionsFor
 import com.dev.lbsuhack.feature.activities.presentation.details.ActivityDetailsViewModel
 import com.dev.lbsuhack.feature.activities.store.details.ActivityDetailsStore
 import com.dev.lbsuhack.feature.activities.ui.details.component.ActivityHeroCard
-import com.dev.lbsuhack.feature.activities.ui.details.dialog.ActivityShareSheet
 import com.dev.lbsuhack.feature.activities.ui.details.component.ActivityStatusNotice
 import com.dev.lbsuhack.feature.activities.ui.details.component.DeleteActivityDialog
 import com.dev.lbsuhack.feature.activities.ui.details.component.DetailsFloatingActions
@@ -49,8 +49,9 @@ import com.dev.lbsuhack.feature.activities.ui.details.component.ParticipantsCard
 import com.dev.lbsuhack.feature.activities.ui.details.component.StatusTimelineCard
 import com.dev.lbsuhack.feature.activities.ui.details.component.SuccessChanceCard
 import com.dev.lbsuhack.feature.activities.ui.details.component.VotingStatusCard
-import org.koin.core.parameter.parametersOf
+import com.dev.lbsuhack.feature.activities.ui.details.dialog.ActivityShareSheet
 import org.koin.androidx.compose.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @Composable
 fun ActivityDetailsScreen(
@@ -84,7 +85,7 @@ fun ActivityDetailsScreen(
 
     LaunchedEffect(state.errorId) {
         state.error?.let {
-            val result = snackbar.showSnackbar(it.resolve(context), actionLabel = retry)
+            val result = snackbar.showHackSnackbar(it.resolve(context), actionLabel = retry)
             if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
                 viewModel.accept(ActivityDetailsStore.Intent.Load(activityId))
             }
@@ -113,7 +114,13 @@ fun ActivityDetailsScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbar) },
+        snackbarHost = {
+            val actions = state.activity?.actionsFor(state.currentUser?.role)
+            HackSnackbarHost(
+                snackbar,
+                modifier = Modifier.padding(bottom = if (actions?.isVisible == true) 88.dp else 0.dp),
+            )
+        },
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             HackTopBar(

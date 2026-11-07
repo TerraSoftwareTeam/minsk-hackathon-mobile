@@ -16,19 +16,26 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dev.lbsuhack.core.domain.model.UserRole
+import com.dev.lbsuhack.core.localization.text.resolve
+import com.dev.lbsuhack.core.ui.component.HackSnackbarHost
+import com.dev.lbsuhack.core.ui.component.showHackSnackbar
 import com.dev.lbsuhack.feature.auth.R
 import com.dev.lbsuhack.feature.auth.presentation.login.LoginViewModel
 import com.dev.lbsuhack.feature.auth.store.login.LoginStore
@@ -42,7 +49,18 @@ fun LoginScreen(
     viewModel: LoginViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
     var step by rememberSaveable { mutableStateOf(LoginStep.WELCOME) }
+
+    LaunchedEffect(state.errorId, state.error, step) {
+        val error = state.error
+        if (error != null && step == LoginStep.CREDENTIALS) {
+            snackbarHostState.showHackSnackbar(error.resolve(context))
+        } else {
+            snackbarHostState.currentSnackbarData?.dismiss()
+        }
+    }
 
     if (step == LoginStep.CREDENTIALS) {
         BackHandler {
@@ -51,6 +69,7 @@ fun LoginScreen(
     }
 
     Scaffold(
+        snackbarHost = { HackSnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             if (step == LoginStep.CREDENTIALS) {

@@ -10,7 +10,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.LightMode
-import androidx.compose.material.icons.outlined.SettingsBrightness
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -64,7 +63,6 @@ fun ProfileSettingsScreen(
                         selected = state.theme == mode,
                         label = stringResource(mode.labelRes()),
                         icon = when (mode) {
-                            AppThemeMode.SYSTEM -> Icons.Outlined.SettingsBrightness
                             AppThemeMode.LIGHT -> Icons.Outlined.LightMode
                             AppThemeMode.DARK -> Icons.Outlined.DarkMode
                         },

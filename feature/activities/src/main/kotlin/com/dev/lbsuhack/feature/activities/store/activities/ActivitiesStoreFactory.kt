@@ -231,7 +231,7 @@ class ActivitiesStoreFactory(
     }
 }
 
-private const val POLLING_INTERVAL_MS = 5_000L
+private const val POLLING_INTERVAL_MS = 1_000L
 private const val MAX_BACKOFF_STEPS = 3
 
 private fun pollDelay(failures: Int): Long =

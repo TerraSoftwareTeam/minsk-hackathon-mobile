@@ -2,8 +2,8 @@ package com.dev.lbsuhack.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -32,18 +32,21 @@ import com.dev.lbsuhack.core.localization.text.resolve
 import com.dev.lbsuhack.core.navigation.api.AppNavigation
 import com.dev.lbsuhack.core.navigation.api.LocalAppNavigation
 import com.dev.lbsuhack.core.navigation.api.LocalNavigator
-import com.dev.lbsuhack.core.navigation.api.Navigator
 import com.dev.lbsuhack.core.navigation.api.NavigationInstaller
+import com.dev.lbsuhack.core.navigation.api.Navigator
 import com.dev.lbsuhack.core.navigation.event.AppEvent
 import com.dev.lbsuhack.core.navigation.event.AppEventBus
 import com.dev.lbsuhack.core.navigation.layer.NavigationLayer
-import com.dev.lbsuhack.feature.activities.navigation.ActivityDetailsRoute
+import com.dev.lbsuhack.core.ui.component.HackSnackbarHost
+import com.dev.lbsuhack.core.ui.component.showHackSnackbar
 import com.dev.lbsuhack.feature.activities.navigation.ActivitiesRoute
+import com.dev.lbsuhack.feature.activities.navigation.ActivityDetailsRoute
 import com.dev.lbsuhack.feature.activities.navigation.CreateActivityRoute
 import com.dev.lbsuhack.feature.auth.navigation.AuthLoginRoute
 import com.dev.lbsuhack.feature.profile.navigation.ProfileRoute
 import com.dev.lbsuhack.feature.requests.navigation.RequestsRoute
 import com.dev.lbsuhack.navigation.AppNavigator
+import kotlinx.coroutines.flow.collectLatest
 import org.koin.compose.getKoin
 import org.koin.compose.koinInject
 
@@ -67,12 +70,12 @@ fun AppRootScreen(
     }
 
     LaunchedEffect(bus, context) {
-        bus.events.collect { event ->
+        bus.events.collectLatest { event ->
             val message = when (event) {
                 is AppEvent.Error -> event.text.resolve(context)
                 is AppEvent.Toast -> event.text.resolve(context)
             }
-            snackbarHostState.showSnackbar(message)
+            snackbarHostState.showHackSnackbar(message)
         }
     }
 
@@ -126,9 +129,9 @@ fun AppRootScreen(
             }
         }
 
-        SnackbarHost(
+        HackSnackbarHost(
             hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter),
+            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
         )
     }
 }

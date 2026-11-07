@@ -29,7 +29,6 @@ import com.dev.lbsuhack.feature.auth.R
 import com.dev.lbsuhack.feature.auth.store.login.LoginStore
 import com.dev.lbsuhack.feature.auth.store.login.PupilLoginMethod
 import com.dev.lbsuhack.feature.auth.ui.component.AuthDemoBanner
-import com.dev.lbsuhack.feature.auth.ui.component.AuthError
 import com.dev.lbsuhack.feature.auth.ui.component.AuthPrimaryButton
 
 @Composable
@@ -115,8 +114,6 @@ internal fun LoginCredentialsContent(
                 }
             }
         }
-
-        AuthError(error = state.error)
 
         Spacer(modifier = Modifier.height(4.dp))
 

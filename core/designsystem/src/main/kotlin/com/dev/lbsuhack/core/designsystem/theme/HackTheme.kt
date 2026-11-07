@@ -3,7 +3,6 @@ package com.dev.lbsuhack.core.designsystem.theme
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -13,6 +12,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import com.dev.lbsuhack.core.designsystem.mode.DefaultThemeMode
 import com.dev.lbsuhack.core.designsystem.mode.AppThemeMode
 import com.dev.lbsuhack.core.designsystem.mode.resolveDark
 
@@ -29,10 +29,10 @@ val MaterialTheme.hack: HackExtras
 
 @Composable
 fun HackTheme(
-    mode: AppThemeMode = AppThemeMode.SYSTEM,
+    mode: AppThemeMode = DefaultThemeMode,
     content: @Composable () -> Unit,
 ) {
-    val isDark = mode.resolveDark(isSystemInDarkTheme())
+    val isDark = mode.resolveDark()
 
     SyncSystemBarIcons(isDark = isDark)
 

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -18,7 +19,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -42,7 +42,9 @@ import com.dev.lbsuhack.core.localization.text.resolve
 import com.dev.lbsuhack.core.ui.component.HackEmptyState
 import com.dev.lbsuhack.core.ui.component.HackFloatingActionButton
 import com.dev.lbsuhack.core.ui.component.HackLoading
+import com.dev.lbsuhack.core.ui.component.HackSnackbarHost
 import com.dev.lbsuhack.core.ui.component.HackTopBar
+import com.dev.lbsuhack.core.ui.component.showHackSnackbar
 import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.presentation.activities.ActivitiesViewModel
 import com.dev.lbsuhack.feature.activities.store.activities.ActivitiesStore
@@ -64,6 +66,17 @@ fun ActivitiesScreen(
     viewModel: ActivitiesViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val listState = rememberLazyListState()
+    var appliedFilters by remember { mutableStateOf(state.selectedCategory to state.selectedTab) }
+
+    LaunchedEffect(state.selectedCategory, state.selectedTab) {
+        val filters = state.selectedCategory to state.selectedTab
+        if (filters != appliedFilters) {
+            listState.requestScrollToItem(0)
+            appliedFilters = filters
+        }
+    }
+
     val staffRole = state.currentUser?.role?.takeIf { it != UserRole.PUPIL }
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
@@ -73,7 +86,7 @@ fun ActivitiesScreen(
     LaunchedEffect(state.errorId) {
         if (state.activities.isEmpty()) return@LaunchedEffect
         state.error?.let {
-            val result = snackbar.showSnackbar(it.resolve(context), actionLabel = retry)
+            val result = snackbar.showHackSnackbar(it.resolve(context), actionLabel = retry)
             if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
                 viewModel.accept(ActivitiesStore.Intent.Refresh)
             }
@@ -81,7 +94,10 @@ fun ActivitiesScreen(
     }
 
     LaunchedEffect(scanError) {
-        scanError?.let { snackbar.showSnackbar(it.resolve(context)) }
+        scanError?.let {
+            snackbar.showHackSnackbar(it.resolve(context))
+            scanError = null
+        }
     }
 
     LaunchedEffect(viewModel) {
@@ -101,7 +117,7 @@ fun ActivitiesScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbar) },
+        snackbarHost = { HackSnackbarHost(snackbar, modifier = Modifier.padding(bottom = 88.dp)) },
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             if (staffRole != null) {
@@ -146,7 +162,7 @@ fun ActivitiesScreen(
                     }
 
                     state.activities.isEmpty() && state.error != null -> {
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                             item(key = LOAD_ERROR_KEY) {
                                 HackEmptyState(
                                     title = stringResource(R.string.activities_load_error_title),
@@ -167,7 +183,7 @@ fun ActivitiesScreen(
                     }
 
                     state.filteredActivities.isEmpty() -> {
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                             item(key = EMPTY_STATE_KEY) {
                                 if (state.hasActiveFilters) {
                                     HackEmptyState(
@@ -206,6 +222,7 @@ fun ActivitiesScreen(
 
                     else -> {
                         LazyColumn(
+                            state = listState,
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 112.dp),
                             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),

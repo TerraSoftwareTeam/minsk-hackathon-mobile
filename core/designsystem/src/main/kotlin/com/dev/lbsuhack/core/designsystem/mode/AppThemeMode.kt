@@ -1,15 +1,13 @@
 package com.dev.lbsuhack.core.designsystem.mode
 
 enum class AppThemeMode {
-    SYSTEM,
-    LIGHT,
     DARK,
+    LIGHT,
 }
 
 val DefaultThemeMode: AppThemeMode = AppThemeMode.DARK
 
-fun AppThemeMode.resolveDark(systemInDark: Boolean): Boolean = when (this) {
-    AppThemeMode.SYSTEM -> systemInDark
+fun AppThemeMode.resolveDark(): Boolean = when (this) {
     AppThemeMode.LIGHT -> false
     AppThemeMode.DARK -> true
 }

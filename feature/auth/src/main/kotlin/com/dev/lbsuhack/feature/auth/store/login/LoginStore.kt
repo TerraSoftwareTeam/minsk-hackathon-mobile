@@ -32,6 +32,7 @@ interface LoginStore : Store<LoginStore.Intent, LoginStore.State, LoginStore.Lab
         val pupilMethod: PupilLoginMethod = PupilLoginMethod.SCHOOLS_BY,
         val isLoading: Boolean = false,
         val error: UiText? = null,
+        val errorId: Long = 0,
     ) {
         val usesManualIdentity: Boolean
             get() = role == UserRole.TEACHER || (role == UserRole.PUPIL && pupilMethod == PupilLoginMethod.MANUAL)

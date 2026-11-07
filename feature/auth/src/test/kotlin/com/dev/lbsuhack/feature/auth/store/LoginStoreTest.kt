@@ -124,6 +124,24 @@ class LoginStoreTest {
     }
 
     @Test
+    fun `repeated validation errors can be shown again after dismissal`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val store = createStore()
+            store.accept(LoginStore.Intent.Submit)
+            runCurrent()
+            val firstError = store.state.error
+            val firstErrorId = store.state.errorId
+            assertNotNull(firstError)
+
+            store.accept(LoginStore.Intent.Submit)
+            runCurrent()
+
+            assertEquals(firstError, store.state.error)
+            assertEquals(firstErrorId + 1, store.state.errorId)
+            store.dispose()
+        }
+
+    @Test
     fun `pupil submit with blank data shows validation error and does not save session`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val store = createStore()

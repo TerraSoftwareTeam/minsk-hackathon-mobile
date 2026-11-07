@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,13 +20,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.localization.text.resolve
 import com.dev.lbsuhack.core.ui.component.HackLoading
+import com.dev.lbsuhack.core.ui.component.HackSnackbarHost
 import com.dev.lbsuhack.core.ui.component.HackTopBar
+import com.dev.lbsuhack.core.ui.component.showHackSnackbar
 import com.dev.lbsuhack.feature.profile.R
 import com.dev.lbsuhack.feature.profile.presentation.profile.ProfileViewModel
 import com.dev.lbsuhack.feature.profile.store.profile.ProfileStore
 import com.dev.lbsuhack.feature.profile.ui.profile.component.ProfileErrorState
 import com.dev.lbsuhack.feature.profile.ui.profile.dialog.EditProfileDialog
 import com.dev.lbsuhack.feature.profile.ui.profile.dialog.LogoutConfirmDialog
+import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -49,9 +51,9 @@ fun ProfileScreen(
     }
 
     LaunchedEffect(viewModel) {
-        viewModel.labels.collect { label ->
+        viewModel.labels.collectLatest { label ->
             when (label) {
-                is ProfileStore.Label.ShowMessage -> snackbarHostState.showSnackbar(label.text.resolve(context))
+                is ProfileStore.Label.ShowMessage -> snackbarHostState.showHackSnackbar(label.text.resolve(context))
             }
         }
     }
@@ -89,7 +91,7 @@ fun ProfileScreen(
             )
         },
         snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState)
+            HackSnackbarHost(hostState = snackbarHostState)
         },
     ) { padding ->
         when {

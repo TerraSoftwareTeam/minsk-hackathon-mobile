@@ -305,4 +305,4 @@ class RequestsStoreFactory(
     }
 }
 
-private const val DEFAULT_POLL_INTERVAL_MS = 10_000L
+private const val DEFAULT_POLL_INTERVAL_MS = 1_000L

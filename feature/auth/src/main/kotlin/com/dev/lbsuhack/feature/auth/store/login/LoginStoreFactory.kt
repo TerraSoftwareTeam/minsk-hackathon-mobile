@@ -14,9 +14,9 @@ import com.dev.lbsuhack.feature.auth.R
 import com.dev.lbsuhack.feature.auth.domain.AuthRepository
 import com.dev.lbsuhack.feature.auth.parseSchoolClass
 import com.dev.lbsuhack.feature.auth.toUiText
-import kotlinx.coroutines.launch
 import java.security.MessageDigest
 import kotlin.random.Random
+import kotlinx.coroutines.launch
 
 class LoginStoreFactory(
     private val storeFactory: StoreFactory,
@@ -163,7 +163,7 @@ class LoginStoreFactory(
             is Message.PupilMethodChanged -> copy(pupilMethod = msg.method, error = null)
             Message.Loading -> copy(isLoading = true, error = null)
             Message.Loaded -> LoginStore.State(role = role, pupilMethod = pupilMethod)
-            is Message.Failed -> copy(isLoading = false, error = msg.error)
+            is Message.Failed -> copy(isLoading = false, error = msg.error, errorId = errorId + 1)
         }
     }
 

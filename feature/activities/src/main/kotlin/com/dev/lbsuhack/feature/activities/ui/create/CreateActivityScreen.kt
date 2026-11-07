@@ -17,7 +17,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,7 +32,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dev.lbsuhack.core.localization.R as LocalizationR
 import com.dev.lbsuhack.core.localization.text.resolve
 import com.dev.lbsuhack.core.ui.component.HackSectionLabel
+import com.dev.lbsuhack.core.ui.component.HackSnackbarHost
 import com.dev.lbsuhack.core.ui.component.HackTopBar
+import com.dev.lbsuhack.core.ui.component.showHackSnackbar
 import com.dev.lbsuhack.feature.activities.R
 import com.dev.lbsuhack.feature.activities.domain.ActivityOrigin
 import com.dev.lbsuhack.feature.activities.presentation.create.CreateActivityViewModel
@@ -75,14 +76,14 @@ fun CreateActivityScreen(
 
     LaunchedEffect(state.errorId) {
         state.error?.let { errorText ->
-            snackbarHostState.showSnackbar(errorText.resolve(context))
+            snackbarHostState.showHackSnackbar(errorText.resolve(context))
             viewModel.accept(CreateActivityStore.Intent.DismissError)
         }
     }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbarHostState, modifier = Modifier.padding(bottom = 108.dp)) },
+        snackbarHost = { HackSnackbarHost(snackbarHostState, modifier = Modifier.padding(bottom = 108.dp)) },
         topBar = {
             HackTopBar(
                 title = stringResource(

@@ -7,21 +7,13 @@ import org.junit.Test
 class AppThemeModeTest {
 
     @Test
-    fun `SYSTEM follows the system dark setting`() {
-        assertTrue(AppThemeMode.SYSTEM.resolveDark(systemInDark = true))
-        assertFalse(AppThemeMode.SYSTEM.resolveDark(systemInDark = false))
+    fun `LIGHT uses the light palette`() {
+        assertFalse(AppThemeMode.LIGHT.resolveDark())
     }
 
     @Test
-    fun `LIGHT ignores the system dark setting`() {
-        assertFalse(AppThemeMode.LIGHT.resolveDark(systemInDark = true))
-        assertFalse(AppThemeMode.LIGHT.resolveDark(systemInDark = false))
-    }
-
-    @Test
-    fun `DARK ignores the system dark setting`() {
-        assertTrue(AppThemeMode.DARK.resolveDark(systemInDark = true))
-        assertTrue(AppThemeMode.DARK.resolveDark(systemInDark = false))
+    fun `DARK uses the dark palette`() {
+        assertTrue(AppThemeMode.DARK.resolveDark())
     }
 
     @Test

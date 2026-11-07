@@ -34,7 +34,7 @@ class DefaultThemeControllerTest {
         val controller = DefaultThemeController(FakeThemePreferences(DefaultThemeMode))
 
         assertEquals(AppThemeMode.entries, controller.availableModes)
-        assertTrue(controller.availableModes.size == 3)
+        assertEquals(listOf(AppThemeMode.DARK, AppThemeMode.LIGHT), controller.availableModes)
     }
 
     @Test

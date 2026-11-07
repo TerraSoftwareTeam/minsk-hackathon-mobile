@@ -23,8 +23,12 @@ class ThemeModeCodecTest {
     }
 
     @Test
+    fun `previous system preference becomes dark`() {
+        assertEquals(AppThemeMode.DARK, ThemeModeCodec.decode("SYSTEM"))
+    }
+
+    @Test
     fun `persisted values are stable names`() {
-        assertEquals("SYSTEM", ThemeModeCodec.encode(AppThemeMode.SYSTEM))
         assertEquals("LIGHT", ThemeModeCodec.encode(AppThemeMode.LIGHT))
         assertEquals("DARK", ThemeModeCodec.encode(AppThemeMode.DARK))
     }

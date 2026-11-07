@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name" translatable="false">Lbsuhack</string>
+    <string name="app_name" translatable="false">Kola</string>
     <string name="notification_channel_name">Уведомления Kola</string>
     <string name="notification_channel_description">Оповещения о статусе заявок и школьных мероприятиях</string>
 </resources>
