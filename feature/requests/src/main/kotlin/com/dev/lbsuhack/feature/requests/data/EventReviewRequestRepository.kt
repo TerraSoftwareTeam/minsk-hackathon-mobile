@@ -1,9 +1,9 @@
 package com.dev.lbsuhack.feature.requests.data
 
+import com.dev.lbsuhack.core.domain.DomainError
+import com.dev.lbsuhack.core.domain.DomainResult
 import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionState
-import kotlinx.coroutines.flow.combine
-import com.dev.lbsuhack.core.domain.DomainResult
 import com.dev.lbsuhack.core.network.call.NetworkResult
 import com.dev.lbsuhack.core.network.call.safeCall
 import com.dev.lbsuhack.core.network.error.toDomain
@@ -20,12 +20,16 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.http.encodeURLPathPart
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 class EventReviewRequestRepository(
@@ -35,6 +39,8 @@ class EventReviewRequestRepository(
 ) : ReviewRequestRepository {
 
     private val requestsFlow = MutableStateFlow<List<ReviewRequest>>(emptyList())
+
+    private val operationMutex = Mutex()
 
     private var owner: String? = sessionId()
 
@@ -57,16 +63,18 @@ class EventReviewRequestRepository(
     } ?: requestsFlow.asStateFlow()
 
     override suspend fun refresh(audience: RequestAudience): DomainResult<Unit> = withContext(ioDispatcher) {
-        prepareCache()
-        val requestOwner = sessionId()
-        when (val result = safeCall { httpClient.get(audience.moderationPath()).body<List<EventResponseDto>>() }) {
-            is NetworkResult.Success -> {
-                if (sessionId() != requestOwner) return@withContext DomainResult.Failure(com.dev.lbsuhack.core.domain.DomainError.Unauthorized)
-                requestsFlow.value = result.data.map { it.toDomain(audience) }
-                DomainResult.Success(Unit)
-            }
+        operationMutex.withLock {
+            prepareCache()
+            val requestOwner = sessionId()
+            when (val result = safeCall { httpClient.get(audience.moderationPath()).body<List<EventResponseDto>>() }) {
+                is NetworkResult.Success -> {
+                    if (sessionId() != requestOwner) return@withLock DomainResult.Failure(DomainError.Unauthorized)
+                    requestsFlow.value = result.data.map { it.toDomain(audience) }
+                    DomainResult.Success(Unit)
+                }
 
-            is NetworkResult.Error -> DomainResult.Failure(result.error.toDomain())
+                is NetworkResult.Error -> DomainResult.Failure(result.error.toDomain())
+            }
         }
     }
 
@@ -76,24 +84,27 @@ class EventReviewRequestRepository(
         startsAt: String?,
     ): DomainResult<ReviewRequest> = withContext(ioDispatcher) {
         if (audience == RequestAudience.ADMIN && startsAt.isNullOrBlank()) {
-            return@withContext DomainResult.Failure(com.dev.lbsuhack.core.domain.DomainError.Validation)
+            return@withContext DomainResult.Failure(DomainError.Validation)
         }
-        prepareCache()
-        val requestOwner = sessionId()
-        when (
-            val result = safeCall {
-                httpClient.post(requestId.actionPath(audience, isDecline = false)) {
-                    if (audience == RequestAudience.ADMIN && startsAt != null) {
-                        contentType(ContentType.Application.Json)
-                        setBody(AdminApproveEventDto(startsAt = startsAt))
-                    }
-                }.body<EventResponseDto>()
+        operationMutex.withLock {
+            prepareCache()
+            val requestOwner = sessionId()
+            when (
+                val result = safeCall {
+                    httpClient.post(requestId.actionPath(audience, isDecline = false)) {
+                        if (audience == RequestAudience.ADMIN && startsAt != null) {
+                            contentType(ContentType.Application.Json)
+                            setBody(AdminApproveEventDto(startsAt = startsAt))
+                        }
+                    }.body<EventResponseDto>()
+                }
+            ) {
+                is NetworkResult.Success -> if (sessionId() == requestOwner) {
+                    DomainResult.Success(updateCache(result.data, audience))
+                } else DomainResult.Failure(DomainError.Unauthorized)
+
+                is NetworkResult.Error -> DomainResult.Failure(result.error.toDomain())
             }
-        ) {
-            is NetworkResult.Success -> if (sessionId() == requestOwner) {
-                DomainResult.Success(updateCache(result.data, audience))
-            } else DomainResult.Failure(com.dev.lbsuhack.core.domain.DomainError.Unauthorized)
-            is NetworkResult.Error -> DomainResult.Failure(result.error.toDomain())
         }
     }
 
@@ -102,23 +113,26 @@ class EventReviewRequestRepository(
         reason: String?,
         audience: RequestAudience,
     ): DomainResult<ReviewRequest> = withContext(ioDispatcher) {
-        prepareCache()
-        val requestOwner = sessionId()
-        val normalizedReason = reason?.trim()?.ifBlank { null }
-        when (
-            val result = safeCall {
-                httpClient.post(requestId.actionPath(audience, isDecline = true)) {
-                    if (normalizedReason != null) {
-                        contentType(ContentType.Application.Json)
-                        setBody(DeclineEventDto(reason = normalizedReason))
-                    }
-                }.body<EventResponseDto>()
+        operationMutex.withLock {
+            prepareCache()
+            val requestOwner = sessionId()
+            val normalizedReason = reason?.trim()?.ifBlank { null }
+            when (
+                val result = safeCall {
+                    httpClient.post(requestId.actionPath(audience, isDecline = true)) {
+                        if (normalizedReason != null) {
+                            contentType(ContentType.Application.Json)
+                            setBody(DeclineEventDto(reason = normalizedReason))
+                        }
+                    }.body<EventResponseDto>()
+                }
+            ) {
+                is NetworkResult.Success -> if (sessionId() == requestOwner) {
+                    DomainResult.Success(updateCache(result.data, audience))
+                } else DomainResult.Failure(DomainError.Unauthorized)
+
+                is NetworkResult.Error -> DomainResult.Failure(result.error.toDomain())
             }
-        ) {
-            is NetworkResult.Success -> if (sessionId() == requestOwner) {
-                DomainResult.Success(updateCache(result.data, audience))
-            } else DomainResult.Failure(com.dev.lbsuhack.core.domain.DomainError.Unauthorized)
-            is NetworkResult.Error -> DomainResult.Failure(result.error.toDomain())
         }
     }
 
@@ -156,6 +170,6 @@ class EventReviewRequestRepository(
             RequestAudience.TEACHER -> if (isDecline) "decline" else "approve"
             RequestAudience.ADMIN -> if (isDecline) "admin/decline" else "admin/approve"
         }
-        return "api/v1/events/$this/$suffix"
+        return "api/v1/events/${this.encodeURLPathPart()}/$suffix"
     }
 }

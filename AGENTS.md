@@ -153,6 +153,9 @@ small flat packages are preferred over one file per package.
 
 ## Roles and file ownership
 
+Feature and core agents are module agents: each owns one module, its tests,
+and the local commands for that module.
+
 ### Feature agent
 
 If you are assigned `feature:<name>`, you may edit only:
@@ -409,8 +412,11 @@ Do not copy these patterns into new code:
 Before reporting completion:
 
 - `./gradlew :<module>:testDebugUnitTest` passes for the module you changed.
-- Only module-scoped commands were run. A global build, full test suite,
-  lint, or coverage run is not part of a module handoff.
+- For a module agent: only module-scoped commands were run. Global build,
+  full test suite, lint, and coverage runs belong to the integrator; do not
+  run them as a sanity check.
+- For the integrator: the full build passes after the module agents stopped
+  building.
 - No files outside the allowed paths were changed.
 - No new dependency was added without approval.
 - No generated file was edited manually.

@@ -6,6 +6,7 @@ import com.dev.lbsuhack.feature.requests.domain.RequestAudience
 import com.dev.lbsuhack.feature.requests.domain.ReviewRequest
 import com.dev.lbsuhack.feature.requests.domain.ReviewRequestRepository
 import com.dev.lbsuhack.feature.requests.domain.ReviewStatus
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,6 +15,8 @@ class FakeReviewRequestRepository(
     private val teacherQueue: List<ReviewRequest> = emptyList(),
     private val adminQueue: List<ReviewRequest> = emptyList(),
     var refreshResult: DomainResult<Unit> = DomainResult.Success(Unit),
+    private val refreshDelayMillis: Long = 0L,
+    private val actionDelayMillis: Long = 0L,
 ) : ReviewRequestRepository {
 
     private val requestsFlow = MutableStateFlow<List<ReviewRequest>>(emptyList())
@@ -21,6 +24,7 @@ class FakeReviewRequestRepository(
     override fun observeRequests(): Flow<List<ReviewRequest>> = requestsFlow.asStateFlow()
 
     override suspend fun refresh(audience: RequestAudience): DomainResult<Unit> {
+        if (refreshDelayMillis > 0L) delay(refreshDelayMillis)
         if (refreshResult is DomainResult.Failure) return refreshResult
 
         requestsFlow.value = when (audience) {
@@ -34,16 +38,22 @@ class FakeReviewRequestRepository(
         requestId: String,
         audience: RequestAudience,
         startsAt: String?,
-    ): DomainResult<ReviewRequest> = updateRequest(requestId) {
-        it.copy(status = ReviewStatus.APPROVED, declineReason = null)
+    ): DomainResult<ReviewRequest> {
+        if (actionDelayMillis > 0L) delay(actionDelayMillis)
+        return updateRequest(requestId) {
+            it.copy(status = ReviewStatus.APPROVED, declineReason = null)
+        }
     }
 
     override suspend fun decline(
         requestId: String,
         reason: String?,
         audience: RequestAudience,
-    ): DomainResult<ReviewRequest> = updateRequest(requestId) {
-        it.copy(status = ReviewStatus.DECLINED, declineReason = reason?.trim()?.ifBlank { null })
+    ): DomainResult<ReviewRequest> {
+        if (actionDelayMillis > 0L) delay(actionDelayMillis)
+        return updateRequest(requestId) {
+            it.copy(status = ReviewStatus.DECLINED, declineReason = reason?.trim()?.ifBlank { null })
+        }
     }
 
     private fun updateRequest(

@@ -8,6 +8,8 @@ import com.dev.lbsuhack.core.designsystem.mode.AppThemeMode
 import com.dev.lbsuhack.core.designsystem.mode.ThemeController
 import com.dev.lbsuhack.core.localization.language.AppLanguage
 import com.dev.lbsuhack.core.localization.language.LanguageController
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 class SettingsStoreFactory(
     private val storeFactory: StoreFactory,
@@ -22,6 +24,8 @@ class SettingsStoreFactory(
                 initialState = SettingsStore.State(
                     theme = themeController.current.value,
                     language = languageController.current.value,
+                    availableModes = themeController.availableModes,
+                    availableLanguages = languageController.availableLanguages,
                 ),
                 executorFactory = ::ExecutorImpl,
                 reducer = ReducerImpl,
@@ -35,8 +39,11 @@ class SettingsStoreFactory(
     private inner class ExecutorImpl :
         CoroutineExecutor<SettingsStore.Intent, Nothing, SettingsStore.State, Message, Nothing>() {
 
+        private var observeJob: Job? = null
+
         override fun executeIntent(intent: SettingsStore.Intent) {
             when (intent) {
+                SettingsStore.Intent.Init -> startObserving()
                 is SettingsStore.Intent.SetTheme -> {
                     themeController.setMode(intent.mode)
                     dispatch(Message.ThemeChanged(intent.mode))
@@ -45,6 +52,22 @@ class SettingsStoreFactory(
                 is SettingsStore.Intent.SetLanguage -> {
                     languageController.setLanguage(intent.language)
                     dispatch(Message.LanguageChanged(intent.language))
+                }
+            }
+        }
+
+        private fun startObserving() {
+            if (observeJob != null) return
+            observeJob = scope.launch {
+                launch {
+                    themeController.current.collect { mode ->
+                        dispatch(Message.ThemeChanged(mode))
+                    }
+                }
+                launch {
+                    languageController.current.collect { language ->
+                        dispatch(Message.LanguageChanged(language))
+                    }
                 }
             }
         }

@@ -23,4 +23,12 @@ class FakeSessionRepository(
     override suspend fun clear() {
         _state.value = SessionState.Unauthenticated
     }
+
+    fun authenticate(user: SessionUser) {
+        _state.value = SessionState.Authenticated(user)
+    }
+
+    fun emitUnknown() {
+        _state.value = SessionState.Unknown
+    }
 }

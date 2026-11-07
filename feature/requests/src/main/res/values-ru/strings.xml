@@ -18,7 +18,6 @@
 
     <string name="requests_kind_publication">Публикация</string>
     <string name="requests_kind_visit">Мероприятие</string>
-    <string name="requests_author_format">Автор: %1$s · %2$s</string>
     <string name="requests_author_name_format">Автор: %1$s</string>
     <string name="requests_votes_format">Голоса: %1$d из %2$d</string>
     <string name="requests_rating_format">Рейтинг: %1$d</string>
@@ -29,6 +28,7 @@
     <string name="requests_action_approve">Одобрить</string>
     <string name="requests_action_decline">Отклонить</string>
     <string name="requests_action_cancel">Отмена</string>
+    <string name="requests_retry">Повторить</string>
 
     <string name="requests_dialog_approve_title">Подтвердить одобрение?</string>
     <string name="requests_dialog_approve_teacher_text">Заявка будет одобрена и сможет попасть в ленту мероприятий.</string>
@@ -37,12 +37,15 @@
     <string name="requests_dialog_decline_text">Укажите причину, чтобы автор понял решение.</string>
     <string name="requests_dialog_decline_reason_label">Причина (необязательно)</string>
     <string name="requests_dialog_decline_reason_hint">Например: мероприятию нужно сопровождение взрослых</string>
+    <string name="requests_reason_counter">%1$d / %2$d</string>
 
     <string name="requests_empty_title">Здесь пока нет заявок</string>
     <string name="requests_empty_pending_teacher">Новые заявки на публикацию от ваших учеников появятся здесь.</string>
     <string name="requests_empty_pending_admin">Новые заявки на мероприятия появятся здесь.</string>
     <string name="requests_empty_processed">Обработанные вами заявки появятся здесь.</string>
     <string name="requests_empty_all">В этой очереди пока нет заявок.</string>
+    <string name="requests_empty_error_title">Не удалось загрузить заявки</string>
+    <string name="requests_empty_error_desc">Список не загрузился. Проверьте соединение и попробуйте ещё раз.</string>
 
     <string name="requests_access_denied_title">Нет доступа</string>
     <string name="requests_access_denied_desc">Раздел доступен классным руководителям и администрации школы.</string>
@@ -50,6 +53,8 @@
     <string name="requests_error_network">Проблема с соединением. Проверьте интернет и попробуйте ещё раз</string>
     <string name="requests_error_forbidden">У вас нет доступа к этой очереди</string>
     <string name="requests_error_not_found">Заявка не найдена. Обновите список</string>
+    <string name="requests_error_validation">Данные отклонены сервером. Проверьте их и попробуйте ещё раз</string>
+    <string name="requests_error_conflict">Эту заявку уже обработал кто-то другой</string>
     <string name="requests_error_unknown">Что-то пошло не так. Попробуйте ещё раз</string>
     <string name="requests_success_approved">Заявка одобрена</string>
     <string name="requests_success_declined">Заявка отклонена</string>

@@ -10,9 +10,9 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.request.HttpResponseData
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.HttpRequestData
+import io.ktor.client.request.HttpResponseData
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -24,9 +24,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.OffsetDateTime
 
 class EventReviewRequestRepositoryTest {
 
@@ -36,6 +37,7 @@ class EventReviewRequestRepositoryTest {
         id: String,
         status: String,
         declineReason: String? = null,
+        startsAt: String? = "2026-11-21T10:00:00.000Z",
     ): String = """
         {
           "id": "$id",
@@ -47,7 +49,7 @@ class EventReviewRequestRepositoryTest {
           "successProbability": 0.5, "imageUrl": null, "ratingAverage": null, "ratingsCount": 0,
                                 "declineReason": ${declineReason?.let { "\"$it\"" } ?: "null"},
           "voteThreshold": 15,
-          "startsAt": "2026-11-21T10:00:00.000Z",
+          "startsAt": ${startsAt?.let { "\"$it\"" } ?: "null"},
           "votingClosesAt": "2026-11-19T10:00:00.000Z",
           "initiator": {
             "id": "pupil-1",
@@ -106,13 +108,12 @@ class EventReviewRequestRepositoryTest {
         assertEquals("e-1", request.id)
         assertEquals("Экскурсия в музей", request.title)
         assertEquals("Описание", request.description)
-        assertEquals("Иван Иванов", request.author.name)
+        assertEquals("Иван Иванов", request.authorName)
         assertEquals(listOf("Пётр Петров"), request.voters)
         assertEquals(1, request.votesCount)
         assertEquals(RequestAudience.TEACHER, request.audience)
         assertEquals(ReviewStatus.PENDING_TEACHER, request.status)
-        assertFalse(request.proposedDate?.contains('T') == true)
-        assertTrue(!request.proposedDate.isNullOrBlank())
+        assertEquals(OffsetDateTime.parse("2026-11-21T10:00:00Z"), request.proposedDate)
     }
 
     @Test
@@ -130,6 +131,23 @@ class EventReviewRequestRepositoryTest {
         assertTrue(result is DomainResult.Success)
         assertEquals(RequestAudience.ADMIN, requests.first().audience)
         assertEquals(ReviewStatus.PENDING_ADMIN, requests.first().status)
+    }
+
+    @Test
+    fun brokenStartsAtDoesNotBreakTheMapping() = runTest {
+        val repository = createRepository { request ->
+            when (request.url.encodedPath) {
+                "/api/v1/events/moderation" ->
+                    okResponse("[${eventJson("e-1", "ON_MODERATION", startsAt = "не дата")}]")
+
+                else -> respond("Not found", HttpStatusCode.NotFound)
+            }
+        }
+
+        repository.refresh(RequestAudience.TEACHER)
+        val request = repository.observeRequests().firstValue().first()
+
+        assertNull(request.proposedDate)
     }
 
     @Test
@@ -154,6 +172,44 @@ class EventReviewRequestRepositoryTest {
         val updated = (result as DomainResult.Success).value
         assertEquals(ReviewStatus.APPROVED, updated.status)
         assertEquals(ReviewStatus.APPROVED, repository.observeRequests().firstValue().first().status)
+    }
+
+    @Test
+    fun approveAdminSendsTheStartDateInTheBody() = runTest {
+        var approveBody: OutgoingContent? = null
+        val repository = createRepository { request ->
+            when {
+                request.url.encodedPath == "/api/v1/events/admin-moderation" ->
+                    okResponse("[${eventJson("e-2", "ON_ADMIN_MODERATION")}]")
+
+                request.method == HttpMethod.Post &&
+                    request.url.encodedPath == "/api/v1/events/e-2/admin/approve" -> {
+                    approveBody = request.body
+                    okResponse(eventJson("e-2", "FINALIZED"))
+                }
+
+                else -> respond("Not found", HttpStatusCode.NotFound)
+            }
+        }
+        repository.refresh(RequestAudience.ADMIN)
+
+        val result = repository.approve("e-2", RequestAudience.ADMIN, "2026-11-21T10:00:00+03:00")
+
+        assertTrue(approveBody !is OutgoingContent.NoContent)
+        assertTrue(result is DomainResult.Success)
+        assertEquals(ReviewStatus.APPROVED, (result as DomainResult.Success).value.status)
+    }
+
+    @Test
+    fun approveAdminWithoutDateIsRejected() = runTest {
+        val repository = createRepository { _ ->
+            respond("Should not be called", HttpStatusCode.OK)
+        }
+
+        val result = repository.approve("e-2", RequestAudience.ADMIN, null)
+
+        assertTrue(result is DomainResult.Failure)
+        assertEquals(DomainError.Validation, (result as DomainResult.Failure).error)
     }
 
     @Test
@@ -229,6 +285,25 @@ class EventReviewRequestRepositoryTest {
         val updated = (result as DomainResult.Success).value
         assertEquals(ReviewStatus.DECLINED, updated.status)
         assertEquals("Нет мест", updated.declineReason)
+    }
+
+    @Test
+    fun requestIdIsEncodedInTheActionPath() = runTest {
+        val requestedPath = mutableListOf<String>()
+        val repository = createRepository { request ->
+            requestedPath += request.url.encodedPath
+            when {
+                request.url.encodedPath == "/api/v1/events/moderation" ->
+                    okResponse("[${eventJson("e 1", "ON_MODERATION")}]")
+
+                else -> respond("Not found", HttpStatusCode.NotFound)
+            }
+        }
+        repository.refresh(RequestAudience.TEACHER)
+
+        repository.approve("e 1", RequestAudience.TEACHER)
+
+        assertTrue(requestedPath.any { it.contains("e%201") })
     }
 
     @Test

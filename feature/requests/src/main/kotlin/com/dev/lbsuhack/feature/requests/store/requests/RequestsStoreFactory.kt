@@ -5,16 +5,18 @@ import com.arkivanov.mvikotlin.core.store.Store
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
 import com.dev.lbsuhack.core.domain.DomainResult
+import com.dev.lbsuhack.core.domain.model.UserRole
 import com.dev.lbsuhack.core.domain.session.ObserveSessionUseCase
 import com.dev.lbsuhack.core.domain.session.SessionState
-import com.dev.lbsuhack.core.domain.session.SessionUser
 import com.dev.lbsuhack.core.localization.text.UiText
 import com.dev.lbsuhack.feature.requests.R
 import com.dev.lbsuhack.feature.requests.toUiText
+import com.dev.lbsuhack.feature.requests.domain.MAX_DECLINE_REASON_LENGTH
 import com.dev.lbsuhack.feature.requests.domain.RequestAudience
 import com.dev.lbsuhack.feature.requests.domain.ReviewRequest
 import com.dev.lbsuhack.feature.requests.domain.ReviewRequestRepository
 import com.dev.lbsuhack.feature.requests.domain.isPending
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
@@ -36,16 +38,16 @@ class RequestsStoreFactory(
             ) {}
 
     private sealed interface Message {
-        data object Refreshed : Message
-        data object Loading : Message
-        data class AudienceResolved(val audience: RequestAudience?) : Message
-        data class UserUpdated(val user: SessionUser?) : Message
+        data class AccessResolved(val audience: RequestAudience?, val accessState: AccessState) : Message
+        data object RefreshStarted : Message
+        data object RefreshCompleted : Message
+        data object RefreshFailed : Message
         data class RequestsLoaded(val requests: List<ReviewRequest>) : Message
-        data object RequestsLoadFailed : Message
+        data class RequestUpdated(val request: ReviewRequest) : Message
         data class TabSelected(val tab: RequestsTab) : Message
         data class DialogOpened(val dialog: RequestDialog?) : Message
         data class DeclineReasonChanged(val value: String) : Message
-        data class StartsAtChanged(val value: String) : Message
+        data class StartsAtChanged(val value: OffsetDateTime, val hasDateError: Boolean) : Message
         data object Submitting : Message
         data object ActionCompleted : Message
         data object ActionFailed : Message
@@ -54,60 +56,92 @@ class RequestsStoreFactory(
     private inner class ExecutorImpl :
         CoroutineExecutor<RequestsStore.Intent, Nothing, RequestsStore.State, Message, RequestsStore.Label>() {
 
-        private var observing = false
+        private var requestedRole: UserRole? = null
+        private var refreshedAudience: RequestAudience? = null
+        private var sessionJob: Job? = null
+        private var requestsJob: Job? = null
 
         override fun executeIntent(intent: RequestsStore.Intent) {
             when (intent) {
                 is RequestsStore.Intent.Load -> {
-                    val actualRole = (observeSessionUseCase.state.value as? SessionState.Authenticated)?.user?.role
-                    val audience = if (actualRole == intent.role) intent.role.toRequestAudience() else null
-                    dispatch(Message.AudienceResolved(audience))
-                    startObserving(audience)
+                    requestedRole = intent.role
+                    refreshedAudience = null
+                    startObserving()
+                    resolveAccess(observeSessionUseCase.state.value)
                 }
 
+                RequestsStore.Intent.Refresh -> refresh(state().audience)
+                RequestsStore.Intent.Pause -> stopObserving()
                 is RequestsStore.Intent.SelectTab -> dispatch(Message.TabSelected(intent.tab))
                 is RequestsStore.Intent.ClickApprove -> openApproveDialog(intent.requestId)
                 is RequestsStore.Intent.ClickDecline -> openDeclineDialog(intent.requestId)
-                RequestsStore.Intent.DismissDialog -> dispatch(Message.DialogOpened(null))
-                is RequestsStore.Intent.ChangeDeclineReason -> dispatch(Message.DeclineReasonChanged(intent.value))
-                is RequestsStore.Intent.ChangeStartsAt -> dispatch(Message.StartsAtChanged(intent.value))
+                RequestsStore.Intent.DismissDialog -> dismissDialog()
+                is RequestsStore.Intent.ChangeDeclineReason -> {
+                    dispatch(Message.DeclineReasonChanged(intent.value.take(MAX_DECLINE_REASON_LENGTH)))
+                }
+
+                is RequestsStore.Intent.ChangeStartsAt -> {
+                    dispatch(Message.StartsAtChanged(intent.value, !isFutureDate(intent.value)))
+                }
+
                 RequestsStore.Intent.ConfirmApprove -> confirmApprove()
                 RequestsStore.Intent.ConfirmDecline -> confirmDecline()
             }
         }
 
-        private fun startObserving(audience: RequestAudience?) {
-            if (observing) {
+        private fun startObserving() {
+            if (sessionJob == null) {
+                sessionJob = scope.launch {
+                    observeSessionUseCase.state.collectLatest { sessionState ->
+                        resolveAccess(sessionState)
+                    }
+                }
+            }
+            if (requestsJob == null) {
+                requestsJob = scope.launch {
+                    requestRepository.observeRequests().collectLatest { requests ->
+                        dispatch(Message.RequestsLoaded(requests))
+                    }
+                }
+            }
+        }
+
+        private fun stopObserving() {
+            sessionJob?.cancel()
+            sessionJob = null
+            requestsJob?.cancel()
+            requestsJob = null
+        }
+
+        private fun resolveAccess(sessionState: SessionState) {
+            val audience = resolveAudience(sessionState)
+            dispatch(Message.AccessResolved(audience, resolveAccessState(sessionState, audience)))
+            if (audience != null && audience != refreshedAudience) {
+                refreshedAudience = audience
                 refresh(audience)
-                return
             }
-            observing = true
+        }
 
-            scope.launch {
-                observeSessionUseCase.state.collectLatest { sessionState ->
-                    val user = (sessionState as? SessionState.Authenticated)?.user
-                    dispatch(Message.UserUpdated(user))
-                }
-            }
+        private fun resolveAudience(sessionState: SessionState): RequestAudience? {
+            val role = (sessionState as? SessionState.Authenticated)?.user?.role ?: return null
+            if (role != requestedRole) return null
+            return role.toRequestAudience()
+        }
 
-            scope.launch {
-                dispatch(Message.Loading)
-                requestRepository.observeRequests().collectLatest { requests ->
-                    dispatch(Message.RequestsLoaded(requests))
-                }
-            }
-
-            refresh(audience)
+        private fun resolveAccessState(sessionState: SessionState, audience: RequestAudience?): AccessState = when {
+            audience != null -> AccessState.Granted
+            sessionState is SessionState.Unknown -> AccessState.Checking
+            else -> AccessState.Denied
         }
 
         private fun refresh(audience: RequestAudience?) {
             if (audience == null) return
-            dispatch(Message.Loading)
+            dispatch(Message.RefreshStarted)
             scope.launch {
                 when (val result = requestRepository.refresh(audience)) {
-                    is DomainResult.Success -> dispatch(Message.Refreshed)
+                    is DomainResult.Success -> dispatch(Message.RefreshCompleted)
                     is DomainResult.Failure -> {
-                        dispatch(Message.RequestsLoadFailed)
+                        dispatch(Message.RefreshFailed)
                         publish(RequestsStore.Label.ShowMessage(result.error.toUiText()))
                     }
                 }
@@ -143,6 +177,11 @@ class RequestsStoreFactory(
             )
         }
 
+        private fun dismissDialog() {
+            if (state().isSubmitting) return
+            dispatch(Message.DialogOpened(null))
+        }
+
         private fun confirmApprove() {
             val dialog = state().dialog as? RequestDialog.Approve ?: return
             if (state().isSubmitting) return
@@ -154,9 +193,11 @@ class RequestsStoreFactory(
 
             dispatch(Message.Submitting)
             scope.launch {
-                when (val result = requestRepository.approve(dialog.requestId, audience, dialog.startsAt)) {
+                val startsAt = dialog.startsAt?.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+                when (val result = requestRepository.approve(dialog.requestId, audience, startsAt)) {
                     is DomainResult.Success -> {
                         dispatch(Message.ActionCompleted)
+                        dispatch(Message.RequestUpdated(result.value))
                         publish(RequestsStore.Label.ShowMessage(UiText.Resource(R.string.requests_success_approved)))
                     }
 
@@ -184,6 +225,7 @@ class RequestsStoreFactory(
                 ) {
                     is DomainResult.Success -> {
                         dispatch(Message.ActionCompleted)
+                        dispatch(Message.RequestUpdated(result.value))
                         publish(RequestsStore.Label.ShowMessage(UiText.Resource(R.string.requests_success_declined)))
                     }
 
@@ -198,20 +240,34 @@ class RequestsStoreFactory(
 
     private object ReducerImpl : Reducer<RequestsStore.State, Message> {
         override fun RequestsStore.State.reduce(msg: Message): RequestsStore.State = when (msg) {
-            Message.Refreshed -> copy(isLoading = false)
-            Message.Loading -> copy(isLoading = true)
-            is Message.AudienceResolved -> copy(audience = msg.audience)
-            is Message.UserUpdated -> copy(currentUser = msg.user)
-            is Message.RequestsLoaded -> copy(requests = msg.requests, isLoading = false)
-            Message.RequestsLoadFailed -> copy(isLoading = false)
+            is Message.AccessResolved -> copy(audience = msg.audience, accessState = msg.accessState)
+            Message.RefreshStarted -> copy(isRefreshing = true, loadFailed = false)
+            Message.RefreshCompleted -> copy(isRefreshing = false, hasLoadedOnce = true)
+            Message.RefreshFailed -> copy(isRefreshing = false, loadFailed = true)
+            is Message.RequestsLoaded -> copy(
+                requests = msg.requests,
+                hasLoadedOnce = hasLoadedOnce || msg.requests.isNotEmpty(),
+            )
+
+            is Message.RequestUpdated -> copy(
+                requests = requests.map { request ->
+                    if (request.id == msg.request.id) msg.request else request
+                },
+            )
+
             is Message.TabSelected -> copy(selectedTab = msg.tab)
             is Message.DialogOpened -> copy(dialog = msg.dialog)
             is Message.DeclineReasonChanged -> copy(
-                dialog = (dialog as? RequestDialog.Decline)?.copy(reason = msg.value),
+                dialog = (dialog as? RequestDialog.Decline)?.copy(reason = msg.value) ?: dialog,
             )
+
             is Message.StartsAtChanged -> copy(
-                dialog = (dialog as? RequestDialog.Approve)?.copy(startsAt = msg.value) ?: dialog,
+                dialog = (dialog as? RequestDialog.Approve)?.copy(
+                    startsAt = msg.value,
+                    hasDateError = msg.hasDateError,
+                ) ?: dialog,
             )
+
             Message.Submitting -> copy(isSubmitting = true)
             Message.ActionCompleted -> copy(isSubmitting = false, dialog = null)
             Message.ActionFailed -> copy(isSubmitting = false)
@@ -219,12 +275,11 @@ class RequestsStoreFactory(
     }
 }
 
-internal fun defaultStartsAt(now: OffsetDateTime = OffsetDateTime.now()): String =
+internal fun defaultStartsAt(now: OffsetDateTime = OffsetDateTime.now()): OffsetDateTime =
     now.plusDays(DEFAULT_START_OFFSET_DAYS).withHour(DEFAULT_START_HOUR).withMinute(0).withSecond(0).withNano(0)
-        .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 
-internal fun isFutureDate(startsAt: String?, now: OffsetDateTime = OffsetDateTime.now()): Boolean =
-    startsAt?.let { runCatching { OffsetDateTime.parse(it).isAfter(now) }.getOrNull() } == true
+internal fun isFutureDate(startsAt: OffsetDateTime?, now: OffsetDateTime = OffsetDateTime.now()): Boolean =
+    startsAt?.isAfter(now) == true
 
 private const val DEFAULT_START_OFFSET_DAYS = 7L
 private const val DEFAULT_START_HOUR = 12

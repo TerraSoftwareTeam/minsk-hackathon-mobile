@@ -299,7 +299,7 @@ class ActivityRepositoryImplTest {
             com.dev.lbsuhack.core.domain.model.UserRole.ORGANIZATOR to listOf("/api/v1/events/admin-moderation"),
         )
         for ((role, path) in roles) {
-            val requests = mutableListOf<String>()
+            val requests = java.util.concurrent.CopyOnWriteArrayList<String>()
             val session = com.dev.lbsuhack.feature.activities.util.FakeSessionRepository(
                 com.dev.lbsuhack.core.domain.session.SessionState.Authenticated(
                     com.dev.lbsuhack.core.domain.session.SessionUser("user", "Иван", role = role),
@@ -379,7 +379,7 @@ class ActivityRepositoryImplTest {
 
     @Test
     fun unvoteLikeAndUnlikeHitEndpointsAndUpdateEvent() = runTest {
-        val calls = mutableListOf<String>()
+        val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
         val event = """
             {
               "id": "e1", "name": "Поход", "description": null, "scope": "CLASS", "category": "TOURISM",

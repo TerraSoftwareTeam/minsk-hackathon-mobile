@@ -7,6 +7,7 @@ import com.dev.lbsuhack.core.localization.language.AppLanguage
 interface SettingsStore : Store<SettingsStore.Intent, SettingsStore.State, Nothing> {
 
     sealed interface Intent {
+        data object Init : Intent
         data class SetTheme(val mode: AppThemeMode) : Intent
         data class SetLanguage(val language: AppLanguage) : Intent
     }
@@ -14,5 +15,7 @@ interface SettingsStore : Store<SettingsStore.Intent, SettingsStore.State, Nothi
     data class State(
         val theme: AppThemeMode,
         val language: AppLanguage,
+        val availableModes: List<AppThemeMode> = emptyList(),
+        val availableLanguages: List<AppLanguage> = emptyList(),
     )
 }

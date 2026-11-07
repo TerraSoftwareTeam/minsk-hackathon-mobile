@@ -47,4 +47,8 @@
         <item quantity="other">%1$d сохранённых элементов</item>
     </plurals>
     <string name="profile_school_not_specified">Школа не указана</string>
+    <string name="profile_retry">Повторить</string>
+    <string name="profile_error_load_title">Не удалось загрузить профиль</string>
+    <string name="profile_error_load_desc">Не удалось загрузить данные профиля. Проверьте подключение и повторите попытку.</string>
+    <string name="profile_name_unknown">—</string>
 </resources>
